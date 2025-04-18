@@ -1,9 +1,10 @@
+// src/components/Hero.tsx
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-[92vh] flex items-center justify-center text-white overflow-hidden">
+    <section className="relative min-h-[100vh] flex flex-col items-center justify-center text-white overflow-hidden pt-24 sm:pt-32">
       {/* VIDEO DE FONDO */}
       <video
         autoPlay
@@ -21,13 +22,13 @@ export default function HeroSection() {
 
       {/* CONTENIDO */}
       <motion.div
-        className="relative z-10 text-center px-4 py-10 sm:py-16 max-w-2xl"
+        className="relative z-10 text-center px-6 py-12 max-w-2xl"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, ease: "easeOut" }}
       >
         <motion.h1
-          className="text-4xl sm:text-5xl font-extrabold uppercase tracking-tight leading-tight mb-4 whitespace-normal"
+          className="text-4xl sm:text-5xl font-extrabold uppercase tracking-tight leading-tight mb-6"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.8 }}
@@ -36,7 +37,7 @@ export default function HeroSection() {
         </motion.h1>
 
         <motion.p
-          className="text-lg sm:text-xl text-white/90 mb-6 font-light"
+          className="text-lg sm:text-xl text-white/90 mb-8 font-light"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.8 }}
@@ -46,7 +47,7 @@ export default function HeroSection() {
 
         <motion.a
           href="#catalogo"
-          className="relative inline-block px-6 py-3 font-semibold text-black bg-white rounded-full transition-all duration-300 hover:bg-white/90 hover:scale-105 hover:-translate-y-1 shadow-lg shadow-white/10"
+          className="inline-block px-6 py-3 font-semibold text-black bg-white rounded-full transition-all duration-300 hover:bg-white/90 hover:scale-105 hover:-translate-y-1 shadow-lg shadow-white/10"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.6, duration: 0.6 }}
@@ -55,7 +56,7 @@ export default function HeroSection() {
         </motion.a>
       </motion.div>
 
-      {/* SCROLL HINT CLICKEABLE */}
+      {/* SCROLL HINT */}
       <motion.a
         href="#catalogo"
         className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 cursor-pointer"

@@ -1,11 +1,11 @@
-//components/CategorySection.tsx
+// src/components/CategorySection.tsx
 import { Helmet } from "react-helmet-async";
 
 export default function CategorySection() {
   return (
     <section
+      id="catalogo"
       className="py-20 bg-gray-100 text-center scroll-mt-16"
-      id="categorias"
     >
       <Helmet>
         <title>Categorías | Tu Casaca Deportiva</title>
@@ -44,7 +44,7 @@ export default function CategorySection() {
 
         {/* NBA */}
         <a
-          href="#catalogo"
+          href="/nba"
           aria-label="Ver camisetas NBA"
           className="group relative rounded-2xl overflow-hidden shadow-xl transition-transform duration-500 hover:scale-105"
         >

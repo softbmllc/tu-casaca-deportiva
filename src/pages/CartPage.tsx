@@ -64,14 +64,22 @@ export default function CartPage() {
       <h1 className="text-3xl font-bold mb-6">Tu carrito</h1>
 
       {items.length === 0 ? (
-        <p className="text-gray-600">
-          Tu carrito está vacío. Volvé al{" "}
-          <Link to="/futbol" className="text-black underline">
-            catálogo
-          </Link>{" "}
-          para seguir comprando.
-        </p>
-      ) : (
+  <div className="text-center py-20 text-gray-700">
+    <img
+      src="/images/empty-cart-illustration.jpg"
+      alt="Carrito vacío"
+      className="mx-auto mb-6 w-36 h-36 opacity-80"
+    />
+    <h2 className="text-2xl font-semibold mb-2">Tu carrito está vacío</h2>
+    <p className="mb-6">¡Pero no te vayas con las manos vacías!</p>
+    <Link
+      to="/"
+      className="inline-block px-6 py-3 bg-black text-white rounded-full font-semibold hover:bg-gray-900 transition"
+    >
+      Ver catálogo
+    </Link>
+  </div>
+) : (
         <>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Resumen de tu compra</h2>

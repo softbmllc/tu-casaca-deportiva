@@ -128,32 +128,45 @@ export default function ProductPage() {
         <Link to="/futbol" className="inline-flex items-center gap-2 text-sm font-semibold text-black hover:underline transition w-fit mb-4">
           <ChevronLeft className="w-4 h-4" /> Volver al catálogo
         </Link>
-        <div className="grid md:grid-cols-2 gap-10">
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-3">
-              {product.images.map((img, idx) => (
-                <img
-                  key={idx}
-                  src={img}
-                  alt={`${product.name} thumbnail ${idx}`}
-                  onMouseEnter={() => setSelectedImage(idx)}
-                  onClick={() => setSelectedImage(idx)}
-                  className={`w-16 h-16 object-cover rounded-md cursor-pointer border transition-all duration-200 ${
-                    selectedImage === idx ? "border-black shadow-md" : "border-transparent"
-                  }`}
-                />
-              ))}
-            </div>
+        <div className="grid md:grid-cols-[120px_1fr_1fr] gap-6 md:gap-10 items-start">
+  {/* Thumbnails - vertical en desktop */}
+  <div className="hidden md:flex flex-col gap-2">
+    {product.images.map((img, idx) => (
+      <img
+        key={idx}
+        src={img}
+        alt={`Miniatura ${idx}`}
+        onClick={() => setSelectedImage(idx)}
+        className={`w-20 h-20 object-cover rounded-md cursor-pointer border transition-all duration-200 ${
+          selectedImage === idx ? "border-black shadow-md" : "border-transparent"
+        }`}
+      />
+    ))}
+  </div>
 
-            <div className="flex-1 bg-white rounded-xl overflow-hidden flex items-center justify-center h-[520px]">
-              <img
-                key={selectedImage}
-                src={product.images[selectedImage]}
-                alt={product.name}
-                className="object-contain max-h-full max-w-full transition-opacity duration-500 ease-in-out animate-fadeIn"
-              />
-            </div>
-          </div>
+  {/* Thumbnails - horizontal en mobile */}
+  <div className="md:hidden col-span-full flex gap-2 overflow-x-auto scroll-smooth pb-2">
+    {product.images.map((img, idx) => (
+      <img
+        key={idx}
+        src={img}
+        alt={`Miniatura ${idx}`}
+        onClick={() => setSelectedImage(idx)}
+        className={`w-20 h-20 object-cover rounded-md cursor-pointer border transition-all duration-200 ${
+          selectedImage === idx ? "border-black shadow-md" : "border-transparent"
+        }`}
+      />
+    ))}
+  </div>
+
+  {/* Imagen principal */}
+  <div className="bg-white rounded-xl overflow-hidden flex items-center justify-center h-[520px] col-span-2 md:col-span-1">
+    <img
+      src={product.images[selectedImage]}
+      alt={product.name}
+      className="object-contain max-h-full max-w-full transition-opacity duration-500 ease-in-out animate-fadeIn"
+    />
+  </div>
 
           <div className="flex flex-col gap-6">
             <h1 className="text-3xl font-bold tracking-tight leading-tight">{product.name}</h1>

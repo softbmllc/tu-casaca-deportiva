@@ -1,7 +1,0 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-function ProductCard({ product }) {
-    return (_jsx(Link, { to: `/producto/${product.slug}`, className: "block", children: _jsxs("div", { className: "bg-white rounded-2xl shadow-md border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group", children: [_jsx("div", { className: "w-full h-60 overflow-hidden bg-gray-100", children: _jsx("img", { src: product.image, alt: product.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" }) }), _jsxs("div", { className: "p-4 flex flex-col gap-3", children: [_jsx("h2", { className: "text-base font-semibold text-black leading-tight", children: product.name }), _jsxs("p", { className: "text-sm font-bold text-green-600", children: [product.priceUSD, _jsx("span", { className: "text-gray-500 ml-1", children: "USD" }), " /", " ", _jsx("span", { className: "text-green-600", children: product.priceUYU }), _jsx("span", { className: "text-gray-500 ml-1", children: "UYU" })] }), _jsxs("span", { className: "flex items-center justify-center gap-2 bg-black text-white text-sm font-semibold py-2 rounded-full w-full transition group-hover:scale-105 group-hover:bg-black/90", children: ["Ver m\u00E1s ", _jsx(ArrowRight, { size: 16 })] })] })] }) }));
-}
-export default ProductCard;

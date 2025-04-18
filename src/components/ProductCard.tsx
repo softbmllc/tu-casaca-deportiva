@@ -8,10 +8,13 @@ function ProductCard({ product }: { product: Product }) {
     <Link to={`/producto/${product.slug}`} className="block">
       <div className="bg-white rounded-2xl shadow-md border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group">
         {/* Imagen */}
-        <div className="w-full h-60 overflow-hidden bg-gray-100">
+        <div className="w-full aspect-square overflow-hidden bg-gray-100">
           <img
             src={product.image}
             alt={product.name}
+            onError={(e) =>
+              ((e.target as HTMLImageElement).src = "/images/placeholder.jpg")
+            }
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>

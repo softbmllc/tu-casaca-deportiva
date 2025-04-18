@@ -1,5 +1,4 @@
 // src/components/SidebarFilter.tsx
-import React from "react";
 
 export default function SidebarFilter() {
   return (

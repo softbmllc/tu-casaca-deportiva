@@ -1,0 +1,5 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+// src/components/SidebarFilter.tsx
+export default function SidebarFilter() {
+    return (_jsx("aside", { className: "mb-10 md:mb-0 md:mr-8", children: _jsxs("div", { className: "sticky top-24", children: [_jsx("h3", { className: "text-lg font-bold mb-4", children: "Categor\u00EDas" }), _jsxs("ul", { className: "space-y-2 text-sm", children: [_jsx("li", { children: _jsx("a", { href: "#", className: "hover:text-green-500", children: "Premier League" }) }), _jsx("li", { children: _jsx("a", { href: "#", className: "hover:text-green-500", children: "La Liga" }) }), _jsx("li", { children: _jsx("a", { href: "#", className: "hover:text-green-500", children: "Serie A" }) }), _jsx("li", { children: _jsx("a", { href: "#", className: "hover:text-green-500", children: "Bundesliga" }) }), _jsx("li", { children: _jsx("a", { href: "#", className: "hover:text-green-500", children: "Nacionales" }) }), _jsx("li", { children: _jsx("a", { href: "#", className: "hover:text-green-500", children: "Retro" }) })] })] }) }));
+}

@@ -1,0 +1,12 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
+import "./index.css";
+import App from "./App";
+import FootballPage from "./pages/FootballPage";
+import ProductPage from "./pages/ProductPage";
+import CartPage from "./pages/CartPage";
+import { CartProvider } from "./context/CartContext";
+ReactDOM.createRoot(document.getElementById("root")).render(_jsx(React.StrictMode, { children: _jsx(HelmetProvider, { children: _jsx(CartProvider, { children: _jsx(BrowserRouter, { children: _jsxs(Routes, { children: [_jsx(Route, { path: "/", element: _jsx(App, {}) }), _jsx(Route, { path: "/futbol", element: _jsx(FootballPage, {}) }), _jsx(Route, { path: "/producto/:id", element: _jsx(ProductPage, {}) }), _jsx(Route, { path: "/carrito", element: _jsx(CartPage, {}) })] }) }) }) }) }));

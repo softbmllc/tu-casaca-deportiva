@@ -25,9 +25,9 @@ app.post("/api/create_preference", async (req, res) => {
         items,
         payer,
         back_urls: {
-          success: "http://localhost:5173/success",
-          failure: "http://localhost:5173/failure",
-          pending: "http://localhost:5173/pending",
+          success: "https://tu-casaca-deportiva.vercel.app/success",
+          failure: "https://tu-casaca-deportiva.vercel.app/failure",
+          pending: "https://tu-casaca-deportiva.vercel.app/pending",
         },
         auto_return: "approved",
         notification_url: "https://61c3-2601-582-c302-8510-49fc-e263-4e02-1189.ngrok-free.app/webhook"

@@ -29,7 +29,7 @@ export default function CartPage() {
   const handleCheckout = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/create_preference", {
+      const res = await fetch("https://61c3-2601-582-c302-8510-49fc-e263-4e02-1189.ngrok-free.app/api/create_preference", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -50,10 +50,10 @@ export default function CartPage() {
       if (data.init_point) {
         window.location.href = data.init_point;
       } else {
-        console.error("No se recibió init_point");
+        console.error("❌ No se recibió init_point");
       }
     } catch (err) {
-      console.error("Error en el checkout:", err);
+      console.error("❌ Error en el checkout:", err);
     } finally {
       setLoading(false);
     }

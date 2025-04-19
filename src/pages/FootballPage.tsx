@@ -10,6 +10,7 @@ import CartIcon from "../components/CartIcon";
 import { ArrowUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import Footer from "../components/Footer";
 
 const leagues = [
   {
@@ -397,6 +398,9 @@ export default function FootballPage() {
           <ArrowUp className="w-5 h-5" />
         </button>
       )}
+
+      {/* 👇 Footer visible en esta página */}
+      <Footer />
     </section>
   );  
 }

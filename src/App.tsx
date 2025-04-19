@@ -2,7 +2,7 @@
 import Layout from "./components/Layout";
 import Hero from "./components/Hero";
 import CategorySection from "./components/CategorySection";
-import FeaturedProducts from "./components/FeaturedProducts";
+import InstagramFeed from "./components/InstagramFeed";
 import { Routes, Route } from "react-router-dom";
 import ProductPage from "./pages/ProductPage";
 import FootballPage from "./pages/FootballPage";
@@ -21,7 +21,7 @@ export default function App() {
             <>
               <Hero />
               <CategorySection />
-              <FeaturedProducts />
+              <InstagramFeed />
             </>
           }
         />

@@ -4,6 +4,7 @@ import products from "../data/products";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import CartIcon from "../components/CartIcon";
+import Footer from "../components/Footer";
 
 import {
   FiMinus,
@@ -345,6 +346,7 @@ export default function ProductPage() {
     <ArrowUp className="w-4 h-4" />
   </button>
 )}
+<Footer />
 </>
 );
 }

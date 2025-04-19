@@ -6,6 +6,7 @@ import RelatedProducts from "../components/RelatedProducts";
 import { CartItem } from "../data/types";
 import { Trash2, Minus, Plus } from "lucide-react";
 import AuthChoice from "../components/AuthChoice";
+import Footer from "../components/Footer";
 
 export default function CartPage() {
   const { items, updateItem } = useCart();
@@ -319,6 +320,7 @@ export default function CartPage() {
           <div className="mt-10">
             <RelatedProducts excludeSlugs={items.map((i) => i.slug)} />
           </div>
+          <Footer />
         </>
       )}
     </section>

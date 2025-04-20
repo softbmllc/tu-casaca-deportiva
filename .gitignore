@@ -7,18 +7,33 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Directorios comunes
 node_modules
 dist
 dist-ssr
-*.local
+.vite/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Archivos innecesarios
 .DS_Store
+*.local
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Archivos compilados de TypeScript
+*.js
+*.js.map
+src/**/*.js
+src/**/*.js.map
+
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Configs de editores
+.idea/
+.vscode/
+!.vscode/extensions.json

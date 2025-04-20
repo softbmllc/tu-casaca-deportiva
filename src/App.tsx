@@ -2,6 +2,7 @@
 import Layout from "./components/Layout";
 import Hero from "./components/Hero";
 import CategorySection from "./components/CategorySection";
+import PromoSlider from "./components/PromoSlider"; // 👈 nuevo
 import InstagramFeed from "./components/InstagramFeed";
 import { Routes, Route } from "react-router-dom";
 import ProductPage from "./pages/ProductPage";
@@ -21,6 +22,7 @@ export default function App() {
             <>
               <Hero />
               <CategorySection />
+              <PromoSlider /> {/* 👈 agregado acá */}
               <InstagramFeed />
             </>
           }

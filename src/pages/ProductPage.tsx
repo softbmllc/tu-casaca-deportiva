@@ -16,8 +16,10 @@ import {
   Inbox,
   ChevronLeft,
   ChevronRight,
-  ArrowUp
-} from "lucide-react";
+  ArrowUp,
+  Bolt
+} from "lucide-react"; // ⬅️ Incluimos Bolt acá
+
 import RelatedProducts from "../components/RelatedProducts";
 import { useCart } from "../context/CartContext"; // 🛒 nuevo
 
@@ -40,8 +42,8 @@ export default function ProductPage() {
     : 99;
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { addToCart, items } = useCart(); // 🛒 hook para agregar al carrito
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0); // 🔢 número total
+  const { addToCart, items } = useCart();
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });

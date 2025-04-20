@@ -1,14 +1,24 @@
 // src/components/ProductCard.tsx
 import { Product } from "../data/types";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
+import stock from "../data/stock";
 
 function ProductCard({ product }: { product: Product }) {
+  const isExpress = stock.some((item) => item.slug === product.slug);
+
   return (
     <Link to={`/producto/${product.slug}`} className="block">
-      <div className="bg-white rounded-2xl shadow-md border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group">
+      <div className="bg-white rounded-2xl shadow-md border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-visible group relative">
         {/* Imagen */}
-        <div className="w-full aspect-square overflow-hidden bg-gray-100">
+        <div className="w-full aspect-square overflow-hidden bg-gray-100 relative">
+          {/* Mostrar cinta solo si está en stock */}
+          {isExpress && (
+            <div className="absolute top-[30px] right-[-36px] w-[150px] bg-amber-500 text-white text-[10px] py-1 px-2 text-center font-bold rotate-45 z-10 flex items-center justify-center gap-1 animate-pulse drop-shadow-sm">
+              <Rocket size={12} className="inline-block" /> Entrega Express
+            </div>
+          )}
+
           <img
             src={product.image}
             alt={product.name}

@@ -10,7 +10,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
 
-    // 👇 Agregá esto para evitar errores innecesarios:
+    // 🚫 Previene que se generen archivos .js
+    "noEmit": true,
+
+    // 👇 Útil si querés limpiar errores molestos que no te afectan
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },

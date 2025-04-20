@@ -2,15 +2,18 @@
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import products from "../data/products";
+import stock from "../data/stock";
 import ProductCard from "../components/ProductCard";
 import { Product } from "../data/types";
 import { FiFilter } from "react-icons/fi";
 import { motion } from "framer-motion";
 import CartIcon from "../components/CartIcon";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Bolt } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import Footer from "../components/Footer";
+import { Rocket } from "lucide-react";
+import StockExpressButton from "../components/StockExpressButton";
 
 const leagues = [
   {
@@ -128,6 +131,10 @@ export default function FootballPage() {
       });
     }
 
+    if (selectedLeague === "STOCK_EXPRESS") {
+      return [...stock].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
     return products.filter((product) => {
       const leagueMatches = selectedLeague ? product.league === selectedLeague : true;
       const teamMatches = selectedTeam ? product.team === selectedTeam : true;
@@ -135,7 +142,12 @@ export default function FootballPage() {
     });
   };
 
-  const productsToDisplay = getFilteredProducts();
+  const getStockExpressProducts = (): Product[] => {
+    return [...stock].sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const isStockExpress = selectedLeague === "STOCK_EXPRESS";
+  const productsToDisplay = isStockExpress ? getStockExpressProducts() : getFilteredProducts();
   const currentLeague = leagues.find((l) => l.name === selectedLeague);
   
   return (
@@ -227,8 +239,22 @@ export default function FootballPage() {
             </button>
           </div>
   
+          <div className="mb-2">
+            <StockExpressButton
+              isSelected={selectedLeague === "STOCK_EXPRESS"}
+              onClick={() => {
+                setSelectedLeague("STOCK_EXPRESS");
+                setSelectedTeam("");
+                setSearchTerm("");
+                setIsFilterOpen?.(false);
+              }}
+            />
+          </div>
+  
+  
           <div>
             <h3 className="font-bold mb-2">Categorías</h3>
+            
             <ul className="space-y-1 text-sm">
               {leagues.map((league) => (
                 <li key={league.name}>
@@ -298,7 +324,7 @@ export default function FootballPage() {
                 </button>
   
                 <h3 className="font-bold mb-4">Filtrar por liga y equipo</h3>
-  
+
                 <div className="space-y-4">
                   {leagues.map((league) => (
                     <div key={league.name}>
@@ -353,12 +379,16 @@ export default function FootballPage() {
             ← Volver al inicio
           </Link>
   
-          <h2 className="text-3xl font-extrabold -mt-1">{selectedLeague}</h2>
-          <p className="text-sm text-gray-600 mb-6">
-            {selectedTeam
-              ? `Mostrando camisetas de ${selectedTeam}`
-              : `Mostrando camisetas disponibles por liga o equipo`}
-          </p>
+          <h2 className="text-3xl font-extrabold -mt-1">
+  {selectedLeague === "STOCK_EXPRESS" ? "Stock Express" : selectedLeague}
+</h2>
+<p className="text-sm text-gray-600 mb-6">
+  {selectedLeague === "STOCK_EXPRESS"
+    ? "Camisetas disponibles para entrega inmediata."
+    : selectedTeam
+    ? `Mostrando camisetas de ${selectedTeam}`
+    : `Mostrando camisetas disponibles por liga o equipo`}
+</p>
   
           <motion.div
             className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"

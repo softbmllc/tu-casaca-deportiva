@@ -18,8 +18,8 @@ export default function StockExpressButton({ isSelected, onClick, extraClasses =
       } ${extraClasses}`}
     >
       <Rocket size={16} className="text-red-600" />
-      <span>Stock</span>
-      <span className="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full shadow font-semibold ml-1">
+      <span className="font-semibold text-[15px]">Stock</span>
+      <span className="bg-red-600 text-white text-[13px] px-2 py-0.5 rounded-full shadow font-semibold ml-1">
         Express
       </span>
     </button>

@@ -6,7 +6,6 @@ import { BundesligaProducts } from "./Bundesliga";
 import { SeleccionesProducts } from "./Selecciones";
 import { UruguayProducts } from "./Uruguay";
 import { RetroProducts } from "./Retro";
-import { NBAProducts } from "./NBA";
 
 export const leagues = [
   ...PremierLeagueProducts,
@@ -16,5 +15,4 @@ export const leagues = [
   ...SeleccionesProducts,
   ...UruguayProducts,
   ...RetroProducts,
-  ...NBAProducts,
 ];

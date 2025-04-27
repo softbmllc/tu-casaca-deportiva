@@ -20,7 +20,7 @@ export default function AdminLayout({ children }: Props) {
   return (
     <div className="min-h-screen flex">
       {/* Sidebar izquierdo */}
-      <Sidebar />
+      <Sidebar activeView="" onChangeView={() => {}} />
 
       {/* Contenido principal */}
       <div className="flex-1 flex flex-col bg-gray-100">

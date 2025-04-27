@@ -1,7 +1,7 @@
 // src/data/Retro.ts
 import { Product } from "./types";
 
-const Retro: Product[] = [
+export const RetroProducts: Partial<Product>[] = [
   {
     id: 4001,
     name: "Liverpool",
@@ -354,4 +354,4 @@ const Retro: Product[] = [
   },
 ];
 
-export default Retro;
+export default RetroProducts;

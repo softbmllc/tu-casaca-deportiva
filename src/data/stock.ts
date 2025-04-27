@@ -1,7 +1,7 @@
 // src/data/stock.ts
 import { Product } from "./types";
 
-const stockProducts: Product[] = [
+export const stockProducts: Partial<Product>[] = [
   {
     id: 6001,
     name: "Real Madrid Visitante 24/25 – Mbappé",

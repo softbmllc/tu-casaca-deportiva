@@ -1,7 +1,7 @@
 // src/data/Uruguay.ts
 import { Product } from "./types";
 
-const Uruguay: Product[] = [
+export const UruguayProducts: Partial<Product>[] = [
   {
     id: 7001,
     name: "Nacional local 24/25",
@@ -32,4 +32,4 @@ const Uruguay: Product[] = [
   },
 ];
 
-export default Uruguay;
+export default UruguayProducts;

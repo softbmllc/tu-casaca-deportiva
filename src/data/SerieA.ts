@@ -1,7 +1,7 @@
 // src/data/SerieA.ts
 import { Product } from "./types";
 
-const SerieA: Product[] = [
+export const SerieAProducts: Partial<Product>[] = [
   {
     id: 5001,
     name: "AC Milan local 24/25",
@@ -283,4 +283,4 @@ const SerieA: Product[] = [
     team: "Verona",
   },
 ];
-export default SerieA;
+export default SerieAProducts;

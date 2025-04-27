@@ -1,7 +1,7 @@
 //src/data/Bundesliga.ts
 import { Product } from "./types";
 
-const Bundesliga: Product[] = [
+export const BundesligaProducts: Partial<Product>[] = [
   {
     id: 2001,
     name: "Borussia Dortmund local 24/25",
@@ -174,4 +174,4 @@ const Bundesliga: Product[] = [
   },
 ];
 
-export default Bundesliga;
+export default BundesligaProducts;

@@ -1,5 +1,6 @@
 import { Product } from "./types";
-const premierLeagueProducts: Product[] = [
+export const PremierLeagueProducts: Partial<Product>[] = [
+
   {
     id: 1,
     name: "Liverpool local 24/25",
@@ -204,4 +205,4 @@ const premierLeagueProducts: Product[] = [
   }
 ];
 
-export default premierLeagueProducts;
+export default PremierLeagueProducts;

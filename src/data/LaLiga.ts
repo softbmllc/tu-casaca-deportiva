@@ -1,7 +1,7 @@
 // src/data/LaLiga.ts
 import { Product } from "./types";
 
-const LaLiga: Product[] = [
+export const LaLigaProducts: Partial<Product>[] = [
   {
     id: 1001,
     name: "Barcelona local 24/25",
@@ -242,17 +242,17 @@ const LaLiga: Product[] = [
   },
   {
     id: 1018,
-    name: "Rayo Vallecas local 24/25",
+    name: "Rayo Vallecano local 24/25",
     subtitle: "Camiseta oficial temporada 24/25",
     priceUSD: 52,
     priceUYU: 2290,
-    slug: "rayo-vallecas-local-24-25",
-    image: "/images/laliga/rayo-vallecas-home-24-25.jpg",
-    images: ["/images/laliga/rayo-vallecas-home-24-25.jpg"],
+    slug: "rayo-vallecano-local-24-25",
+    image: "/images/laliga/rayo-vallecano-home-24-25.jpg",
+    images: ["/images/laliga/rayo-vallecano-home-24-25.jpg"],
     sizes: ["S", "M", "L", "XL"],
     category: "Fútbol",
     league: "La Liga",
-    team: "Rayo Vallecas",
+    team: "Rayo Vallecano",
   },
   {
     id: 1019,
@@ -326,4 +326,4 @@ const LaLiga: Product[] = [
   }
 ];
 
-export default LaLiga;
+export default LaLigaProducts;

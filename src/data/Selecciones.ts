@@ -1,7 +1,7 @@
 //src/data/selecciones.ts
 import { Product } from "./types";
 
-const Selecciones: Product[] = [
+export const SeleccionesProducts: Partial<Product>[] = [
   {
     id: 3003,
     name: "Francia",
@@ -298,4 +298,4 @@ const Selecciones: Product[] = [
   },
 ];
 
-export default Selecciones;
+export default SeleccionesProducts;

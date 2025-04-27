@@ -7,6 +7,8 @@ import { SeleccionesProducts } from "./Selecciones";
 import { UruguayProducts } from "./Uruguay";
 import { RetroProducts } from "./Retro";
 
+// Leagues list - actualizado
+
 export const leagues = [
   ...PremierLeagueProducts,
   ...LaLigaProducts,

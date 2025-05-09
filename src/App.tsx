@@ -6,7 +6,6 @@ import CategorySection from "./components/CategorySection";
 import PromoSlider from "./components/PromoSlider";
 import ProductPage from "./pages/ProductPage";
 import FootballPage from "./pages/FootballPage";
-import NBAPage from "./pages/NBAPage";
 import CartPage from "./pages/CartPage";
 import SuccessPage from "./pages/SuccessPage";
 import FailurePage from "./pages/FailurePage";
@@ -69,7 +68,6 @@ export default function App() {
 
         {/* ✅ Rutas públicas de secciones */}
         <Route path="/futbol" element={<FootballPage />} />
-        <Route path="/nba" element={<NBAPage />} />
         <Route path="/carrito" element={<CartPage />} />
 
         {/* ✅ Rutas con layout */}

@@ -6,7 +6,7 @@ import { CartItem } from "../data/types";
 type CartContextType = {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
-  updateItem: (id: number, size: string, updates: Partial<CartItem>) => void;
+  updateItem: (id: string | number, size: string, updates: Partial<CartItem>) => void;
   clearCart: () => void;
 };
 
@@ -26,7 +26,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prevItems) => {
       const existing = prevItems.find(
         (item) =>
-          item.id === newItem.id &&
+          item.id.toString() === newItem.id.toString() &&
           item.size === newItem.size &&
           item.customName === newItem.customName &&
           item.customNumber === newItem.customNumber
@@ -44,11 +44,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateItem = (id: number, size: string, updates: Partial<CartItem>) => {
+  const updateItem = (id: string | number, size: string, updates: Partial<CartItem>) => {
     setItems((prevItems) =>
       prevItems
         .map((item) =>
-          item.id === id && item.size === size
+          item.id.toString() === id.toString() && item.size === size
             ? { ...item, ...updates }
             : item
         )

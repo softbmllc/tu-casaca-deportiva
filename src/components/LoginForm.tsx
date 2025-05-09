@@ -27,7 +27,7 @@ export default function LoginForm() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-10">
       {/* Logo */}
       <img
-        src="/logo.png"
+        src="/logo1.png"
         alt="Tu Casaca Deportiva"
         className="w-24 h-24 object-contain mb-4"
       />

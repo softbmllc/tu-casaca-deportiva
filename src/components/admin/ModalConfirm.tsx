@@ -6,9 +6,10 @@ interface ModalConfirmProps {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  isLoading?: boolean; // 👈🏼 agregado
 }
 
-export default function ModalConfirm({ title, message, onConfirm, onCancel }: ModalConfirmProps) {
+export default function ModalConfirm({ title, message, onConfirm, onCancel, isLoading = false }: ModalConfirmProps) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <motion.div
@@ -23,14 +24,16 @@ export default function ModalConfirm({ title, message, onConfirm, onCancel }: Mo
           <button
             onClick={onCancel}
             className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-sm font-medium"
+            disabled={isLoading}
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium"
+            className={`px-4 py-2 rounded-lg text-white text-sm font-medium ${isLoading ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"}`}
+            disabled={isLoading}
           >
-            Eliminar
+            {isLoading ? "Eliminando..." : "Eliminar"}
           </button>
         </div>
       </motion.div>

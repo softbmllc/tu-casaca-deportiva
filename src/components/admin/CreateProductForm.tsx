@@ -1,9 +1,31 @@
 // src/components/admin/CreateProductForm.tsx
-import { useForm, Controller, Control, FieldValues } from "react-hook-form";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import ImageUploader from "./ImageUploader";
-import { leagues } from "../../data/leagues";
+import { Product } from "../../data/types";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  createProduct,
+  fetchTeams,
+  fetchSubcategories,
+  fetchLeagues,
+} from "../../firebaseUtils";
 
 // Definimos los tamaños disponibles como una constante
 const SIZES = ["S", "M", "L", "XL"] as const;
@@ -13,87 +35,240 @@ type Size = typeof SIZES[number];
 // Tipamos el objeto de stock para que utilice el tipo Size
 type StockRecord = Record<Size, number>;
 
+// Tipo para ligas almacenadas en localStorage
+type League = {
+  id: number;
+  name: string;
+};
+
+// Tipo para equipos almacenados en localStorage
+type Team = {
+  id: number;
+  name: string;
+  league: string;
+};
+
 // Interfaz para nuestro formulario
 interface FormData {
   title: string;
   league: string;
   team: string;
-  subtitle: string;
-  usdPrice: number;
-  uyuPrice: number;
-  details: string;
-  extraDescription: string;
-  descriptionPosition: "top" | "bottom";
-  active: boolean;
-  stock: StockRecord;
-}
-
-// Función para generar un slug totalmente único basado en el título + timestamp
-const generateUniqueSlug = (title: string): string => {
-  const timestamp = Date.now();
-  const randomId = Math.floor(Math.random() * 100000);
-  
-  // Normalizar título eliminando acentos y caracteres especiales
-  const normalizedTitle = title
-    .toLowerCase()
-    .normalize("NFD") // Normalizar acentos
-    .replace(/[\u0300-\u036f]/g, "") // Eliminar diacríticos
-    .replace(/[^a-z0-9\s-]/g, "") // Eliminar caracteres especiales
-    .replace(/\s+/g, "-") // Reemplazar espacios con guiones
-    .replace(/-+/g, "-") // Evitar guiones duplicados
-    .replace(/^-|-$/g, ""); // Eliminar guiones al inicio y final
-  
-  return `${normalizedTitle}-${timestamp}-${randomId}`;
-};
-
-// Función para encontrar la liga correspondiente a un equipo
-const findLeagueForTeam = (team: string): string | null => {
-  for (const league of leagues) {
-    if (league.teams.includes(team)) {
-      return league.name;
-    }
-  }
-  return null;
-};
-
-// Interfaz para el producto que guardamos en localStorage
-interface Product {
-  id: number;
-  slug: string;
-  name: string;
-  title: string;
-  subtitle: string;
-  league: string;
-  category: string;
-  team: string;
   priceUSD: number;
-  usdPrice: number;
   priceUYU: number;
-  uyuPrice: number;
-  details: string;
-  extraDescription: string;
+  defaultDescriptionType: "none" | "camiseta";
+  extraDescriptionTop: string;
+  extraDescriptionBottom: string;
   descriptionPosition: "top" | "bottom";
   active: boolean;
+  customizable: boolean;
   stock: StockRecord;
-  images: string[];
-  image: string;
-  sizes: Size[];
 }
 
+// Constantes para Cloudinary
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/ddkyumyw3/image/upload";
+const UPLOAD_PRESET = "unsigned_preset";
+
+// Función para generar un slug limpio (sin timestamp ni random)
+const generateCleanSlug = (title: string): string => {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+};
+
+// Componente para imagen arrastrable
+function SortableImageItem({ id, url, onRemove, onMoveLeft, onMoveRight }: {
+  id: string;
+  url: string;
+  onRemove: () => void;
+  onMoveLeft: () => void;
+  onMoveRight: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative cursor-move group" {...attributes} {...listeners}>
+      <img src={url} alt="Vista previa" className="w-full h-40 object-cover rounded border" />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition"
+      >
+        ×
+      </button>
+      <div className="absolute bottom-1 left-1 right-1 flex justify-between opacity-0 group-hover:opacity-100 transition">
+        <button type="button" onClick={(e) => { e.stopPropagation(); onMoveLeft(); }} className="bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-black/90">
+          ←
+        </button>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onMoveRight(); }} className="bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-black/90">
+          →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 🔥 ACA recién empieza el componente:
 export default function CreateProductForm() {
   const { id } = useParams();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [images, setImages] = useState<string[]>([]);
-  const [teams, setTeams] = useState<string[]>([]);
   const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    title: "",
+    category: "",
+    subCategory: "",
+    team: "",
+    priceUSD: 0,
+    priceUYU: 0,
+    images: [],
+    sizes: ["S", "M", "L", "XL"],
+    stock: {
+      S: 0,
+      M: 0,
+      L: 0,
+      XL: 0,
+    },
+    active: true,
+    customizable: true,
+  });
+
+  // Estado para mensaje de éxito visual
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Estados principales
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState("");
+const [images, setImages] = useState<string[]>([]);
+type Category = {
+  id: number;
+  name: string;
+};
+
+const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+const [subcategories, setSubcategories] = useState<{ id: string; name: string; categoryId: string }[]>([]);
+const [teams, setTeams] = useState<{ id: string; name: string; subCategoryId: string }[]>([]);
+const [uploadingImages, setUploadingImages] = useState(false);
+const [addingTeam, setAddingTeam] = useState(false);
+const [newTeamName, setNewTeamName] = useState("");
+const fileInputRef = useRef<HTMLInputElement>(null);
+const [selectedCategory, setSelectedCategory] = useState("");
+const [selectedSubcategory, setSelectedSubcategory] = useState("");
+const [selectedTeam, setSelectedTeam] = useState("");
+const [availableLeagues, setAvailableLeagues] = useState<{ id: string; name: string }[]>([]);
+const [product, setProduct] = useState<Partial<Product>>({});
+const [customizable, setCustomizable] = useState(true);
+
+useEffect(() => {
+  const loadAllData = async () => {
+    try {
+      const leagues = await fetchLeagues(); // 🔥 Esto ya te trae las ligas con sus teams principales
+      const allSubcategoriesPromises = leagues.map((league) =>
+        fetchSubcategories(league.id)
+      );
+      const allSubcategories = (await Promise.all(allSubcategoriesPromises)).flat();
+
+      const allTeamsPromises = allSubcategories.map((sub) =>
+        fetchTeams(sub.categoryId, sub.id)
+      );
+      const allTeams = (await Promise.all(allTeamsPromises)).flat();
+
+      setCategories(leagues);
+      setSubcategories(allSubcategories);
+      setTeams(allTeams);
+
+      console.log("[CreateProductForm] Categorías, Subcategorías y Equipos cargados correctamente desde Firebase");
+    } catch (error) {
+      console.error("[CreateProductForm] Error cargando datos de Firebase:", error);
+    }
+  };
+
+  loadAllData();
+}, []);
+
+// 🔥 Mantener formData sincronizado con las selecciones
+useEffect(() => {
+  setFormData((prev) => ({
+    ...prev,
+    category: selectedCategory,
+  }));
+}, [selectedCategory]);
+
+useEffect(() => {
+  setSelectedSubcategory("");
+  setSelectedTeam("");
+}, [selectedCategory]);
+
+useEffect(() => {
+  setFormData((prev) => ({
+    ...prev,
+    subcategory: selectedSubcategory,
+  }));
+}, [selectedSubcategory]);
+
+useEffect(() => {
+  const loadLeagues = async () => {
+    try {
+      const fetched = await fetchLeagues();
+      setAvailableLeagues(fetched);
+    } catch (error) {
+      console.error("Error cargando ligas:", error);
+    }
+  };
+
+  loadLeagues();
+}, []);
+
+// 🧹 Luego sigue tu código normal
+  // Configuración mejorada de sensores para drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // puedes ajustar esta distancia si quieres
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  // Función para subir imágenes a Cloudinary - Mejorada para múltiples imágenes
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+    
+    try {
+      const response = await fetch(CLOUDINARY_URL, {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error de Cloudinary: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error("Error al subir la imagen a Cloudinary:", error);
+      throw error;
+    }
+  };
   
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    reset,
     control,
     formState: { errors },
   } = useForm<FormData>({
@@ -101,13 +276,14 @@ export default function CreateProductForm() {
       title: "",
       league: "",
       team: "",
-      subtitle: "",
-      usdPrice: 80,
-      uyuPrice: 3200,
-      details: "",
-      extraDescription: "",
+      priceUSD: 80,
+      priceUYU: 3200,
+      defaultDescriptionType: "none", // 🔥 Nuevo
+      extraDescriptionTop: "",        // 🔥 Nuevo
+      extraDescriptionBottom: "",     // 🔥 Nuevo
       descriptionPosition: "bottom",
       active: true,
+      customizable: true,
       stock: {
         S: 0,
         M: 0,
@@ -118,371 +294,512 @@ export default function CreateProductForm() {
   });
 
   // Observar cambios en el equipo seleccionado para actualizar la liga automáticamente
-  const selectedTeam = watch("team");
-  const selectedLeague = watch("league");
-  
-  useEffect(() => {
-    if (selectedTeam && (!selectedLeague || selectedLeague === "")) {
-      const league = findLeagueForTeam(selectedTeam);
-      if (league) {
-        console.log(`Equipo '${selectedTeam}' encontrado en liga '${league}'`);
-        setValue("league", league);
-      } else {
-        console.log(`No se encontró liga para el equipo '${selectedTeam}'`);
-      }
+  const watchedTeam = watch("team");
+const watchedLeague = watch("league");
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setImages((items) => {
+        const oldIndex = items.findIndex((item) => item === active.id);
+        const newIndex = items.findIndex((item) => item === over.id);
+        
+        return arrayMove(items, oldIndex, newIndex);
+      });
     }
-  }, [selectedTeam, selectedLeague, setValue]);
+  };
 
-  // Actualizar equipos cuando se selecciona una liga
-  useEffect(() => {
-    if (selectedLeague) {
-      const leagueData = leagues.find((l) => l.name === selectedLeague);
-      if (leagueData) {
-        setTeams(leagueData.teams);
-      } else {
-        setTeams([]);
-      }
-    } else {
-      setTeams([]);
-    }
-  }, [selectedLeague]);
-
-  // Cargar datos para edición
-  useEffect(() => {
-    if (id) {
-      try {
-        const productos = JSON.parse(localStorage.getItem("productos") || "[]");
-        const producto = productos.find((p: any) => p.id === Number(id) || p.id === id);
-
-        if (producto) {
-          console.log("Cargando producto para edición:", producto);
-
-          // Mapear campos del producto a los campos del formulario
-          setValue("title", producto.title || producto.name || "");
-          setValue("league", producto.league || producto.category || "");
-          setValue("team", producto.team || "");
-          setValue("subtitle", producto.subtitle || "");
-          setValue("usdPrice", producto.usdPrice || producto.priceUSD || 0);
-          setValue("uyuPrice", producto.uyuPrice || producto.priceUYU || 0);
-          setValue("details", producto.details || "");
-          setValue(
-            "extraDescription",
-            producto.extraDescription || producto.descriptionTop || producto.descriptionBottom || ""
-          );
-          setValue("descriptionPosition", producto.descriptionPosition || "bottom");
-          setValue("active", producto.active !== false);
-          
-          // Asegurarse de que stock tenga la estructura correcta
-          const stock: StockRecord = { S: 0, M: 0, L: 0, XL: 0 };
-          if (producto.stock) {
-            // Asignar solo las propiedades que existen en nuestro StockRecord
-            SIZES.forEach(size => {
-              if (typeof producto.stock[size] === 'number') {
-                stock[size] = producto.stock[size];
-              }
-            });
-          }
-          setValue("stock", stock);
-          
-          setImages(producto.images || []);
-
-          // Actualizar los equipos si hay una liga seleccionada
-          if (producto.league || producto.category) {
-            const leagueData = leagues.find(
-              (l) => l.name === (producto.league || producto.category)
-            );
-            if (leagueData) {
-              setTeams(leagueData.teams);
-            }
-          }
-        } else {
-          console.error("Producto no encontrado para editar con ID:", id);
+  const addNewTeam = () => {
+    if (!newTeamName.trim() || !watchedLeague) return;
+    
+    try {
+      // Cargar equipos actuales
+      const storedTeamsJson = localStorage.getItem("teams");
+      let storedTeams: Team[] = storedTeamsJson ? JSON.parse(storedTeamsJson) : [];
+      
+      // Generar ID único para el nuevo equipo
+      const newTeamId = Date.now();
+      
+      // Crear objeto de equipo
+      const newTeam: Team = {
+        id: newTeamId,
+        name: newTeamName.trim(),
+        league: watchedLeague,
+      };
+      
+      // Añadir a la lista
+      storedTeams.push(newTeam);
+      
+      // Guardar en localStorage
+      localStorage.setItem("teams", JSON.stringify(storedTeams));
+      
+      // Actualizar equipos en el estado
+      setTeams([
+        ...teams,
+        {
+          id: String(newTeamId), // ✅ casteamos a string
+          name: newTeamName.trim(),
+          subCategoryId: selectedSubcategory, // ✅ este es el campo que espera el tipo
         }
-      } catch (error) {
-        console.error("Error al cargar producto:", error);
-        setError("Error al cargar el producto");
-      }
+      ].sort((a, b) => a.name.localeCompare(b.name)));
+      
+      // Seleccionar el nuevo equipo
+      setValue("team", newTeamName.trim());
+      
+      // Limpiar y cerrar formulario
+      setNewTeamName("");
+      setAddingTeam(false);
+      
+      console.log(`[CreateProductForm] Equipo '${newTeamName.trim()}' añadido a liga '${watchedLeague}'`);
+    } catch (error) {
+      console.error("[CreateProductForm] Error al añadir nuevo equipo:", error);
+      setError("No se pudo añadir el equipo. Intente nuevamente.");
     }
-  }, [id, setValue]);
+  };
 
-  const onSubmit = (data: FormData) => {
+  // Mejorado: Manejo de carga de múltiples imágenes
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) return;
+    
+    setUploadingImages(true);
+    setError("");
+    
+    try {
+      const files = Array.from(event.target.files);
+      console.log(`[CreateProductForm] Subiendo ${files.length} imágenes...`);
+      
+      // Subir todas las imágenes en paralelo
+      const uploadPromises = files.map(file => uploadToCloudinary(file));
+      const uploadedUrls = await Promise.all(uploadPromises);
+      
+      // Agregar las URLs a las imágenes existentes
+      setImages(prevImages => [...prevImages, ...uploadedUrls]);
+      
+      console.log(`[CreateProductForm] ${uploadedUrls.length} imágenes subidas con éxito`);
+      
+      // Limpiar el input para permitir subir los mismos archivos nuevamente si es necesario
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error) {
+      console.error("[CreateProductForm] Error al subir imágenes:", error);
+      setError("Error al subir imágenes. Intente nuevamente.");
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+  
+  const handleMoveImage = (index: number, direction: "left" | "right") => {
+    if (
+      (direction === "left" && index === 0) ||
+      (direction === "right" && index === images.length - 1)
+    ) {
+      return;
+    }
+    
+    const newImages = [...images];
+    const newIndex = direction === "left" ? index - 1 : index + 1;
+    
+    [newImages[index], newImages[newIndex]] = [newImages[newIndex], newImages[index]];
+    
+    setImages(newImages);
+  };
+
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
+    if (images.length === 0) {
+      setError("Debes subir al menos una imagen");
+      return;
+    }
+
+    if (!selectedCategory || !selectedSubcategory) {
+      setError("Debes seleccionar categoría y subcategoría");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      console.log("Datos del formulario a guardar:", data);
-      console.log("Imágenes a guardar:", images);
-      
-      // Obtener productos existentes o iniciar un array vacío
-      const existingProducts = JSON.parse(localStorage.getItem("productos") || "[]");
+      const title = data.title.trim();
+      const slug = generateCleanSlug(title);
 
-      // Generar un nuevo ID único para nuevos productos
-      let productId: number;
-      let productSlug: string;
+      // Verificación de duplicidad de slug (ver comentarios anteriores para implementación)
 
-      if (id) {
-        // Edición: mantener el ID y slug existentes
-        const existingProduct = existingProducts.find((p: any) => 
-          p.id === Number(id) || p.id === id || p.id?.toString() === id
-        );
-        if (existingProduct) {
-          productId = existingProduct.id;
-          productSlug = existingProduct.slug;
-          console.log(`Editando producto con ID: ${productId} y slug: ${productSlug}`);
-        } else {
-          // Por alguna razón no se encontró el producto, crear uno nuevo
-          productId = Date.now();
-          productSlug = generateUniqueSlug(data.title);
-          console.error(`No se encontró el producto a editar con ID ${id}, creando uno nuevo.`);
-        }
-      } else {
-        // Creación: generar ID y slug nuevos
-        productId = Date.now();
-        productSlug = generateUniqueSlug(data.title);
-        console.log(`Creando producto nuevo con ID: ${productId} y slug: ${productSlug}`);
-      }
-
-      // Construir objeto de producto con todos los campos normalizados
-      const product: Product = {
-        id: productId,
-        slug: productSlug,
-        name: data.title, // Para compatibilidad con componentes que usan name
-        title: data.title, // Para componentes admin que usan title
-        subtitle: data.subtitle,
-        league: data.league, // Para compatibilidad con componentes que usan league
-        category: data.league, // Para componentes admin que usan category
-        team: data.team,
-        priceUSD: Number(data.usdPrice), // Para compatibilidad con componentes que usan priceUSD
-        usdPrice: Number(data.usdPrice), // Para componentes admin que usan usdPrice
-        priceUYU: Number(data.uyuPrice), // Para compatibilidad con componentes que usan priceUYU
-        uyuPrice: Number(data.uyuPrice), // Para componentes admin que usan uyuPrice
-        details: data.details,
-        extraDescription: data.extraDescription,
-        descriptionPosition: data.descriptionPosition,
+      const categoryName = categories.find((cat) => cat.id === selectedCategory)?.name || "";
+      const subcategoryName = subcategories.find((sub) => sub.id === selectedSubcategory)?.name || "";
+      const teamName = teams.find((team) => team.id === selectedTeam)?.name || "";
+      const newProduct: Partial<Product> = {
+        title: title,
+        slug: slug,
+        category: { id: selectedCategory, name: categoryName },
+        subCategory: { id: selectedSubcategory, name: subcategoryName },
+        team: { id: selectedTeam, name: teamName },
+        priceUSD: data.priceUSD,
+        priceUYU: data.priceUYU,
+        defaultDescriptionType: data.defaultDescriptionType || "none",
+        extraDescriptionTop: data.extraDescriptionTop || "",
+        extraDescriptionBottom: data.extraDescriptionBottom || "",
+        descriptionPosition: data.descriptionPosition || "bottom",
         active: data.active,
         stock: data.stock,
         images: images,
-        image: images.length > 0 ? images[0] : "",
-        sizes: [...SIZES], // Copiamos el array de tamaños
+        allowCustomization: data.customizable,
+        customName: "",
+        customNumber: "",
       };
 
-      // Actualizar o añadir el producto
-      if (id) {
-        // Edición: reemplazar el producto existente
-        const updatedProducts = existingProducts.map((p: any) =>
-          p.id === Number(id) || p.id === id || p.id?.toString() === id ? product : p
-        );
-        localStorage.setItem("productos", JSON.stringify(updatedProducts));
-        console.log("Producto actualizado en localStorage");
-      } else {
-        // Creación: añadir el nuevo producto
-        existingProducts.push(product);
-        localStorage.setItem("productos", JSON.stringify(existingProducts));
-        console.log("Producto nuevo agregado a localStorage");
-      }
+      // 🔥 Verificación de nombres de categoría, subcategoría y equipo
+      console.log("[Verificación]", categoryName, subcategoryName, teamName);
+      console.log("[CreateProductForm] Producto listo para guardar:", newProduct);
 
-      // Disparar evento para notificar a otras pestañas
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'productos',
-        newValue: localStorage.getItem("productos")
-      }));
-
-      // Navegar de vuelta a la lista de productos
+      await createProduct(newProduct);
+      setSuccessMessage("¡Producto creado correctamente!");
       setTimeout(() => {
-        navigate("/admin");
-      }, 500);
+        setSuccessMessage("");
+        navigate("/admin/productos");
+      }, 2000);
     } catch (error) {
-      console.error("Error al guardar producto:", error);
-      setError(`Error al guardar el producto. Detalles: ${error}`);
+      console.error("[CreateProductForm] Error al crear producto:", error);
+      setError("Error al crear el producto. Intente nuevamente.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleFormValidation = async (data: any) => {
+  
+    if (!selectedCategory) {
+      alert("Por favor selecciona una categoría");
+      return;
+    }
+  
+    if (!selectedSubcategory) {
+      alert("Por favor selecciona una subcategoría");
+      return;
+    }
+  
+    // ✅ Si pasa validaciones
+    handleSubmit(data);
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 rounded shadow-sm">
-      <h2 className="text-xl font-bold mb-4">
-        {id ? "Editar producto" : "Crear nuevo producto"}
-      </h2>
-
-      {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded">{error}</div>}
-
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Título/Nombre *</label>
-        <input
-          {...register("title", { required: "El título es obligatorio" })}
-          className="w-full border rounded p-2"
-        />
-        {errors.title && (
-          <p className="text-red-500 text-sm mt-1">{errors.title?.message}</p>
+    <>
+      {successMessage && (
+        <div className="bg-green-100 text-green-800 p-4 rounded-md mb-4">
+          {successMessage}
+        </div>
+      )}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    
+        {/* Error general */}
+        {error && (
+          <div className="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
         )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Liga/Categoría *</label>
-          <select
-            {...register("league", { required: "La liga es obligatoria" })}
-            className="w-full border rounded p-2"
-            onChange={(e) => {
-              setValue("league", e.target.value);
-              setValue("team", "");
-            }}
-          >
-            <option value="">Seleccionar liga...</option>
-            {leagues.map((league) => (
-              <option key={league.name} value={league.name}>
-                {league.name}
-              </option>
-            ))}
-          </select>
-          {errors.league && (
-            <p className="text-red-500 text-sm mt-1">{errors.league?.message}</p>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Equipo</label>
-          <select
-            {...register("team")}
-            className="w-full border rounded p-2"
-            disabled={!selectedLeague}
-          >
-            <option value="">Seleccionar equipo...</option>
-            {teams.map((team) => (
-              <option key={team} value={team}>
-                {team}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Subtítulo</label>
-        <input {...register("subtitle")} className="w-full border rounded p-2" />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Precio USD *</label>
+    
+        {/* Título */}
+        <div className="space-y-2">
+          <label htmlFor="title" className="block font-medium">
+            Título del producto <span className="text-red-500">*</span>
+          </label>
           <input
-  type="text"
-  inputMode="numeric"
-  pattern="\d*"
-  {...register("usdPrice", { required: "El precio USD es obligatorio", min: { value: 1, message: "El precio debe ser mayor a 0" } })}
-  className="w-full border rounded p-2"
-/>
-          {errors.usdPrice && (
-            <p className="text-red-500 text-sm mt-1">{errors.usdPrice?.message}</p>
+            id="title"
+            type="text"
+            {...register("title", { required: "El título es obligatorio" })}
+            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            placeholder="Ej: Camiseta Uruguay 2023 Titular"
+          />
+          {errors.title && (
+            <span className="text-red-500 text-sm">{errors.title.message}</span>
           )}
         </div>
 
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Precio UYU *</label>
+      {/* CATEGORÍA */}
+<div className="mb-4">
+  <label className="block text-sm font-medium mb-1">Categoría:</label>
+  <select
+    className="w-full border p-2 rounded"
+    value={selectedCategory}
+    onChange={(e) => {
+      const value = e.target.value;
+      setSelectedCategory(value);
+      const categoryName = categories.find((cat) => cat.id === value)?.name || "";
+      setProduct((prev) => ({ ...prev, category: { id: value, name: categoryName } }));
+    }}
+  >
+    <option value="">Seleccionar categoría</option>
+    {categories.map((cat) => (
+      <option key={cat.id} value={cat.id}>
+        {cat.name}
+      </option>
+    ))}
+  </select>
+</div>
+
+{/* SUBCATEGORÍA */}
+<div className="mb-4">
+  <label className="block text-sm font-medium mb-1">Subcategoría:</label>
+  <select
+    className="w-full border p-2 rounded"
+    value={selectedSubcategory}
+    onChange={(e) => {
+      const value = e.target.value;
+      setSelectedSubcategory(value);
+      const subcategoryName = subcategories.find((sub) => sub.id === value)?.name || "";
+      setProduct((prev) => ({ ...prev, subCategory: { id: value, name: subcategoryName } }));
+    }}
+    disabled={!selectedCategory}
+  >
+    <option value="">Seleccionar subcategoría</option>
+    {subcategories
+      .filter((sub) => sub.categoryId === selectedCategory)
+      .map((sub) => (
+        <option key={sub.id} value={sub.id}>
+          {sub.name}
+        </option>
+      ))}
+  </select>
+</div>
+
+        {/* Precios */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="priceUSD" className="block font-medium">
+              Precio en USD <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="priceUSD"
+              type="number"
+              step="0.01"
+              min="0"
+              {...register("priceUSD", {
+                required: "El precio en USD es obligatorio",
+                valueAsNumber: true,
+                validate: (value) => value > 0 || "El precio debe ser mayor a 0",
+              })}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            {errors.priceUSD && (
+              <span className="text-red-500 text-sm">{errors.priceUSD.message}</span>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="priceUYU" className="block font-medium">
+              Precio en UYU <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="priceUYU"
+              type="number"
+              step="1"
+              min="0"
+              {...register("priceUYU", {
+                required: "El precio en UYU es obligatorio",
+                valueAsNumber: true,
+                validate: (value) => value > 0 || "El precio debe ser mayor a 0",
+              })}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            {errors.priceUYU && (
+              <span className="text-red-500 text-sm">{errors.priceUYU.message}</span>
+            )}
+          </div>
+        </div>
+
+
+        {/* Stock */}
+        <div className="space-y-2">
+          <label className="block font-medium">
+            Stock disponible <span className="text-red-500">*</span>
+          </label>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    {SIZES.map((size) => (
+      <div key={size} className="space-y-1">
+        <label htmlFor={`stock.${size}`} className="block text-sm">
+          Talle {size}
+        </label>
+        <input
+          id={`stock.${size}`}
+          type="number"
+          min="0"
+          {...register(`stock.${size}` as const, {
+            valueAsNumber: true,
+          })}
+          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+        />
+      </div>
+    ))}
+  </div>
+        </div>
+
+      {/* Descripción automática */}
+<div className="space-y-2">
+  <label htmlFor="defaultDescriptionType" className="block font-medium">
+    Descripción automática
+  </label>
+  <select
+    id="defaultDescriptionType"
+    {...register("defaultDescriptionType")}
+    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+  >
+    <option value="">Sin descripción automática</option>
+    <option value="camiseta">Camiseta</option>
+    {/* Futuras opciones: campera, short, etc */}
+  </select>
+</div>
+
+<div className="space-y-2 mt-4">
+  <label className="flex items-center space-x-2">
+    <input
+      type="checkbox"
+      checked={formData.customizable}
+      onChange={(e) =>
+        setFormData((prev) => ({ ...prev, customizable: e.target.checked }))
+      }
+      className="text-black rounded focus:ring-black h-5 w-5"
+    />
+    <span>Permitir personalización con nombre y número</span>
+  </label>
+</div>
+
+{/* Texto arriba de la descripción */}
+<div className="space-y-2">
+  <label htmlFor="extraDescriptionTop" className="block font-medium">
+    Texto adicional (arriba)
+  </label>
+  <textarea
+    id="extraDescriptionTop"
+    {...register("extraDescriptionTop")}
+    rows={3}
+    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+    placeholder="Texto opcional arriba de la descripción automática..."
+  ></textarea>
+</div>
+
+{/* Texto abajo de la descripción */}
+<div className="space-y-2">
+  <label htmlFor="extraDescriptionBottom" className="block font-medium">
+    Texto adicional (abajo)
+  </label>
+  <textarea
+    id="extraDescriptionBottom"
+    {...register("extraDescriptionBottom")}
+    rows={3}
+    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+    placeholder="Texto opcional abajo de la descripción automática..."
+  ></textarea>
+</div>
+
+      {/* Estado activo */}
+      <div className="space-y-2">
+        <label className="flex items-center space-x-2">
           <input
-  type="text"
-  inputMode="numeric"
-  pattern="\d*"
-  {...register("uyuPrice", { required: "El precio UYU es obligatorio", min: { value: 1, message: "El precio debe ser mayor a 0" } })}
-  className="w-full border rounded p-2"
-/>
-          {errors.uyuPrice && (
-            <p className="text-red-500 text-sm mt-1">{errors.uyuPrice?.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Detalles</label>
-        <textarea
-          {...register("details")}
-          className="w-full border rounded p-2 min-h-[100px]"
-        ></textarea>
-      </div>
-
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Descripción extra</label>
-        <textarea
-          {...register("extraDescription")}
-          className="w-full border rounded p-2 min-h-[100px]"
-        ></textarea>
-      </div>
-
-      <div className="mb-4">
-        <label className="block font-medium mb-1">Posición de descripción extra</label>
-        <select
-          {...register("descriptionPosition")}
-          className="w-full border rounded p-2"
-        >
-          <option value="top">Arriba (antes de los detalles)</option>
-          <option value="bottom">Abajo (después de los detalles)</option>
-        </select>
-      </div>
-
-      <div className="mb-4">
-        <label className="flex items-center">
-          <input type="checkbox" {...register("active")} className="mr-2" />
-          <span>Activo (visible en el sitio)</span>
+            type="checkbox"
+            {...register("active")}
+            className="text-black rounded focus:ring-black h-5 w-5"
+          />
+          <span>Producto activo (visible para clientes)</span>
         </label>
       </div>
 
-      <div className="mb-6">
-        <label className="block font-medium mb-2">Stock por talle</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {SIZES.map((size) => (
-            <div key={size} className="border p-3 rounded">
-              <label className="block font-medium mb-1">Talle {size}</label>
-              <Controller
-                name={`stock.${size}`}
-                control={control}
-                render={({ field }) => (
-                  <input
-  type="text"
-  inputMode="numeric"
-  pattern="\d*"
-  value={field.value}
-  onChange={(e) => {
-    const value = parseInt(e.target.value);
-    field.onChange(isNaN(value) ? 0 : value);
-  }}
-  className="w-full border rounded p-2"
-/>
-                )}
-              />
-            </div>
-          ))}
+      {/* Imágenes */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <label className="block font-medium">
+            Imágenes <span className="text-red-500">*</span>
+          </label>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageUpload}
+            className="hidden"
+            id="image-upload"
+          />
+          
+          <label
+            htmlFor="image-upload"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md cursor-pointer transition-colors flex items-center justify-center disabled:opacity-50"
+          >
+            {uploadingImages ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Subiendo...
+              </>
+            ) : (
+              <>Agregar imágenes</>
+            )}
+          </label>
         </div>
+
+        {images.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              <SortableContext
+                items={images}
+                strategy={verticalListSortingStrategy}
+              >
+                {images.map((url, index) => (
+                  <SortableImageItem
+                    key={url}
+                    id={url}
+                    url={url}
+                    onRemove={() => handleRemoveImage(index)}
+                    onMoveLeft={() => handleMoveImage(index, "left")}
+                    onMoveRight={() => handleMoveImage(index, "right")}
+                  />
+                ))}
+              </SortableContext>
+            </div>
+          </DndContext>
+        )}
+        
+        {images.length === 0 && (
+          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center text-gray-500">
+            No hay imágenes cargadas
+          </div>
+        )}
       </div>
 
-      <div className="mb-6">
-        <label className="block font-medium mb-2">Imágenes</label>
-        <p className="text-sm text-gray-500 mb-2">
-          Podés subir varias imágenes. La primera imagen será la principal.
-        </p>
-        <ImageUploader images={images} onChange={setImages} />
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => navigate("/admin")}
-          className="px-4 py-2 border rounded hover:bg-gray-50"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
-        >
-          {loading
-            ? "Guardando..."
-            : id
-            ? "Actualizar producto"
-            : "Crear producto"}
-        </button>
-      </div>
-    </form>
+        {/* Botón de envío */}
+        <div className="pt-4">
+          <button
+            type="submit"
+            disabled={loading || uploadingImages}
+            className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+              loading || uploadingImages
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700 text-white"
+            }`}
+          >
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Guardando...
+              </div>
+            ) : (
+              "Crear publicación"
+            )}
+          </button>
+        </div>
+      </form>
+    </>
   );
 }

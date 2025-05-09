@@ -1,34 +1,44 @@
-// src/data/types.ts
-
 export type Product = {
-  id: number;
-  name: string;
+  id: string;
   title: string;
+  subtitle?: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  extraDescription?: string;
   priceUSD: number;
   priceUYU: number;
-  usdPrice?: number; // Compatibilidad para productos guardados desde el admin
-  uyuPrice?: number; // Compatibilidad para productos guardados desde el admin
-  slug: string;
-  subtitle?: string;
-  image?: string;
-  images: string[];
-  sizes: string[];
-  category: string;
+  category: { id: string; name: string };
+  subCategory: { id: string; name: string };
+  team: { id: string; name: string };
   league: string;
-  team: string;
-  descriptionTop?: string;
-  descriptionBottom?: string;
-  active?: boolean;
-  stock?: {
-    [size: string]: number;
-  };
+  images?: string[];
+  stock?: { [size: string]: number };
+  sizes?: string[];
+  active: boolean;
+  defaultDescriptionType?: string;
+  extraDescriptionTop?: string;
+  extraDescriptionBottom?: string;
+  descriptionPosition?: "top" | "bottom";
+  allowCustomization?: boolean;
   customName?: string;
   customNumber?: string;
 };
 
-// ✅ Tipo para items del carrito
+export interface League {
+  id: string;
+  name: string;
+  teams: string[];
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  subCategoryId: string;
+}
+
 export type CartItem = {
-  id: number;
+  id: string;
   slug: string;
   name: string;
   image: string;
@@ -40,13 +50,36 @@ export type CartItem = {
   customNumber?: string;
 };
 
-// ✅ Tipo de usuario autenticado
 export type User = {
-  id: number;
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+};
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+};
+export type Client = {
+  id: string;
   name: string;
   email: string;
   phone?: string;
   address?: string;
-  city?: string;
-  department?: string;
+  country?: string;
+};
+
+export type LeagueData = {
+  id: string;
+  name: string;
+  teams: string[];
+};
+
+export type Subcategory = {
+  id: string;
+  name: string;
+  categoryId: string;
 };

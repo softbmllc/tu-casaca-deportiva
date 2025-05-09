@@ -19,24 +19,19 @@ export default function OrderAdmin() {
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    // Cargar pedidos con sus estados guardados
-    const pedidosAdmin = JSON.parse(localStorage.getItem("pedidosAdmin") || "[]");
+    const pedidosGuardados = JSON.parse(localStorage.getItem("pedidosAdmin") || "[]");
     const pedidosSimulados = JSON.parse(localStorage.getItem("pedidos") || "[]");
-    
-    // Si ya existen pedidos guardados con sus estados, usarlos directamente
-    if (pedidosAdmin.length > 0) {
-      setOrders(pedidosAdmin);
-      return;
-    }
-    
-    // Si no hay pedidos guardados con estados, inicializar desde pedidos simulados
+
     const parsed: Order[] = pedidosSimulados.map((pedido: any, index: number) => {
+      const id = pedido.id || Date.now() + index + Math.floor(Math.random() * 1000);
+      const estadoAnterior = pedidosGuardados.find((p: any) => p.id === id)?.status;
+
       return {
-        id: pedido.id || Date.now() + index + Math.floor(Math.random() * 1000),
+        id,
         client: pedido.cliente.nombre,
         phone: pedido.cliente.telefono,
         address: pedido.cliente.direccion,
-        city: pedido.cliente.ciudad || "",
+        city: pedido.cliente.ciudad,
         department: pedido.cliente.departamento,
         postalCode: pedido.cliente.codigoPostal,
         items: pedido.items
@@ -48,12 +43,11 @@ export default function OrderAdmin() {
           )
           .join(" / "),
         total: pedido.total,
-        status: "En Proceso",
+        status: estadoAnterior || "En Proceso",
       };
     });
+
     setOrders(parsed);
-    // Guardar los pedidos iniciales en localStorage
-    localStorage.setItem("pedidosAdmin", JSON.stringify(parsed));
   }, []);
 
   const cycleStatus = (status: Order["status"]): Order["status"] => {
@@ -67,7 +61,6 @@ export default function OrderAdmin() {
       order.id === id ? { ...order, status: cycleStatus(order.status) } : order
     );
     setOrders(updatedOrders);
-    // Guardar inmediatamente los cambios en localStorage
     localStorage.setItem("pedidosAdmin", JSON.stringify(updatedOrders));
   };
 

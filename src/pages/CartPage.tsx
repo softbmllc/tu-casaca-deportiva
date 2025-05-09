@@ -7,6 +7,8 @@ import { CartItem } from "../data/types";
 import { Trash2, Minus, Plus } from "lucide-react";
 import AuthChoice from "../components/AuthChoice";
 import Footer from "../components/Footer";
+import { db } from "../firebase";
+import { collection, doc, setDoc, Timestamp } from "firebase/firestore";
 
 export default function CartPage() {
   const { items, updateItem, clearCart } = useCart();
@@ -37,12 +39,8 @@ const [resetConfirm, setResetConfirm] = useState("");
 
   // Función modular para crear un pedido
   const crearPedido = () => {
-    const total = items.reduce((sum, item) => {
-      const price = currency === "USD" ? item.priceUSD : item.priceUYU;
-      return sum + price * item.quantity;
-    }, 0);
-
     return {
+      id: Date.now() + Math.floor(Math.random() * 10000), // ID único numérico
       cliente: {
         nombre: shippingInfo.name,
         telefono: shippingInfo.phone,
@@ -51,7 +49,6 @@ const [resetConfirm, setResetConfirm] = useState("");
         departamento: shippingInfo.department,
         codigoPostal: shippingInfo.postalCode,
         email: shippingInfo.email,
-        // No incluimos la contraseña por seguridad
       },
       items: items.map(item => ({
         id: item.id,
@@ -62,15 +59,18 @@ const [resetConfirm, setResetConfirm] = useState("");
         customName: item.customName,
         customNumber: item.customNumber,
       })),
-      total: total,
+      total: items.reduce((sum, item) => {
+        const price = currency === "USD" ? item.priceUSD : item.priceUYU;
+        return sum + price * item.quantity;
+      }, 0),
       moneda: currency,
-      estado: "simulado",
+      // estado eliminado, ahora se define en Firestore como "En Proceso"
       fecha: new Date().toISOString(),
     };
   };
 
   // Función para simular un pedido
-  const simularPedido = () => {
+  const simularPedido = async () => {
     // Validar campos obligatorios
     if (!shippingInfo.name || !shippingInfo.phone || !shippingInfo.address) {
       alert("Por favor completa los campos obligatorios: nombre, teléfono y dirección");
@@ -91,41 +91,66 @@ const [resetConfirm, setResetConfirm] = useState("");
     }
 
     // Crear el pedido
-const pedido = crearPedido();
+    const pedido = crearPedido();
 
-// Guardar en localStorage
-const pedidosActuales = JSON.parse(localStorage.getItem("pedidos") || "[]");
-localStorage.setItem("pedidos", JSON.stringify([...pedidosActuales, pedido]));
+    try {
+      // Guardar en Firestore
+      const pedidoRef = doc(collection(db, "orders"));
+      await setDoc(pedidoRef, {
+        ...pedido,
+        status: "En Proceso",
+        createdAt: Timestamp.now(),
+      });
+      // También guardar cliente en colección "clients"
+      const clientRef = doc(db, "clients", shippingInfo.email);
+      await setDoc(
+        clientRef,
+        {
+          name: shippingInfo.name,
+          phone: shippingInfo.phone,
+          address: shippingInfo.address,
+          city: shippingInfo.city,
+          department: shippingInfo.department,
+          postalCode: shippingInfo.postalCode,
+          email: shippingInfo.email,
+          updatedAt: Timestamp.now(),
+        },
+        { merge: true }
+      );
+    } catch (e) {
+      alert("Error al guardar el pedido en Firestore");
+      return;
+    }
 
-// Si quiere registrarse, también guardamos el usuario
-if (shippingInfo.wantsToRegister) {
-  const usuariosActuales = JSON.parse(localStorage.getItem("usuarios") || "[]");
-  const emailYaExiste = usuariosActuales.some((u: any) => u.email === shippingInfo.email);
+    // Si quiere registrarse, también guardamos el usuario (en localStorage, como antes)
+    if (shippingInfo.wantsToRegister) {
+      const usuariosActuales = JSON.parse(localStorage.getItem("usuarios") || "[]");
+      const emailYaExiste = usuariosActuales.some((u: any) => u.email === shippingInfo.email);
 
-  if (emailYaExiste) {
-    alert("Este correo ya está registrado. Por favor iniciá sesión o usá otro correo.");
-    return;
-  }
+      if (emailYaExiste) {
+        alert("Este correo ya está registrado. Por favor iniciá sesión o usá otro correo.");
+        return;
+      }
 
-  const nuevoUsuario = {
-    nombre: shippingInfo.name,
-    telefono: shippingInfo.phone,
-    direccion: shippingInfo.address,
-    ciudad: shippingInfo.city,
-    departamento: shippingInfo.department,
-    codigoPostal: shippingInfo.postalCode,
-    email: shippingInfo.email,
-    password: shippingInfo.password, // En producción, usar hash
-  };
+      const nuevoUsuario = {
+        nombre: shippingInfo.name,
+        telefono: shippingInfo.phone,
+        direccion: shippingInfo.address,
+        ciudad: shippingInfo.city,
+        departamento: shippingInfo.department,
+        codigoPostal: shippingInfo.postalCode,
+        email: shippingInfo.email,
+        password: shippingInfo.password, // En producción, usar hash
+      };
 
-  localStorage.setItem("usuarios", JSON.stringify([...usuariosActuales, nuevoUsuario]));
-}
+      localStorage.setItem("usuarios", JSON.stringify([...usuariosActuales, nuevoUsuario]));
+    }
 
-// Limpiar carrito
-clearCart();
+    // Limpiar carrito
+    clearCart();
 
-// Redireccionar
-navigate("/admin");
+    // Redireccionar
+    navigate("/admin");
   };
 
   const handleCheckout = async () => {
@@ -141,13 +166,28 @@ navigate("/admin");
         alert("Para registrarte, debes completar email, contraseña y confirmar contraseña");
         return;
       }
-      
       if (shippingInfo.password !== shippingInfo.confirmPassword) {
         alert("Las contraseñas no coinciden");
         return;
       }
     }
-    
+
+    // Crear el pedido antes de redirigir a MP
+    const pedido = crearPedido();
+    let pedidoRef;
+    try {
+      pedidoRef = doc(collection(db, "orders"));
+      await setDoc(pedidoRef, {
+        ...pedido,
+        status: "Pendiente de pago",
+        createdAt: Timestamp.now(),
+        mpCheckoutId: "", // Placeholder para almacenar luego el ID de la transacción si lo necesitás
+      });
+    } catch (e) {
+      alert("Error al guardar el pedido en Firestore");
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await fetch("https://61c3-2601-582-c302-8510-49fc-e263-4e02-1189.ngrok-free.app/api/create_preference", {
@@ -173,6 +213,7 @@ navigate("/admin");
             department: shippingInfo.department,
             postalCode: shippingInfo.postalCode,
             wantsToRegister: shippingInfo.wantsToRegister,
+            internalOrderId: pedidoRef.id,
           },
         }),
       });
@@ -198,16 +239,18 @@ navigate("/admin");
 
   const handleQuantityChange = (item: CartItem, newQty: number) => {
     if (newQty >= 1 && newQty <= 99) {
-      updateItem(item.id, item.size, { quantity: newQty });
+      updateItem(Number(item.id), item.size, { quantity: newQty });
     }
   };
 
   const handleRemoveItem = (item: CartItem) => {
-    updateItem(item.id, item.size, { quantity: 0 });
+    updateItem(Number(item.id), item.size, { quantity: 0 });
   };
 
   return (
-    <section className="max-w-5xl mx-auto px-6 py-10">
+    <section className="bg-white text-black min-h-screen flex flex-col">
+      <main className="flex-grow">
+        <div className="max-w-5xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold mb-6">Tu carrito</h1>
   
       {items.length === 0 && (
@@ -493,10 +536,17 @@ navigate("/admin");
             </button>
           </div>
 
-          <div className="mt-10">
-            <RelatedProducts excludeSlugs={items.map((i) => i.slug)} />
-          </div>
-          <Footer />
+          {items.length > 0 && (
+            <div className="mt-10 bg-white">
+              <div className="pb-20">
+                <RelatedProducts
+                  title="También te podría gustar"
+                  excludeSlugs={items.map((i) => i.slug)}
+                  categoryName="Fútbol"
+                />
+              </div>
+            </div>
+          )}
         </>
       )}
       {showLoginModal && (
@@ -742,6 +792,9 @@ navigate("/admin");
     </div>
   </div>
 )}
+        </div>
+      </main>
+      <Footer />
     </section>
   );
 }

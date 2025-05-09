@@ -12,13 +12,15 @@ export default function Sidebar({ activeView, onChangeView }: SidebarProps) {
     { label: "Ver Publicaciones", view: "productList" },
     { label: "Crear Publicaciones", view: "productForm" },
     { label: "Historial de Pedidos", view: "orders" },
+    { label: "Categorías", view: "categories" },
     { label: "Usuarios", view: "users" },
   ];
 
   return (
-    <aside className="w-64 bg-white shadow-md h-screen px-4 py-6">
-      <h2 className="text-lg font-bold mb-6">Panel de Administración</h2>
-      <nav className="space-y-2">
+    <aside className="w-64 bg-white shadow-lg border-r border-gray-200 h-screen px-4 py-6 flex flex-col items-center">
+      <img src="/logo.png" alt="Logo Tu Casaca Deportiva" className="h-20 w-auto mb-4" />
+      <h2 className="text-xl font-bold text-center mb-6">Panel de Administración</h2>
+      <nav className="space-y-2 w-full">
         {menuItems.map((item) => (
           <button
             key={item.view}

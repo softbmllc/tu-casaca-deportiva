@@ -1,26 +1,8 @@
 // src/data/products.ts
-import PremierLeague from "./PremierLeague";
-import LaLiga from "./LaLiga";
-import SerieA from "./SerieA";
-import Bundesliga from "./Bundesliga";
-import Selecciones from "./Selecciones";
-import Retro from "./Retro";
-import Uruguay from "./Uruguay";
-import stockProducts from "./stock";
+
 import { Product } from "./types";
 
-// Productos del catálogo sin tipar aún
-const rawCatalog = [
-  ...PremierLeague,
-  ...LaLiga,
-  ...SerieA,
-  ...Bundesliga,
-  ...Selecciones,
-  ...Retro,
-  ...Uruguay,
-];
-
-// Función que garantiza el retorno exacto de un Product
+// Función dummy para compatibilidad (por ahora)
 function createProduct(p: any, index: number): Product {
   return {
     id: typeof p.id === "number" ? p.id : 10000 + index,
@@ -28,28 +10,25 @@ function createProduct(p: any, index: number): Product {
     title: p.title || "",
     priceUSD: p.priceUSD ?? 0,
     priceUYU: p.priceUYU ?? 0,
-    usdPrice: p.usdPrice ?? p.priceUSD ?? 0,
-    uyuPrice: p.uyuPrice ?? p.priceUYU ?? 0,
     slug: p.slug || `producto-${10000 + index}`,
     subtitle: p.subtitle || "",
-    image: p.image || "",
+    extraDescription: p.extraDescription || "",
     images: p.images || [],
     sizes: p.sizes || ["S", "M", "L", "XL"],
-    category: p.category || "FÚTBOL",
     league: p.league || "FÚTBOL",
     team: p.team || "",
-    descriptionTop: p.descriptionTop || "",
-    descriptionBottom: p.descriptionBottom || "",
+    description: p.description || "",
+    descriptionPosition: p.descriptionPosition || "bottom",
     active: p.active ?? true,
     stock: p.stock || { S: 0, M: 0, L: 0, XL: 0 },
     customName: p.customName,
     customNumber: p.customNumber,
+    category: p.category || "",
+    subCategory: p.subCategory || "",
   };
 }
 
-const mergedProducts = [
-  ...stockProducts,
-  ...rawCatalog.map(createProduct),
-] as Product[];
+// No hay productos hardcodeados ahora
+const mergedProducts: Product[] = [];
 
 export default mergedProducts;

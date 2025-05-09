@@ -1,109 +1,97 @@
 // src/components/admin/ProductList.tsx
 import { useEffect, useState } from "react";
-import productCatalog from "../../data/products";
-import { Product as BaseProduct } from "../../data/types";
-import { useNavigate } from "react-router-dom";
+import { Product } from "../../data/types";
+import { fetchProducts, deleteProduct, fetchProductById, updateProduct } from "../../firebaseUtils";
+import EditProductModal from "./EditProductModal";
 import ModalConfirm from "./ModalConfirm";
 
-interface AdminProduct extends Partial<BaseProduct> {
-  id: number;
-  name: string;
-  title: string;
-  league: string;
-  category: string;
-  extraDescription?: string;
-  descriptionPosition?: "top" | "bottom";
-}
-
 export default function ProductList() {
-  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [filter, setFilter] = useState("Todas");
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteName, setConfirmDeleteName] = useState<string>("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const loadProducts = () => {
-      const local = localStorage.getItem("productos");
-      if (local) {
-        const parsedProducts = JSON.parse(local);
-        const normalizedProducts = parsedProducts.map((p: AdminProduct) => ({
-          ...p,
-          title: p.title || p.name || "",
-          name: p.name || p.title || "",
-          active: p.active !== false,
-          league: p.league || p.category || "FÚtbol",
-          category: p.category || p.league || "FÚtbol",
-          extraDescription: p.extraDescription || "",
-          descriptionPosition: p.descriptionPosition || "bottom",
-          stock: p.stock || { S: 0, M: 0, L: 0, XL: 0 },
-          images: p.images || [],
-          slug: p.slug || `${p.id}-${(p.name || p.title || "").toLowerCase().replace(/\s+/g, '-')}`
-        }));
-        setProducts(normalizedProducts);
-      } else {
-        initializeProductsFromCatalog();
+    const loadProducts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const productsData = await fetchProducts();
+        setProducts(productsData);
+      } catch (error) {
+        console.error("Error al cargar productos:", error);
+        setError("No se pudieron cargar los productos. Intenta nuevamente.");
+      } finally {
+        setLoading(false);
       }
     };
-
-    const initializeProductsFromCatalog = () => {
-      const enriched = productCatalog.map((p, index) => ({
-        ...p,
-        id: p.id || index + 1,
-        title: p.name,
-        extraDescription: "",
-        descriptionPosition: "bottom" as const,
-        active: true,
-        category: p.league || p.category || "FÚtbol",
-        league: p.league || p.category || "FÚtbol",
-        stock: p.stock || { S: 0, M: 0, L: 0, XL: 0 },
-        images: p.images || [],
-      }));
-      localStorage.setItem("productos", JSON.stringify(enriched));
-      setProducts(enriched);
-    };
-
     loadProducts();
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "productos") {
-        loadProducts();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const saveToStorage = (updated: AdminProduct[]) => {
-    localStorage.setItem("productos", JSON.stringify(updated));
-    setProducts(updated);
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'productos',
-      newValue: JSON.stringify(updated)
-    }));
+  const handleEdit = async (id: string) => {
+    try {
+      const product = await fetchProductById(id);
+      if (product) {
+        setEditingProduct(product);
+        setIsModalOpen(true);
+      } else {
+        setError(`No se encontró el producto con ID: ${id}`);
+      }
+    } catch (error) {
+      console.error("Error al cargar producto para editar:", error);
+      setError("No se pudo cargar el producto para editar. Intenta nuevamente.");
+    }
   };
 
-  const toggleActive = (id: number) => {
-    const updated = products.map((p) => p.id === id ? { ...p, active: !p.active } : p);
-    saveToStorage(updated);
+  const handleSaveProduct = async (updatedProduct: Product) => {
+    try {
+      if (updatedProduct.id) {
+        await updateProduct(updatedProduct.id, updatedProduct);
+        const refreshedProducts = await fetchProducts();
+        setProducts(refreshedProducts);
+        setIsModalOpen(false);
+        setEditingProduct(null);
+      }
+    } catch (error) {
+      console.error("Error al guardar cambios:", error);
+      setError("No se pudo guardar el producto. Intenta nuevamente.");
+    }
   };
 
-  const handleEdit = (id: number) => {
-    navigate(`/admin/editar/${id}`);
+  const toggleActive = async (id: string) => {
+    try {
+      const product = products.find((p) => p.id === id);
+      if (!product) return;
+      await updateProduct(id, { active: !product.active });
+      const refreshedProducts = await fetchProducts();
+      setProducts(refreshedProducts);
+    } catch (error) {
+      console.error("Error al actualizar estado:", error);
+      setError("No se pudo actualizar el estado del producto.");
+    }
   };
 
-  const handleDeleteClick = (id: number, name: string) => {
+  const handleDeleteClick = (id: string, name: string) => {
     setConfirmDeleteId(id);
     setConfirmDeleteName(name);
   };
 
-  const confirmDelete = () => {
-    if (confirmDeleteId !== null) {
-      const updated = products.filter((p) => p.id !== confirmDeleteId);
-      saveToStorage(updated);
-      setConfirmDeleteId(null);
-      setConfirmDeleteName("");
+  const confirmDelete = async () => {
+    if (confirmDeleteId) {
+      try {
+        await deleteProduct(confirmDeleteId);
+        const refreshedProducts = await fetchProducts();
+        setProducts(refreshedProducts);
+        setConfirmDeleteId(null);
+        setConfirmDeleteName("");
+      } catch (error) {
+        console.error("Error al eliminar producto:", error);
+        setError("No se pudo eliminar el producto.");
+      }
     }
   };
 
@@ -112,72 +100,124 @@ export default function ProductList() {
     setConfirmDeleteName("");
   };
 
-  const uniqueCategories = [
+  const uniqueLeagues = [
     "Todas",
-    ...Array.from(new Set(products.map((p) => p.league || p.category || "Fútbol")))
+    ...Array.from(
+      new Set(
+        products
+          .map((p) =>
+            typeof p.category === "object" ? p.category?.name : p.category
+          )
+          .filter(Boolean)
+      )
+    ),
   ].sort();
 
   const filteredProducts =
     filter === "Todas"
       ? products
-      : products.filter((p) => (p.league || p.category) === filter);
+      : products.filter(
+          (p) =>
+            (typeof p.category === "object"
+              ? p.category?.name
+              : p.category) === filter
+        );
 
   return (
     <div className="bg-white p-4 rounded shadow">
       <h2 className="text-xl font-bold mb-4">Publicaciones</h2>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+          <button onClick={() => setError(null)} className="ml-2">&times;</button>
+        </div>
+      )}
 
       <div className="mb-4">
         <label className="mr-2 font-medium">Filtrar por categoría:</label>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="border px-3 py-1 rounded"
+          className="px-3 py-2 border rounded shadow focus:ring-black"
         >
-          {uniqueCategories.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
+          {uniqueLeagues.map((league) => (
+            <option key={league} value={league}>
+              {league}
+            </option>
           ))}
         </select>
       </div>
 
-      {filteredProducts.length === 0 ? (
-        <p className="text-gray-500 italic">No hay productos publicados.</p>
+      {loading ? (
+        <div className="text-center py-8">Cargando productos...</div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="text-center py-8 text-gray-500 italic">No hay productos.</div>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b">
-              <th className="py-2 text-left">Título</th>
-              <th className="py-2 text-left">Liga</th>
-              <th className="py-2 text-left">Precio</th>
-              <th className="py-2 text-left">Stock</th>
-              <th className="py-2 text-left">Estado</th>
-              <th className="py-2 text-left">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProducts.map((product) => (
-              <tr key={product.id} className="border-b">
-                <td className="py-2">{product.title || product.name}</td>
-                <td className="py-2">{product.league || product.category || "Fútbol"}</td>
-                <td className="py-2">{product.priceUSD || product.usdPrice} USD / {product.priceUYU || product.uyuPrice} UYU</td>
-                <td className="py-2">{Object.entries(product.stock || {}).map(([talle, cant]) => `${talle}: ${cant}`).join(", ")}</td>
-                <td className="py-2">{product.active === false ? "Inactivo" : "Activo"}</td>
-                <td className="py-2 space-x-2">
-                  <button onClick={() => handleEdit(product.id)} className="text-blue-600 hover:underline text-sm">Editar</button>
-                  <button onClick={() => toggleActive(product.id)} className="text-yellow-600 hover:underline text-sm">{product.active === false ? "Activar" : "Desactivar"}</button>
-                  <button onClick={() => handleDeleteClick(product.id, product.title || product.name)} className="text-red-600 hover:underline text-sm">Eliminar</button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="py-2 text-left">Título</th>
+                <th className="py-2 text-left">Liga</th>
+                <th className="py-2 text-left">Precio</th>
+                <th className="py-2 text-left">Stock</th>
+                <th className="py-2 text-left">Estado</th>
+                <th className="py-2 text-left">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredProducts.map((product) => (
+                <tr key={product.id} className="border-b">
+                  <td className="py-2">{product.title}</td>
+                  <td className="py-2">
+                    {typeof product.category === "object"
+                      ? product.category?.name
+                      : product.category || "Sin categoría"}
+                  </td>
+                  <td className="py-2">{product.priceUSD} USD / {product.priceUYU} UYU</td>
+                  <td className="py-2">{Object.entries(product.stock ?? {}).map(([size, qty]) => `${size}: ${qty}`).join(", ")}</td>
+                  <td className="py-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                      {product.active ? "Activo" : "Inactivo"}
+                    </span>
+                  </td>
+                  <td className="py-2 space-x-2">
+                    <button onClick={() => handleEdit(product.id!)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs">
+                      Editar
+                    </button>
+                    <button onClick={() => toggleActive(product.id!)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs">
+                      {product.active ? "Desactivar" : "Activar"}
+                    </button>
+                    <button onClick={() => handleDeleteClick(product.id!, product.title)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      {confirmDeleteId !== null && (
+      {confirmDeleteId && (
         <ModalConfirm
-          title="¿Confirmar eliminación?"
+          title="¿Eliminar producto?"
           message={`¿Seguro que quieres eliminar "${confirmDeleteName}"?`}
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
+          isLoading={false}
+        />
+      )}
+
+      {isModalOpen && editingProduct && (
+        <EditProductModal
+          product={editingProduct}
+          onSave={handleSaveProduct}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingProduct(null);
+          }}
         />
       )}
     </div>

@@ -23,7 +23,7 @@ const slides = [
     imageMobile: '/images/mobile/slider-nba-celu.jpg',
     title: 'LO MEJOR DE LA NBA',
     subtitle: 'Conseguí todas las camisetas',
-    link: '/nba',
+    link: '/futbol',
   },
   {
     imageDesktop: '/images/slider-rossi.jpg',

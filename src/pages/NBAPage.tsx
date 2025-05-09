@@ -1,144 +1,107 @@
 // src/pages/NBAPage.tsx
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import ProductCard from "../components/ProductCard";
-import { Product } from "../data/types";
-import { FiFilter } from "react-icons/fi";
-import { motion } from "framer-motion";
-import CartIcon from "../components/CartIcon";
-import { ArrowUp } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUp, Filter } from "lucide-react";
+import { Product } from "../data/types";
+import { fetchProducts, fetchLeagues, fetchTeams } from "../firebaseUtils";
+import ProductCard from "../components/ProductCard";
 import Footer from "../components/Footer";
 import StockExpressButton from "../components/StockExpressButton";
-import products from "../data/products"; // Importar productos base
-
-// Equipos de la NBA
-const nbaTeams = [
-  "ALL STAR", "Indiana Pacers", "Dream Team", "Chicago Bulls", "Los Angeles Lakers",
-  "Houston Rockets", "Atlanta Hawks", "New York Knicks", "Cleveland Cavaliers",
-  "Portland Trail Blazers", "Toronto Raptors", "San Antonio Spurs", "Dallas Mavericks",
-  "Utah Jazz", "Charlotte Hornets", "Memphis Grizzlies", "Golden State Warriors",
-  "Boston Celtics", "Miami Heat", "Denver Nuggets", "Brooklyn Nets", "Philadelphia 76ers",
-  "Milwaukee Bucks", "Los Angeles Clippers", "Phoenix Suns", "Detroit Pistons",
-  "Oklahoma City Thunder", "Niños"
-];
+import CartIcon from "../components/CartIcon";
 
 // Define un tipo para productos locales
 type LocalProduct = Product & {
   active?: boolean;
 };
 
+// Interfaz para las ligas
+type LeagueData = {
+  name: string;
+  teams: string[];
+};
+
 export default function NBAPage() {
-  const [products, setProducts] = useState<LocalProduct[]>([]);
+  const [products, setProducts] = useState<LocalProduct[]>([]); // Estado para almacenar productos
+  const [selectedLeague, setSelectedLeague] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const location = useLocation();
-  const [selectedCategory, setSelectedCategory] = useState(""); // Para reemplazar selectedLeague
+  
+  // Estado para almacenar las ligas dinámicas
+  const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
+  const [noLeaguesAvailable, setNoLeaguesAvailable] = useState(false);
 
-  // PUNTO CRÍTICO 1: Cargar productos combinando localStorage y predefinidos
+  // 🔥 Nuevo sistema para cargar productos, ligas y equipos de NBA
+useEffect(() => {
+  async function loadNBAData() {
+    try {
+      const [productsFetched, leaguesFetched, teamsFetched] = await Promise.all([
+        fetchProducts(),
+        fetchLeagues(),
+        fetchTeams()
+      ]);
+
+      // Filtrar productos de NBA
+const nbaProducts = productsFetched.filter(
+  (p) => (p.league === "NBA" || p.category === "NBA") && p.active !== false
+);
+setProducts(nbaProducts);
+
+// Extraer ligas y equipos de NBA
+const nbaTeams = teamsFetched.filter((team) => team.league === "NBA");
+
+const nbaLeagues: LeagueData[] = [];
+const leagueMap = new Map<string, Set<string>>();
+
+nbaTeams.forEach((team) => {
+  if (!leagueMap.has(team.league)) {
+    leagueMap.set(team.league, new Set<string>());
+  }
+  leagueMap.get(team.league)?.add(team.name);
+});
+
+leagueMap.forEach((teams, leagueName) => {
+  nbaLeagues.push({
+    name: leagueName,
+    teams: Array.from(teams).sort((a, b) => a.localeCompare(b))
+  });
+});
+
+      setDynamicLeagues(nbaLeagues);
+
+      if (nbaLeagues.length > 0 && !selectedLeague) {
+        setSelectedLeague(nbaLeagues[0].name);
+      }
+
+      setNoLeaguesAvailable(nbaLeagues.length === 0);
+    } catch (error) {
+      console.error("[NBAPage] Error al cargar NBA:", error);
+      setProducts([]);
+      setNoLeaguesAvailable(true);
+    }
+  }
+
+  loadNBAData();
+}, [selectedLeague]);
+
   useEffect(() => {
-    const loadProducts = () => {
-      try {
-        // Importamos los productos base desde el archivo de productos
-        const defaultProducts = products.filter(p => 
-          p.category === "NBA" || p.league === "NBA"
-        );
-        
-        // IMPORTANTE: Primero normalizar los productos predefinidos
-        const normalizedDefaultProducts = defaultProducts.map((prod) => ({
-          ...prod,
-          active: true,
-          slug: prod.slug || `default-${prod.id}`,
-          name: prod.name || "",
-          priceUSD: prod.priceUSD || 0,
-          usdPrice: prod.priceUSD || 0,
-          priceUYU: prod.priceUYU || 0,
-          uyuPrice: prod.priceUYU || 0,
-          league: prod.league || "NBA",
-          category: prod.category || "NBA",
-          images: prod.images || (prod.image ? [prod.image] : []),
-          image: prod.image || (prod.images && prod.images.length > 0 ? prod.images[0] : ""),
-        }));
-        
-        // Cargar productos desde localStorage
-        const savedProducts = localStorage.getItem("productos");
-        
-        let allProducts: LocalProduct[] = [];
-        
-        if (savedProducts) {
-          // Si hay productos en localStorage, combinar con los predefinidos
-          const parsedProducts = JSON.parse(savedProducts);
-          
-          // 1. Obtener IDs o slugs de productos en localStorage para verificar duplicados
-          const savedIds = new Set(parsedProducts.map((p: any) => p.id?.toString()));
-          const savedSlugs = new Set(parsedProducts.map((p: any) => p.slug));
-          
-          // 2. Filtrar productos predefinidos que no estén en localStorage
-          const uniqueDefaultProducts = normalizedDefaultProducts.filter(
-            (p) => !savedIds.has(p.id?.toString()) && !savedSlugs.has(p.slug)
-          );
-          
-          // 3. Combinar ambos arrays, priorizando localStorage
-          // Filtramos para incluir solo productos de NBA
-          const nbaProducts = parsedProducts.filter((p: any) => 
-            p.category === "NBA" || p.league === "NBA"
-          );
-          
-          allProducts = [...nbaProducts, ...uniqueDefaultProducts];
-        } else {
-          // Si no hay productos en localStorage, usar los normalizados predefinidos
-          allProducts = normalizedDefaultProducts;
+    if (location.hash === "#stock-express") {
+      setSelectedLeague("STOCK_EXPRESS");
+      setSelectedTeam("");
+      setSearchTerm("");
+  
+      setTimeout(() => {
+        const section = document.getElementById("stock-express");
+        if (section) {
+          section.scrollIntoView({ behavior: "smooth" });
         }
-        
-        // Ahora filtrar y normalizar para mostrar
-        const activeProducts = allProducts.filter((prod) => prod.active !== false);
-        
-        // Mapeo final para asegurar compatibilidad perfecta con ProductCard
-        const mappedProducts = activeProducts.map((prod) => ({
-          ...prod,
-          id: prod.id || 0,
-          slug: prod.slug || `default-${prod.id || Date.now()}`,
-          name: prod.name || prod.title || '',
-          title: prod.title || prod.name || '',
-          image: (prod.images && prod.images.length > 0) ? prod.images[0] : (prod.image || ''),
-          images: prod.images || (prod.image ? [prod.image] : []),
-          league: prod.league || prod.category || 'NBA',
-          category: prod.category || prod.league || 'NBA',
-          priceUSD: prod.priceUSD || prod.usdPrice || 0,
-          usdPrice: prod.priceUSD || prod.usdPrice || 0,
-          priceUYU: prod.priceUYU || prod.uyuPrice || 0,
-          uyuPrice: prod.priceUYU || prod.uyuPrice || 0,
-          sizes: prod.sizes || ["S", "M", "L", "XL"],
-          team: prod.team || '',
-          subtitle: prod.subtitle || ''
-        }));
-        
-        console.log(`Cargados ${mappedProducts.length} productos NBA`);
-        setProducts(mappedProducts);
-      } catch (error) {
-        console.error("Error al cargar productos:", error);
-        // En caso de error, inicializar con array vacío
-        setProducts([]);
-      }
-    };
-
-    loadProducts();
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "productos") {
-        loadProducts();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+      }, 300); // da tiempo a renderizar
+    }
+  }, [location.hash]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -150,7 +113,7 @@ export default function NBAPage() {
 
   useEffect(() => {
     if (searchTerm.trim().length > 0) {
-      setSelectedCategory("");
+      setSelectedLeague("");
       setSelectedTeam("");
     }
   }, [searchTerm]);
@@ -159,7 +122,23 @@ export default function NBAPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleLeagueClick = (league: string) => {
+    setSelectedLeague(league);
+    setSelectedTeam("");
+    setSearchTerm("");
+    setIsFilterOpen(false);
+  };
+
   const handleTeamClick = (team: string) => {
+    // Buscar en las ligas dinámicas
+    const teamLeague = dynamicLeagues.find((league) =>
+      league.teams.includes(team)
+    )?.name;
+
+    if (teamLeague) {
+      setSelectedLeague(teamLeague);
+    }
+
     setSelectedTeam(team);
     setSearchTerm("");
     setIsFilterOpen(false);
@@ -175,37 +154,34 @@ export default function NBAPage() {
         return nameMatch || teamMatch;
       });
     }
-    
-    if (selectedCategory === "STOCK_EXPRESS") {
-      // Filtrar productos con stock
+  
+    if (selectedLeague === "STOCK_EXPRESS") {
+      // Filtrar productos que tienen stock
       const productsWithStock = products.filter((product) => {
+        // Verificar si el producto tiene la propiedad stock y al menos un talle con cantidad > 0
         if (product.stock) {
           return Object.values(product.stock).some(quantity => (quantity as number) > 0);
         }
         return false;
       });
       
-      // Eliminar duplicados basados en ID
-      const uniqueProducts: Product[] = [];
-      const seenIds = new Set();
-      
-      productsWithStock.forEach(product => {
-        if (!seenIds.has(product.id)) {
-          seenIds.add(product.id);
-          uniqueProducts.push(product);
-        }
-      });
-      
-      return uniqueProducts.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      return productsWithStock.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     }
   
     return products.filter((product) => {
+      const leagueMatches = selectedLeague 
+        ? (product.league === selectedLeague || product.category === selectedLeague) 
+        : true;
       const teamMatches = selectedTeam ? product.team === selectedTeam : true;
-      return teamMatches;
+      return leagueMatches && teamMatches;
     });
   };
 
+  const isStockExpress = selectedLeague === "STOCK_EXPRESS";
   const productsToDisplay = getFilteredProducts();
+  
+  // Adaptamos esto para usar dynamicLeagues en lugar de leagues
+  const currentLeague = dynamicLeagues.find((l) => l.name === selectedLeague);
   
   return (
     <section className="bg-[#f9f9f9] text-black min-h-screen">
@@ -231,14 +207,14 @@ export default function NBAPage() {
       </div>
   
       <div className="max-w-7xl mx-auto px-6 relative">
-      <div className="mt-4">
-  <Link
-    to="/"
-    className="text-black font-semibold hover:underline text-sm inline-flex items-center gap-1 transition"
-  >
-    ← Volver al inicio
-  </Link>
-</div>
+        <div className="mt-4">
+          <Link
+            to="/"
+            className="text-black font-semibold hover:underline text-sm inline-flex items-center gap-1 transition"
+          >
+            ← Volver al inicio
+          </Link>
+        </div>
         <div className="absolute right-2 top-0 translate-y-20 sm:translate-y-9 sm:right-0 z-50">
           <CartIcon variant="hero" />
         </div>
@@ -248,13 +224,13 @@ export default function NBAPage() {
             onClick={() => setIsFilterOpen(!isFilterOpen)}
             className="flex-1 flex items-center justify-center gap-2 text-sm text-gray-700 bg-white border border-gray-300 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition"
           >
-            <FiFilter className="text-lg" />
+            <Filter className="text-lg" />
             Filtros
           </button>
 
           <button
             onClick={() => {
-              setSelectedCategory("");
+              setSelectedLeague("");
               setSelectedTeam("");
               setSearchTerm("");
               setIsFilterOpen(false);
@@ -292,11 +268,11 @@ export default function NBAPage() {
             <button
               onClick={() => {
                 setSearchTerm("");
-                setSelectedCategory("");
+                setSelectedLeague("");
                 setSelectedTeam("");
               }}
               className={`w-full text-left px-3 py-2 rounded-lg transition ring-1 ring-transparent text-[15px] font-semibold ${
-                selectedCategory === "" && selectedTeam === ""
+                selectedLeague === "" && selectedTeam === ""
                   ? "bg-black text-white ring-black"
                   : "hover:bg-gray-100 text-gray-800"
               }`}
@@ -306,58 +282,53 @@ export default function NBAPage() {
           </div>
 
           {/* Botón Stock Express en menú móvil */}
-          <div className="mb-4">
-            <StockExpressButton
-              isSelected={selectedCategory === "STOCK_EXPRESS"}
-              onClick={() => {
-                setSelectedCategory("STOCK_EXPRESS");
-                setSelectedTeam("");
-                setSearchTerm("");
-                setIsFilterOpen(false);
-              }}
-            />
-          </div>
+<div className="mb-4">
+  <StockExpressButton
+    isSelected={selectedLeague === "STOCK_EXPRESS"}
+    onClick={() => {
+      handleLeagueClick("STOCK_EXPRESS");
+      setIsFilterOpen(false);
+    }}
+  />
+</div>
 
-          <div>
-            <h3 className="font-bold mb-2">Equipos</h3>
-            <ul className="space-y-1 text-sm">
-              {nbaTeams.map((team) => (
-                <li key={team}>
-                  <button
-                    onClick={() => handleTeamClick(team)}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition ring-1 ring-transparent ${
-                      selectedTeam === team
-                        ? "bg-black text-white font-semibold ring-black"
-                        : "hover:bg-gray-100"
-                    }`}
-                  >
-                    <span className="font-semibold text-[15px]">{team}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Equipos de la liga NBA */}
+          {currentLeague && currentLeague.teams.length > 0 && (
+            <div>
+              <h3 className="font-bold mb-2">Equipos de NBA</h3>
+              <ul className="space-y-1 text-sm">
+                {currentLeague.teams.map((team) => (
+                  <li key={team}>
+                    <button
+                      onClick={() => handleTeamClick(team)}
+                      className={`w-full text-left px-3 py-2 rounded-lg transition ring-1 ring-transparent ${
+                        selectedTeam === team
+                          ? "bg-black text-white ring-black"
+                          : "hover:bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {team}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </motion.aside>
-
-        {/* Filtro móvil */}
-        <AnimatePresence>
-          {isFilterOpen && (
-            <motion.div
-              className="fixed inset-0 z-50 bg-black/50 sm:hidden overflow-hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsFilterOpen(false)}
-            >
+  
+        {/* Contenido principal */}
+        <div>
+          {/* Menú de filtros móvil */}
+          <AnimatePresence>
+            {isFilterOpen && (
               <motion.div
-                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 max-h-[80vh] overflow-y-auto"
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                onClick={(e) => e.stopPropagation()}
+                initial={{ x: -300, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -300, opacity: 0 }}
+                className="fixed inset-0 z-40 bg-white p-4 md:hidden"
+                style={{ maxWidth: "280px", boxShadow: "0 0 10px rgba(0,0,0,0.1)" }}
               >
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-bold">Filtros</h3>
                   <button
                     onClick={() => setIsFilterOpen(false)}
@@ -366,117 +337,142 @@ export default function NBAPage() {
                     ✕
                   </button>
                 </div>
-
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    placeholder="Buscar..."
-                    className="w-full border px-3 py-2 rounded-lg text-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                <div className="mb-4">
+  
+                <div className="space-y-6">
+                  <div>
+                    <label className="block font-medium text-sm mb-2">
+                      Buscar
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nombre o equipo..."
+                      className="w-full border px-3 py-2 rounded-lg text-sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+  
+                  <div>
+                    <button
+                      onClick={() => {
+                        setSearchTerm("");
+                        setSelectedLeague("");
+                        setSelectedTeam("");
+                        setIsFilterOpen(false);
+                      }}
+                      className="w-full text-center px-3 py-2 rounded-lg bg-black text-white text-sm font-medium"
+                    >
+                      Ver todos los productos
+                    </button>
+                  </div>
+  
+                  {/* Stock Express Button */}
+                  <div>
                   <StockExpressButton
-                    isSelected={selectedCategory === "STOCK_EXPRESS"}
-                    onClick={() => {
-                      setSelectedCategory("STOCK_EXPRESS");
-                      setSelectedTeam("");
-                      setSearchTerm("");
-                      setIsFilterOpen(false);
-                    }}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className="font-bold mb-2">Equipos</h3>
-                  {nbaTeams.map((team) => (
-                    <div key={team} className="mb-2">
-                      <button
-                        onClick={() => {
-                          handleTeamClick(team);
-                          setIsFilterOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition ${
-                          selectedTeam === team
-                            ? "bg-black text-white font-semibold"
-                            : "hover:bg-gray-100"
-                        }`}
-                      >
-                        {team}
-                      </button>
+  isSelected={selectedLeague === "STOCK_EXPRESS"}
+  onClick={() => {
+    handleLeagueClick("STOCK_EXPRESS");
+    setIsFilterOpen(false);
+  }}
+/>
+                  </div>
+  
+                  {/* Equipos de NBA */}
+                  {currentLeague && currentLeague.teams.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2">
+                        Equipos de NBA
+                      </h4>
+                      <ul className="space-y-1">
+                        {currentLeague.teams.map((team) => (
+                          <li key={team}>
+                            <button
+                              onClick={() => {
+                                handleTeamClick(team);
+                                setIsFilterOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
+                                selectedTeam === team
+                                  ? "bg-gray-200 font-medium"
+                                  : ""
+                              }`}
+                            >
+                              {team}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  ))}
+                  )}
                 </div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Contenido principal */}
-        <main>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-            <div className="mb-4 md:mb-0">
-              <h1 className="text-2xl md:text-3xl font-bold">Camisetas NBA</h1>
-              <p className="text-gray-500 text-sm md:text-base">
-                Todas {selectedTeam ? `- ${selectedTeam}` : ""} {selectedCategory === "STOCK_EXPRESS" ? "- Stock Express" : ""}
-              </p>
+            )}
+          </AnimatePresence>
+  
+          {/* Productos */}
+          <div className="py-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">
+                {isStockExpress
+                  ? "Camisetas NBA con Stock Express"
+                  : selectedTeam
+                  ? `Camisetas de ${selectedTeam}`
+                  : selectedLeague && selectedLeague !== "STOCK_EXPRESS"
+                  ? `Camisetas de ${selectedLeague}`
+                  : searchTerm
+                  ? `Resultados para "${searchTerm}"`
+                  : "Camisetas de NBA"}
+              </h2>
             </div>
-          </div>
-
-          {/* Sección Stock Express */}
-          {selectedCategory === "STOCK_EXPRESS" && (
-            <div 
-              id="stock-express"
-              className="bg-white p-4 md:p-6 rounded-xl border shadow-sm mb-8"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <ArrowUp className="h-5 w-5 rotate-45 text-green-600" />
-                <h2 className="text-xl font-bold">Stock Express</h2>
+  
+            {productsToDisplay.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+                {productsToDisplay.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
               </div>
-              <p className="text-gray-700 mb-1">
-                Productos en stock, disponibles inmediatamente para entrega o retiro.
-              </p>
-              <p className="text-gray-500 text-sm">* Las cantidades mostradas son el stock real disponible</p>
-            </div>
-          )}
-
-          {/* Grid de productos */}
-          {productsToDisplay.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 mb-2">No se encontraron productos que coincidan con tu búsqueda.</p>
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setSelectedCategory("");
-                  setSelectedTeam("");
-                }}
-                className="text-blue-600 underline hover:text-blue-800"
-              >
-                Ver todos los productos
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {productsToDisplay.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
-        </main>
+            ) : (
+              <div className="text-center py-16">
+                <h3 className="text-xl font-semibold mb-2">
+                  No se encontraron productos
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {searchTerm
+                    ? "Intenta con otros términos de búsqueda"
+                    : selectedTeam
+                    ? `No hay camisetas disponibles de ${selectedTeam}`
+                    : selectedLeague === "STOCK_EXPRESS"
+                    ? "No hay camisetas NBA disponibles en stock actualmente"
+                    : "No hay camisetas NBA disponibles en este momento"}
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedLeague("");
+                    setSelectedTeam("");
+                  }}
+                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 transition"
+                >
+                  Ver todos los productos
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
+  
+      <Footer />
+  
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 bg-black text-white p-3 rounded-full shadow-lg hover:bg-black/80 transition"
+          className="fixed bottom-20 right-4 md:right-8 bg-black text-white p-3 rounded-full shadow-lg hover:bg-gray-800 transition-all z-30"
+          aria-label="Volver arriba"
         >
-          <ArrowUp size={20} />
+          <ArrowUp className="h-5 w-5" />
         </button>
       )}
-
-      <Footer />
+  
     </section>
   );
 }

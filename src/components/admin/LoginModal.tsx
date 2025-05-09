@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { authenticateUser } from "../../utils/userUtils";
-import { User } from "../../data/types"; // Asegurate de tener este tipo definido
+import { AuthUser } from "../../data/types"; // Asegurate de tener este tipo definido
 
 interface LoginModalProps {
   onClose: () => void;
@@ -15,10 +15,15 @@ export default function LoginModal({ onClose }: LoginModalProps) {
 
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const user: User | null = authenticateUser(email, password);
+    const user = authenticateUser(email, password);
 
     if (user) {
-      login(user);
+      login({
+        id: String(user.id),
+        name: user.name,
+        email: user.email,
+        password: password,
+      });
       onClose();
     } else {
       alert("Usuario o contraseña incorrectos");

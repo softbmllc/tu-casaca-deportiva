@@ -1,13 +1,12 @@
 // src/App.tsx
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import LayoutRoutes from "./components/LayoutRoutes";
 import Hero from "./components/Hero";
 import CategorySection from "./components/CategorySection";
 import PromoSlider from "./components/PromoSlider";
-import InstagramFeed from "./components/InstagramFeed";
 import ProductPage from "./pages/ProductPage";
 import FootballPage from "./pages/FootballPage";
-import NBAPage from "./pages/NBAPage"; // ✅ Import agregado
+import NBAPage from "./pages/NBAPage";
 import CartPage from "./pages/CartPage";
 import SuccessPage from "./pages/SuccessPage";
 import FailurePage from "./pages/FailurePage";
@@ -15,7 +14,18 @@ import PendingPage from "./pages/PendingPage";
 import AdminPanel from "./pages/AdminPanel";
 import LoginForm from "./components/LoginForm";
 import RequireAuth from "./components/RequireAuth";
-import EditProduct from "./pages/EditProduct";
+import AdminCategoryManager from "./components/admin/AdminCategoryManager"; // ✅ NUEVO componente oficial
+import OrderAdmin from "./components/admin/OrderAdmin";
+import ClientDetail from "./components/admin/ClientDetail";
+
+function ClientDetailWrapper() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const clientId = id || "";
+
+  return <ClientDetail clientId={clientId} onBack={() => navigate("/admin")} />;
+}
 
 function Home() {
   return (
@@ -23,37 +33,57 @@ function Home() {
       <Hero />
       <CategorySection />
       <PromoSlider />
-      <InstagramFeed />
     </>
   );
 }
 
 export default function App() {
   return (
-    <Routes>
-      {/* ✅ Login público */}
-      <Route path="/login" element={<LoginForm />} />
+    <div className="bg-black min-h-screen flex flex-col">
+      <Routes>
+        {/* ✅ Login público */}
+        <Route path="/login" element={<LoginForm />} />
 
-      {/* ✅ Rutas protegidas */}
-      <Route path="/admin/*" element={<RequireAuth><AdminPanel /></RequireAuth>} />
-      <Route path="/admin/editar/:id" element={<RequireAuth><EditProduct /></RequireAuth>} />
+        {/* ✅ Ruta protegida directa al administrador de categorías */}
+        <Route
+          path="/admin/categorias"
+          element={
+            <RequireAuth>
+              <AdminCategoryManager />
+            </RequireAuth>
+          }
+        />
 
-      {/* ✅ Rutas independientes (no pasan por Layout) */}
-      <Route path="/futbol" element={<FootballPage />} />
-      <Route path="/nba" element={<NBAPage />} /> {/* ✅ Ruta NBA agregada */}
-      <Route path="/carrito" element={<CartPage />} />
+        {/* ✅ Detalle de cliente en administración */}
+        <Route
+          path="/admin/clientes/:id"
+          element={
+            <RequireAuth>
+              <ClientDetailWrapper />
+            </RequireAuth>
+          }
+        />
 
-      {/* ✅ Rutas con Layout */}
-      <Route path="/" element={<LayoutRoutes />}>
-        <Route index element={<Home />} />
-        <Route path="producto/:id" element={<ProductPage />} />
-        <Route path="success" element={<SuccessPage />} />
-        <Route path="failure" element={<FailurePage />} />
-        <Route path="pending" element={<PendingPage />} />
-      </Route>
+        {/* ✅ Panel completo de administración */}
+        <Route path="/admin/*" element={<RequireAuth><AdminPanel /></RequireAuth>} />
 
-      {/* ✅ Ruta fallback (404) */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* ✅ Rutas públicas de secciones */}
+        <Route path="/futbol" element={<FootballPage />} />
+        <Route path="/nba" element={<NBAPage />} />
+        <Route path="/carrito" element={<CartPage />} />
+
+        {/* ✅ Rutas con layout */}
+        <Route path="/" element={<LayoutRoutes />}>
+          <Route index element={<Home />} />
+          <Route path="producto/:id" element={<ProductPage />} />
+          <Route path="success" element={<SuccessPage />} />
+          <Route path="failure" element={<FailurePage />} />
+          <Route path="pending" element={<PendingPage />} />
+        </Route>
+
+        {/* ✅ Fallback 404 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   );
 }

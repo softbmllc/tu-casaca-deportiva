@@ -1,13 +1,15 @@
 // src/components/admin/ClientDetail.tsx
 import { useEffect, useState } from "react";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../firebase";
 
 interface Props {
-  clientId: number;
+  clientId: string;
   onBack: () => void;
 }
 
 interface Client {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   email: string;
@@ -16,10 +18,11 @@ interface Client {
   department: string;
   postalCode: string;
   country: string;
+  password?: string;
 }
 
 interface Pedido {
-  id: number;
+  id: string; // antes era number
   total: number;
   fecha: string;
   estado: string;
@@ -34,23 +37,61 @@ export default function ClientDetail({ clientId, onBack }: Props) {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [activeTab, setActiveTab] = useState("personal");
 
-  useEffect(() => {
-    const data = localStorage.getItem("usuarios");
-    if (data) {
-      const usuarios = JSON.parse(data) as Client[];
-      const found = usuarios.find((u) => u.id === clientId);
-      if (found) setClient(found);
+useEffect(() => {
+  async function fetchClient() {
+    try {
+      console.log("📦 clientId recibido:", clientId);
+      if (typeof clientId !== "string" || clientId.trim() === "") {
+        console.error("❌ ID del cliente inválido:", clientId);
+        return;
+      }
+      const docRef = doc(db, "clients", clientId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setClient({ ...data, id: docSnap.id } as Client);
+      }
+    } catch (error) {
+      console.error("Error al obtener cliente desde Firestore:", error);
     }
-  }, [clientId]);
+  }
+
+  if (clientId) fetchClient();
+}, [clientId]);
 
   useEffect(() => {
     if (!client) return;
-    const pedidosData = localStorage.getItem("pedidos");
-    if (pedidosData) {
-      const allPedidos = JSON.parse(pedidosData) as Pedido[];
-      const filtered = allPedidos.filter((p) => p.cliente?.email === client.email);
-      setPedidos(filtered);
+
+    async function fetchPedidos() {
+      try {
+        const querySnapshot = await getDocs(
+          query(
+            collection(db, "orders"),
+            where("cliente.email", "==", client?.email || "")
+          )
+        );
+        const pedidosData = querySnapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+            if (data?.cliente?.email === client?.email) {
+              return {
+                id: doc.id,
+                total: data.total,
+                fecha: data.fecha,
+                estado: data.estado,
+                cliente: data.cliente,
+              } as Pedido;
+            }
+            return null;
+          })
+          .filter((pedido) => pedido !== null) as Pedido[];
+        setPedidos(pedidosData);
+      } catch (error) {
+        console.error("Error al cargar pedidos del cliente:", error);
+      }
     }
+
+    fetchPedidos();
   }, [client]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,14 +100,25 @@ export default function ClientDetail({ clientId, onBack }: Props) {
     setClient({ ...client, [name]: value });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!client) return;
-    const data = localStorage.getItem("usuarios");
-    if (data) {
-      const usuarios = JSON.parse(data) as Client[];
-      const updated = usuarios.map((u) => (u.id === client.id ? client : u));
-      localStorage.setItem("usuarios", JSON.stringify(updated));
+    try {
+      const clientRef = doc(db, "clients", client.id);
+      await updateDoc(clientRef, {
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        address: client.address,
+        city: client.city,
+        department: client.department,
+        postalCode: client.postalCode,
+        country: client.country,
+        ...(client.password ? { password: client.password } : {})
+      });
       setEditing(false);
+      setClient({ ...client });
+    } catch (error) {
+      console.error("Error al actualizar cliente:", error);
     }
   };
 
@@ -179,12 +231,24 @@ export default function ClientDetail({ clientId, onBack }: Props) {
               <input
                 type="text"
                 name="country"
-                value={client.country}
+                value={client.country || "Uruguay"}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
                 disabled={!editing}
               />
             </div>
+            {editing && (
+              <div className="col-span-2">
+                <label className="block font-semibold">Nueva Contraseña</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={client.password || ""}
+                  onChange={handleChange}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+            )}
           </div>
           <div className="flex gap-4">
             {!editing ? (
@@ -242,5 +306,25 @@ export default function ClientDetail({ clientId, onBack }: Props) {
         </div>
       )}
     </div>
-);
+  );
+}
+
+// Wrapper para parsear el id recibido como string a número
+export function ClientDetailWrapper({ clientId, onBack }: { clientId: string; onBack: () => void }) {
+  return (
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onBack} />
+      <div className="fixed inset-0 z-50 flex justify-center items-center">
+        <div className="bg-white rounded shadow-lg max-w-5xl w-full mx-4 p-6 overflow-y-auto max-h-[90vh] relative">
+          <button
+            onClick={onBack}
+            className="absolute top-4 right-4 text-gray-500 hover:text-black text-2xl"
+          >
+            ×
+          </button>
+          <ClientDetail clientId={clientId} onBack={onBack} />
+        </div>
+      </div>
+    </>
+  );
 }

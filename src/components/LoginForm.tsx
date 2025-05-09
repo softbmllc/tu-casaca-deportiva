@@ -15,7 +15,7 @@ export default function LoginForm() {
     const user = authenticateUser(email, password);
 
     if (user) {
-      login(user); // Usar el login del contexto
+      login({ ...user, id: user.id.toString(), password: "" }); // convertir id a string
       alert("Inicio de sesión exitoso");
       navigate("/admin", { replace: true });
     } else {

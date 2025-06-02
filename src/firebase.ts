@@ -4,12 +4,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Configuración de tu proyecto Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyD6Blhu3eNWqRk8twwM7zccXNlOET_iadk",
-  authDomain: "tu-casaca-deportiva.firebaseapp.com",
-  projectId: "tu-casaca-deportiva",
-  storageBucket: "tu-casaca-deportiva.appspot.com",
-  messagingSenderId: "556546831204",
-  appId: "1:556546831204:web:98a9137ef6b011810e8071",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Inicializar Firebase

@@ -2,10 +2,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { getLoggedInUser, loginUser as utilsLoginUser, logoutUser as utilsLogoutUser } from "../utils/userUtils";
 import { User } from "../data/types";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { firebaseDB } from "../firebase";
 
 interface AuthContextType {
   user: User | null;
-  login: (user: User) => void;
+  login: (user: User & { password: string }) => void;
   logout: () => void;
 }
 
@@ -24,26 +27,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } : null
   );
 
-  // Este useEffect es solo un seguro adicional
   useEffect(() => {
-    const storedUser = getLoggedInUser();
-    if (storedUser && !user) {
-      setUser({
-        id: String(storedUser.id),
-        name: storedUser.name,
-        email: storedUser.email,
-        password: "", // Ajusta si tienes este dato
-      });
-    }
-  }, [user]);
-
-  const login = (user: User) => {
-    setUser(user);
-    utilsLoginUser({
-      id: Number(user.id),
-      name: user.name,
-      email: user.email,
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const userData: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || "Admin",
+          email: firebaseUser.email || "",
+          password: "", // no almacenamos la contraseña aquí
+        };
+        setUser(userData);
+        utilsLoginUser({
+          id: Number(userData.id), // puede ser string si usás UID
+          name: userData.name,
+          email: userData.email,
+        });
+      } else {
+        setUser(null);
+        utilsLogoutUser();
+      }
     });
+
+    return () => unsubscribe();
+  }, []);
+
+  const login = async (user: User & { password: string }) => {
+    try {
+      const auth = getAuth();
+      const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
+      const firebaseUser = userCredential.user;
+
+      const userData: User = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || "Admin",
+        email: firebaseUser.email || "",
+        password: "", // no almacenamos la contraseña aquí
+      };
+
+      setUser(userData);
+      utilsLoginUser({
+        id: Number(userData.id),
+        name: userData.name,
+        email: userData.email,
+      });
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+      alert("Login fallido: " + (error as Error).message);
+    }
   };
 
   const logout = () => {

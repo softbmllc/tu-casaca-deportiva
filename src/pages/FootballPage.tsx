@@ -300,10 +300,9 @@ export default function FootballPage() {
     }
 
     return products.filter((product) => {
-      // Filtrar por categoría
+      // Filtrar por liga usando category.name
       const leagueMatches = selectedLeague
         ? (
-            product.category?.name === selectedLeague ||
             product.category?.name?.toLowerCase() === selectedLeague.toLowerCase()
           )
         : true;
@@ -318,9 +317,10 @@ export default function FootballPage() {
 
   const isStockExpress = selectedLeague === "STOCK_EXPRESS";
   const productsToDisplay = getFilteredProducts().filter((p) => {
-    if (filterParam === "NBA") return p.category?.name === "NBA";
-    if (filterParam === "FUTBOL") return p.category?.name !== "NBA";
-    return true; // sin filtro, mostrar todo
+    const category = (p.category?.name || "").toLowerCase();
+    if (filterParam === "NBA") return category === "nba";
+    if (filterParam === "FUTBOL") return category !== "nba";
+    return true;
   });
   
   // Adaptamos esto para usar dynamicLeagues en lugar de leagues

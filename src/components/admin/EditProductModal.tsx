@@ -45,9 +45,6 @@ interface Props {
   onClose: () => void;
 }
 
-// Constantes para Cloudinary
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/ddkyumyw3/image/upload";
-const UPLOAD_PRESET = "unsigned_preset";
 
 const sizes = ["S", "M", "L", "XL"];
 
@@ -165,24 +162,44 @@ useEffect(() => {
   loadAllData();
 }, []);
 
-const uploadToCloudinary = async (file: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", UPLOAD_PRESET);
+// Subida de imágenes a ImageKit
+const handleImageUploadImageKit = async (files: File[]) => {
+  const uploadedUrls: string[] = [];
 
-  try {
-    const response = await fetch(CLOUDINARY_URL, {
-      method: "POST",
-      body: formData,
-    });
+  for (const file of files) {
+    const formData = new FormData();
+    const sigResponse = await fetch("/api/imagekit-signature");
+    const { signature, expire, token } = await sigResponse.json();
 
-    if (!response.ok) throw new Error(`Error de Cloudinary: ${response.statusText}`);
-    const data = await response.json();
-    return data.secure_url;
-  } catch (error) {
-    console.error("Error al subir la imagen a Cloudinary:", error);
-    throw error;
+    formData.append("file", file);
+    formData.append("publicKey", import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY);
+    formData.append("signature", signature);
+    formData.append("expire", expire);
+    formData.append("token", token);
+    formData.append("fileName", file.name);
+    formData.append("folder", "products");
+
+    try {
+      const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(
+          `Error al subir imagen a ImageKit: ${res.status} - ${JSON.stringify(err)}`
+        );
+      }
+
+      const data = await res.json();
+      uploadedUrls.push(data.url);
+    } catch (error) {
+      console.error("Error uploading to ImageKit", error);
+    }
   }
+
+  return uploadedUrls;
 };
 
 const handleChange = (field: keyof Product, value: any) => {
@@ -200,23 +217,18 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
   try {
     const files = Array.from(e.target.files);
-    const uploadedUrls: string[] = [];
-
     for (const file of files) {
       if (!file.type.startsWith("image/")) {
         setError("Uno de los archivos no es una imagen válida.");
         setUploadingImages(false);
         return;
       }
-      const imageUrl = await uploadToCloudinary(file);
-      uploadedUrls.push(imageUrl);
     }
-
+    const urls = await handleImageUploadImageKit(files);
     setFormData((prev) => ({
       ...prev,
-      images: [...(prev.images || []), ...uploadedUrls],
+      images: [...(prev.images || []), ...urls],
     }));
-
     e.target.value = "";
   } catch (error) {
     console.error("Error en la carga de imágenes:", error);

@@ -64,9 +64,37 @@ interface FormData {
   stock: StockRecord;
 }
 
-// Constantes para Cloudinary
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/ddkyumyw3/image/upload";
-const UPLOAD_PRESET = "unsigned_preset";
+
+// Nueva función para subir imágenes a ImageKit
+const uploadImageToImageKit = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("publicKey", import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY);
+  formData.append("fileName", file.name);
+  formData.append("folder", "tcd");
+  formData.append("useUniqueFileName", "true");
+
+  const response = await fetch("/api/imagekit-signature", {
+    method: "POST",
+  });
+  const signatureData = await response.json();
+
+  formData.append("signature", signatureData.signature);
+  formData.append("expire", signatureData.expire.toString());
+  formData.append("token", signatureData.token);
+
+  const uploadResponse = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error("Error al subir la imagen a ImageKit");
+  }
+
+  const data = await uploadResponse.json();
+  return data.url;
+};
 
 // Función para generar un slug limpio (sin timestamp ni random)
 const generateCleanSlug = (title: string): string => {
@@ -240,29 +268,6 @@ useEffect(() => {
     })
   );
   
-  // Función para subir imágenes a Cloudinary - Mejorada para múltiples imágenes
-  const uploadToCloudinary = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
-    
-    try {
-      const response = await fetch(CLOUDINARY_URL, {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Error de Cloudinary: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      return data.secure_url;
-    } catch (error) {
-      console.error("Error al subir la imagen a Cloudinary:", error);
-      throw error;
-    }
-  };
   
   const {
     register,
@@ -370,7 +375,7 @@ const watchedLeague = watch("league");
       console.log(`[CreateProductForm] Subiendo ${files.length} imágenes...`);
       
       // Subir todas las imágenes en paralelo
-      const uploadPromises = files.map(file => uploadToCloudinary(file));
+      const uploadPromises = files.map(file => uploadImageToImageKit(file));
       const uploadedUrls = await Promise.all(uploadPromises);
       
       // Agregar las URLs a las imágenes existentes

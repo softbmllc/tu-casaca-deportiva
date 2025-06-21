@@ -66,6 +66,7 @@ interface FormData {
 
 
 // Nueva función para subir imágenes a ImageKit
+import axios from "axios";
 const uploadImageToImageKit = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
@@ -74,14 +75,16 @@ const uploadImageToImageKit = async (file: File): Promise<string> => {
   formData.append("folder", "tcd");
   formData.append("useUniqueFileName", "true");
 
-  const response = await fetch("/api/imagekit-signature", {
-    method: "POST",
-  });
-  const signatureData = await response.json();
+  // Obtener firma de ImageKit
+  const response = await axios.get('/api/imagekit-signature');
+  console.log('[ImageKit Signature]', response.data);
+  const { signature, timestamp } = response.data;
+  if (!signature || !timestamp) {
+    throw new Error("La firma o el timestamp de ImageKit no están definidos");
+  }
 
-  formData.append("signature", signatureData.signature);
-  formData.append("expire", signatureData.expire.toString());
-  formData.append("token", signatureData.token);
+  formData.append("signature", signature);
+  formData.append("timestamp", timestamp); // El timestamp ya es string, no necesita toString()
 
   const uploadResponse = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
     method: "POST",

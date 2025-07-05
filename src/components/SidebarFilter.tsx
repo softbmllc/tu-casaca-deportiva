@@ -1,18 +1,9 @@
 // src/components/SidebarFilter.tsx
 import { useEffect, useState } from "react";
+import { JSX } from "react/jsx-runtime";
 import { useTranslation } from "react-i18next";
 import { fetchCategories } from "../firebaseUtils";
-
-interface Subcategory {
-  id: string;
-  name: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  subcategories: Subcategory[];
-}
+import { Category, Subcategory } from "../data/types";
 
 interface SidebarFilterProps {
   categories: Category[];
@@ -20,6 +11,8 @@ interface SidebarFilterProps {
   setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
   selectedSubcategory: string;
   setSelectedSubcategory: React.Dispatch<React.SetStateAction<string>>;
+  renderCategoryName?: (category: Category) => React.ReactNode;
+  isMobile?: boolean; // <-- Add this line
 }
 
 export default function SidebarFilter({
@@ -28,6 +21,7 @@ export default function SidebarFilter({
   setSelectedCategory,
   selectedSubcategory,
   setSelectedSubcategory,
+  renderCategoryName,
 }: SidebarFilterProps) {
   const { t } = useTranslation();
   const { i18n } = useTranslation();
@@ -62,7 +56,13 @@ export default function SidebarFilter({
                     : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
-                {typeof category.name === 'object' ? category.name[language] : category.name || ''}
+                {renderCategoryName ? (
+                  renderCategoryName(category)
+                ) : (
+                  <span className="font-bold">
+                    {typeof category.name === 'object' ? category.name[language] : category.name || ''}
+                  </span>
+                )}
               </button>
               {Array.isArray(category.subcategories) &&
                 category.subcategories.length > 0 && (

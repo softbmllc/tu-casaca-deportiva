@@ -21,12 +21,13 @@
     "button": "Descubrir Pure"
   },
   "nav": {
+    "home": "Inicio",
     "shop": "Tienda",
     "about": "Nosotros",
     "contact": "Contacto"
   },
   "productPage": {
-    "relatedProducts": "Productos relacionados",
+    "relatedProducts": "También te podria interesar",
     "addToCart": "Agregar al carrito",
     "outOfStock": "Agotado",
     "selectSize": "Seleccioná un talle",
@@ -50,13 +51,16 @@
     "productsFound": "{{count}} producto encontrado",
     "productsFound_plural": "{{count}} productos encontrados",
     "sortBy": "Ordenar por",
-    "sortPriceAsc": "Precio: menor a mayor",
-    "sortPriceDesc": "Precio: mayor a menor",
-    "sortNameAZ": "Nombre: A a Z",
-    "sortNameZA": "Nombre: Z a A",
+    "sort": {
+      "az": "A-Z",
+      "za": "Z-A",
+      "priceAsc": "Precio ↑",
+      "priceDesc": "Precio ↓"
+    },
     "noProductsFound": "No se encontraron productos para esta selección. Probá con otros filtros o volvé a Mostrar todo.",
     "noResults": "No se encontraron productos para esta selección. Probá con otros filtros o volvé a Mostrar todo.",
-    "noResultsClickable": "No se encontraron productos para esta selección. Probá con otros filtros o volvé a <showAll>Mostrar todo</showAll>."
+    "noResultsClickable": "No se encontraron productos para esta selección. Probá con otros filtros o volvé a <showAll>Mostrar todo</showAll>.",
+    "openFilters": "Filtros"
   }
   ,
   "promoSlider": {

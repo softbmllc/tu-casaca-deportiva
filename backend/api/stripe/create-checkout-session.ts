@@ -29,8 +29,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
-      success_url: `https://www.getbionova.com/success`,
-      cancel_url: `https://www.getbionova.com/cart`,
+      success_url: `${req.headers.origin}/success`,
+      cancel_url: `${req.headers.origin}/cart`,
       shipping_address_collection: {
         allowed_countries: ['US'],
       },

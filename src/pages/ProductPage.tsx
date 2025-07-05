@@ -1,9 +1,11 @@
 //src/pages/ProductPage.tsx
+
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import CartIcon from "../components/CartIcon";
-import { fetchProductById, fetchProducts } from "../firebaseUtils";
+import ProductPageNavbar from "../components/ProductPageNavbar";
+import { fetchProductById, fetchProducts } from "../firebaseClientUtils";
 import { useCart } from "../context/CartContext";
 import { Check, ChevronLeft, ArrowUp } from "lucide-react";
 import { FiMinus, FiPlus } from "react-icons/fi";
@@ -19,7 +21,7 @@ export default function ProductPage() {
   console.log("🧠 DEBUG PARAMS — slug:", slug);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedOption, setSelectedOption] = useState<{ value: string; priceUSD: number; variantLabel?: string } | null>(null);
+  const [selectedOption, setSelectedOption] = useState<{ value: string; priceUSD: number; variantLabel?: string; variantId?: string; stock?: number } | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -45,45 +47,19 @@ export default function ProductPage() {
         return;
       }
       try {
-        const allProducts = await fetchProducts();
-        // Tipado explícito para TypeScript: product.stock es un objeto con valores numéricos
-        type StockType = { [key: string]: number };
-        console.log("🐞 DEBUG PAGE — productos recibidos:", allProducts, "slug:", slug);
-        const decodedSlug = decodedId;
-        // 🧩 DEBUG MATCHING
-        console.log(
-          "🧩 DEBUG MATCHING — slug:",
-          slug,
-          "decodedSlug:",
-          decodedSlug,
-          "slugs disponibles:",
-          allProducts.map((p: any) => p.slug)
-        );
-        // 🔍 DEBUG SLUG CHECK
-        console.log("🔍 DEBUG SLUG CHECK —", {
-          slug,
-          decodedSlug,
-          allSlugs: allProducts.map((p: any) => p.slug?.toLowerCase()),
-        });
-
-        const match = allProducts.find((p: any) => {
-          const firebaseSlug = decodeURIComponent(p.slug || "").trim().toLowerCase();
-          const currentSlug = decodeURIComponent(slug || "").trim().toLowerCase();
-          return firebaseSlug === currentSlug;
-        });
-
-        if (!match) {
-          console.warn("❌ No se encontró el producto con slug:", decodedSlug);
+        const productData = await fetchProductById(decodedId);
+        if (!productData) {
+          console.warn("❌ No se encontró el producto con slug:", decodedId);
           setProduct(null);
           setLoading(false);
           return;
         }
 
-        console.log("✅ Producto encontrado:", match);
+        console.log("✅ Producto encontrado:", productData);
         setProduct({
-          ...match,
-          title: match.title || "",
-          description: match.description || "",
+          ...productData,
+          title: productData.title || "",
+          description: productData.description || "",
         });
       } catch (error) {
         console.error("[ProductPage] Error cargando producto:", error);
@@ -143,23 +119,9 @@ export default function ProductPage() {
         <Helmet><title>{`${product.title?.[lang] || product.title} | Looma`}</title></Helmet>
 
         {/* Top-level floating controls */}
-        <div className="w-full flex justify-between items-center px-4 pt-4 z-50 relative">
-          <Link
-            to="/futbol"
-            className="inline-flex items-center gap-2 text-sm font-medium text-gray-800 bg-white border border-gray-300 rounded-full px-4 py-2 hover:bg-black hover:text-white transition-shadow shadow-sm hover:shadow-md w-fit"
-          >
-            <ChevronLeft size={16} /> {t('productPage.backToCatalog')}
-          </Link>
+        <ProductPageNavbar />
 
-          <Link
-            to="/carrito"
-            className="bg-black text-white p-2.5 rounded-full shadow-lg hover:bg-black/80 transition"
-          >
-            <CartIcon variant="hero" />
-          </Link>
-        </div>
-
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto p-4 mt-20">
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           <div className="flex flex-col gap-4">
@@ -226,53 +188,65 @@ export default function ProductPage() {
             <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight mb-6">
               {product.title?.[lang]}
             </h1>
-            {product.subtitle && <p className="text-gray-600 mb-4">{product.subtitle}</p>}
-
-            <div className="mb-6">
+            <div className="mt-2 sm:mt-4 mb-6">
               <div className="text-4xl font-extrabold text-black">
                 US$ {(selectedOption?.priceUSD ?? product.priceUSD).toFixed(2)}
               </div>
             </div>
+            {product.subtitle && <p className="text-gray-600 mb-4">{product.subtitle}</p>}
 
-            {/* Opciones de variante multilenguaje y precio */}
-            {Array.isArray(product.variants) && product.variants.length > 0 && (
-              <div className="mb-6">
-                {product.variants.map((variant: any, vIndex: number) => (
-                  <div key={vIndex} className="mb-4">
-                    <h3 className="uppercase text-sm font-semibold text-gray-800 mb-2">
-                      {variant.label?.[lang] || "Opción"}
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {variant.options.map((option: any, oIndex: number) => (
-                        <button
-                          key={oIndex}
-                          onClick={() => {
-                            setSelectedOption({ ...option, variantLabel: variant.label?.[lang] || "Opción" });
-                          }}
-                          className={`px-4 py-2 rounded-md border ${
-                            selectedOption?.value === option.value
-                              ? "bg-black text-white border-black"
-                              : "bg-white text-black border-gray-300"
-                          } hover:shadow-md transition`}
-                        >
-                          {option.value}
-                        </button>
-                      ))}
+            {/* Cápsulas */}
+            <div className="flex flex-col space-y-2 mt-6">
+              {/* Opciones de variante multilenguaje y precio */}
+              {Array.isArray(product.variants) && product.variants.length > 0 && (
+                <div className="mb-6">
+                  {product.variants.map((variant: any, vIndex: number) => (
+                    <div key={vIndex} className="mb-4">
+                      <h3 className="uppercase text-sm font-semibold text-gray-800 mb-1">
+                        {variant.label?.[lang] || "Opción"}
+                      </h3>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {variant.options.map((option: any, oIndex: number) => (
+                          <button
+                            key={oIndex}
+                            onClick={() => {
+                              setSelectedOption({
+                                ...option,
+                                variantLabel: variant.label?.[lang] || "Opción",
+                                variantId: option.variantId || `${variant.label?.[lang] || "Opción"}-${option.value}`,
+                              });
+                            }}
+                            className={`px-4 py-2 rounded-md border ${
+                              selectedOption?.value === option.value
+                                ? "bg-black text-white border-black"
+                                : "bg-white text-black border-gray-300"
+                            } hover:shadow-md transition`}
+                          >
+                            {option.value}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Cantidad */}
-            <div className="mb-6 border-b border-gray-200 pb-6">
-              <label className="uppercase text-sm font-semibold text-gray-800 mb-2">{t('productPage.quantity')}</label>
+            <div className="flex flex-col space-y-2 mt-6">
+              <label className="uppercase text-sm font-semibold text-gray-800">{t('productPage.quantity')}</label>
               <div className="flex w-fit border rounded-md overflow-hidden">
-                <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="px-3 bg-gray-100 hover:bg-gray-200"><FiMinus /></button>
+                <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="px-3 bg-gray-100 hover:bg-gray-200">
+                  <FiMinus />
+                </button>
                 <div className="px-4 py-2">{quantity}</div>
-                <button onClick={() => setQuantity(quantity + 1)} className="px-3 bg-gray-100 hover:bg-gray-200"><FiPlus /></button>
+                <button onClick={() => setQuantity(quantity + 1)} className="px-3 bg-gray-100 hover:bg-gray-200">
+                  <FiPlus />
+                </button>
               </div>
             </div>
+
+            <hr className="my-6 border-gray-200" />
 
             {/* Descripción del producto */}
             {productDescription && (
@@ -295,20 +269,49 @@ export default function ProductPage() {
                     return;
                   }
 
-                  // --- Verificación del tipo para evitar error de tipado de variantLabel
+                  const availableStock = selectedOption?.stock ?? product.stockTotal ?? 0;
+
+                  // Buscar si ya hay un ítem igual en el carrito
+                  const existingItem = items.find(
+                    (item) =>
+                      item.id === String(product.id) &&
+                      item.size === (selectedOption?.value || '') &&
+                      item.variantId === (selectedOption?.variantId || '')
+                  );
+
+                  const currentQuantityInCart = existingItem?.quantity || 0;
+                  const requestedTotal = currentQuantityInCart + quantity;
+
+                  if (requestedTotal > availableStock) {
+                    alert(`Solo hay ${availableStock} unidades disponibles`);
+                    return;
+                  }
+
                   const variantLabel = (selectedOption as any)?.variantLabel || "Opción";
 
                   addToCart({
                     id: String(product.id),
                     slug: product.slug,
                     name: product.title,
-                    image: product.images?.[0] || product.image || "",
-                    priceUSD: price,
-                    quantity,
-                    size: selectedOption?.value || "",
-                    options: selectedOption ? `${variantLabel}: ${selectedOption.value}` : "",
+                    title: {
+                      en: product.title?.en || '',
+                      es: product.title?.es || '',
+                    },
+                    subtitle: product.subtitle || '',
+                    description: {
+                      en: product.description?.en || '',
+                      es: product.description?.es || '',
+                    },
+                    image: product.images?.[0] || '',
+                    price: selectedOption?.priceUSD ?? product.priceUSD,
+                    priceUSD: product.priceUSD,
+                    quantity: quantity,
+                    size: selectedOption?.value || '',
+                    options: selectedOption?.value || '',
+                    variantId: selectedOption?.variantId || '',
                   });
                   scrollToTop();
+
                 }}
                 className={`py-3 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 border font-semibold ${
                   isOutOfStock
@@ -343,7 +346,6 @@ export default function ProductPage() {
           </button>
         )}
 
-        {/* Carrito flotante (moved above) */}
 
         {/* No custom alert/confirm modals */}
         </div> {/* cierra container mx-auto */}

@@ -55,28 +55,28 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
   return (
     <div className="relative">
       {title && (
-        <div className="container px-4 mx-auto">
-          <h2 className="text-3xl font-extrabold tracking-wider uppercase leading-snug mb-6 text-left mt-16 border-t pt-10 text-black">
+        <div className="container px-4 mx-auto flex justify-between items-center mt-12 md:mt-32 border-t pt-12">
+          <h2 className="text-2xl sm:text-5xl font-semibold leading-tight text-left text-neutral-900 tracking-tight whitespace-normal mt-12 md:mt-20 mb-6 sm:mb-10">
             {title}
           </h2>
+          <div className="hidden sm:flex gap-2">
+            <button
+              onClick={() => scroll("left")}
+              className="p-3 bg-white rounded-full shadow-md hover:bg-black hover:text-white transition border border-gray-300"
+              aria-label="Anterior"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              className="p-3 bg-white rounded-full shadow-md hover:bg-black hover:text-white transition border border-gray-300"
+              aria-label="Siguiente"
+            >
+              <ArrowRight className="w-6 h-6" />
+            </button>
+          </div>
         </div>
       )}
-      <div className="flex justify-end mb-4 gap-2">
-        <button
-          onClick={() => scroll("left")}
-          className="p-3 bg-white rounded-full shadow-md hover:bg-black hover:text-white transition border border-gray-300"
-          aria-label="Anterior"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <button
-          onClick={() => scroll("right")}
-          className="p-3 bg-white rounded-full shadow-md hover:bg-black hover:text-white transition border border-gray-300"
-          aria-label="Siguiente"
-        >
-          <ArrowRight className="w-6 h-6" />
-        </button>
-      </div>
 
       <div
         ref={scrollRef}

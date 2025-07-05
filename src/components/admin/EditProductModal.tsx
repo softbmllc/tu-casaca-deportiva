@@ -294,11 +294,11 @@ const handleSaveProduct = async () => {
 const handleDragEnd = (event: DragEndEvent) => {
   const { active, over } = event;
   if (over && active.id !== over.id) {
-    setFormData((prevState) => {
-      const oldImages = prevState.images || [];
+    setImages((prevImages) => {
+      const oldImages = prevImages.filter((img): img is string => img !== null);
       const activeIndex = oldImages.findIndex((url) => url === active.id);
       const overIndex = oldImages.findIndex((url) => url === over.id);
-      return { ...prevState, images: arrayMove(oldImages, activeIndex, overIndex) };
+      return arrayMove(oldImages, activeIndex, overIndex);
     });
   }
 };
@@ -590,10 +590,27 @@ return (
                 Imágenes
                 <span className="text-gray-400 text-sm ml-2">(arrastrá para ordenar)</span>
               </label>
-              <ImageUploader
-                images={images.filter((img): img is string => img !== null)}
-                onChange={setImages}
-              />
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext
+                  items={images.filter((img): img is string => img !== null)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {images
+                      .filter((img): img is string => img !== null)
+                      .map((url, index) => (
+                        <SortableImageItem
+                          key={url}
+                          id={url}
+                          url={url}
+                          onRemove={() => removeImage(index)}
+                          onMoveLeft={() => moveImageLeft(index)}
+                          onMoveRight={() => moveImageRight(index)}
+                        />
+                      ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
         </div>

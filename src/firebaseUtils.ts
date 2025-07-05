@@ -1,4 +1,8 @@
 // src/firebaseUtils.ts
+
+import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { getFirestore, doc as firestoreDoc, setDoc, getDoc as firestoreGetDoc } from "firebase/firestore";
+
 import { db } from "./firebase";
 import {
   collection,
@@ -10,7 +14,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 
-import { Product, League, Team, Client, Category } from "./data/types";
+import { Product, League, Team, Category, ClientWithId } from "./data/types";
 
 // 🔥 Función para traer un producto específico por ID
 export async function fetchProductById(id: string): Promise<Product | null> {
@@ -281,7 +285,7 @@ export async function deleteSubcategory(categoryId: string, subcategoryId: strin
 }
 
 
-export async function fetchClientsFromFirebase(): Promise<Client[]> {
+export async function fetchClientsFromFirebase(): Promise<ClientWithId[]> {
   const clientsRef = collection(db, "clients");
   const snap = await getDocs(clientsRef);
   return snap.docs.map((doc) => {
@@ -292,6 +296,9 @@ export async function fetchClientsFromFirebase(): Promise<Client[]> {
       email: data.email || "",
       phone: data.phone || "",
       address: data.address || "",
+      city: data.city || "",
+      state: data.state || "",
+      zip: data.zip || "",
       country: data.country || "",
     };
   });
@@ -415,4 +422,102 @@ export async function fetchCategories(): Promise<Category[]> {
   );
 
   return categories;
+}
+
+// 🔥 Función para guardar un pedido completo en Firebase
+export async function saveOrderToFirebase(order: {
+  cartItems: any[];
+  client: {
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    country?: string;
+  };
+  totalAmount: number;
+  paymentIntentId: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  date: string;
+  estado: "En proceso" | "Confirmado" | "Cancelado" | "Entregado";
+}) {
+  try {
+    const ordersRef = collection(db, "orders");
+    await addDoc(ordersRef, order);
+    console.log("✅ Pedido guardado en Firebase:", order);
+  } catch (error) {
+    console.error("❌ Error al guardar el pedido:", error);
+    throw error;
+  }
+}
+
+
+// Función para registrar cliente (con o sin usuario Firebase Auth)
+import type { Client } from "./data/types";
+interface RegisterClientOptions {
+  client: Client;
+  password?: string;
+  shouldRegister: boolean;
+}
+
+export const registerClient = async ({
+  client,
+  password,
+  shouldRegister,
+}: RegisterClientOptions): Promise<void> => {
+  const auth = getAuth();
+  const dbFirestore = getFirestore();
+
+  try {
+    let uid = "";
+    const clientDocRef = firestoreDoc(dbFirestore, "clients", client.email);
+
+    if (shouldRegister && password) {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        client.email,
+        password
+      );
+      uid = userCredential.user.uid;
+    }
+
+    const existingDoc = await firestoreGetDoc(clientDocRef);
+
+    await setDoc(clientDocRef, {
+      ...client,
+      updatedAt: new Date().toISOString(),
+      uid: uid || (existingDoc.exists() ? existingDoc.data()?.uid || "" : ""),
+    });
+  } catch (error: any) {
+    console.error("Error al registrar cliente:", error);
+    throw error;
+  }
+};
+
+// 🔥 Función para obtener los pedidos reales desde Firebase
+export async function fetchOrdersFromFirebase() {
+  try {
+    const ordersRef = collection(db, "orders");
+    const snapshot = await getDocs(ordersRef);
+
+    const orders = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        cartItems: data.cartItems || [],
+        client: data.client || {},
+        totalAmount: data.totalAmount || 0,
+        paymentIntentId: data.paymentIntentId || "",
+        paymentStatus: data.paymentStatus || "",
+        paymentMethod: data.paymentMethod || "",
+        date: data.date || "",
+        estado: data.estado || "En proceso",
+      };
+    });
+
+    return orders;
+  } catch (error) {
+    console.error("❌ Error al traer pedidos desde Firebase:", error);
+    return [];
+  }
 }

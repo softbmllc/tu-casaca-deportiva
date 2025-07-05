@@ -1,3 +1,5 @@
+// src/utils/userUtils.ts
+
 import CryptoJS from "crypto-js";
 
 // ⚠️ Este User es solo para manejo interno de login, no para productos ni cliente final

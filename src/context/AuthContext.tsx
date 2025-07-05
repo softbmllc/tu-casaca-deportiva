@@ -18,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(
     storedUser ? {
       id: String(storedUser.id),
+      uid: String(storedUser.id),
       name: storedUser.name,
       email: storedUser.email,
       password: "", // Ajusta esto según cómo manejes la contraseña
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedUser && !user) {
       setUser({
         id: String(storedUser.id),
+        uid: String(storedUser.id),
         name: storedUser.name,
         email: storedUser.email,
         password: "", // Ajusta si tienes este dato
@@ -38,7 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const login = (user: User) => {
-    setUser(user);
+    setUser({
+      ...user,
+      uid: String(user.id),
+    });
     utilsLoginUser({
       id: Number(user.id),
       name: user.name,

@@ -21,6 +21,7 @@
       "button": "Discover Pure"
     },
     "nav": {
+      "home": "Home",
       "shop": "Shop",
       "about": "About",
       "contact": "Contact"
@@ -34,14 +35,21 @@
       "searchPlaceholder": "Ex: magnesium",
       "allProducts": "Available products",
       "sortBy": "Sort by",
-      "sortPriceAsc": "Price: Low to High",
-      "sortPriceDesc": "Price: High to Low",
-      "sortNameAZ": "Name: A to Z",
-      "sortNameZA": "Name: Z to A",
+      "sortPriceAsc": "Price ↑",
+      "sortPriceDesc": "Price ↓",
+      "sortNameAZ": "A-Z",
+      "sortNameZA": "Z-A",
       "clearFilters": "Clear filters",
       "showAll": "Show all",
       "noResults": "No products found for this selection. Try other filters or go back to Show all.",
-      "noResultsClickable": "No products found for this selection. Try other filters or go back to <showAll>Show all</showAll>."
+      "noResultsClickable": "No products found for this selection. Try other filters or go back to <showAll>Show all</showAll>.",
+      "openFilters": "Filters",
+      "sort": {
+        "az": "A-Z",
+        "za": "Z-A",
+        "priceAsc": "Price ↑",
+        "priceDesc": "Price ↓"
+      }
     },
     "productPage": {
       "backToCatalog": "Back to catalog",

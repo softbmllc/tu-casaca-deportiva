@@ -4,9 +4,9 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 const videoUrls = [
-  "https://res.cloudinary.com/ddkyumyw3/video/upload/v1750003770/FUXION2_f6kk4g.mp4",
-  "https://res.cloudinary.com/ddkyumyw3/video/upload/v1750000500/PURE2_detyqs.mp4",
-  "https://res.cloudinary.com/ddkyumyw3/video/upload/v1750119796/PURE7_l5zvrs.mov"
+  "https://ik.imagekit.io/devrodri/FUXION2_f6kk4g.mp4",
+  "https://ik.imagekit.io/devrodri/PURE2_detyqs.mp4",
+  "https://ik.imagekit.io/devrodri/PURE7_l5zvrs.mov"
 ];
 
 export default function VideoShowcase() {

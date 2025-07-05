@@ -19,9 +19,9 @@ export default function HeroSection() {
   ];
 
   const logos = [
-    "https://res.cloudinary.com/ddkyumyw3/image/upload/v1750276335/logo-fuxion_irts0s.png", // Fuxion
-    "https://res.cloudinary.com/ddkyumyw3/image/upload/v1750276337/logo-pure_tr4git.png", // Pure
-    "https://res.cloudinary.com/ddkyumyw3/image/upload/v1750276341/Double_Wood-logo_hkja36.png", // Double Wood
+    "https://ik.imagekit.io/devrodri/logo-fuxion_irts0s.png", // Fuxion
+    "https://ik.imagekit.io/devrodri/logo-pure_tr4git.png", // Pure
+    "https://ik.imagekit.io/devrodri/Double_Wood-logo_hkja36.png", // Double Wood
   ];
 
   return (

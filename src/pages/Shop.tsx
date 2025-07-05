@@ -4,24 +4,25 @@ import { useTranslation, Trans } from "react-i18next";
 import { useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import ProductCard from "../components/ProductCard";
+import ShopNavbar from "../components/ShopNavbar";
 import { Product, LeagueData, Subcategory, Category as BaseCategory } from "../data/types";
+import type { Category } from "../data/types";
 
-type Category = BaseCategory & {
-  subcategories: Subcategory[];
-};
 import { FiFilter } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall } from "react-icons/fa";
 import { motion } from "framer-motion";
 import CartIcon from "../components/CartIcon";
 import { ArrowUp, Bolt } from "lucide-react";
-import { Listbox } from "@headlessui/react";
-import { Check, ChevronDown } from "lucide-react";
+import { Listbox, Transition } from "@headlessui/react";
+import { ChevronDownIcon, CheckIcon } from "@heroicons/react/20/solid";
+import { Fragment } from 'react';
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Rocket } from "lucide-react";
 import { fetchProducts, fetchLeagues, fetchSubcategories, fetchCategories } from "../firebaseUtils";
 import ProductSkeleton from "../components/ProductSkeleton";
 import SidebarFilter from "../components/SidebarFilter";
+import MobileFilterDrawer from "../components/MobileFilterDrawer";
 import Footer from "../components/Footer";
 
 // Define un tipo para productos locales
@@ -47,14 +48,35 @@ export default function Shop() {
   const [selectedLeague, setSelectedLeague] = useState(initialCategory);
   const [selectedTeam, setSelectedTeam] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   // Estado de ordenamiento
   const [sortOption, setSortOption] = useState("");
+  // Para el nuevo Listbox de mobile
+  const sortOptions = [
+    { value: "az", label: t("shop.sort.az") },
+    { value: "za", label: t("shop.sort.za") },
+    { value: "priceAsc", label: t("shop.sort.priceAsc") },
+    { value: "priceDesc", label: t("shop.sort.priceDesc") },
+  ];
+  const selectedSort = sortOptions.find(o => o.value === sortOption) || sortOptions[0];
+  const handleSortChange = (option: { value: string; label: string }) => {
+    setSortOption(option.value);
+  };
+  const handleOpenFilters = () => setIsFilterOpen(true);
   // --- Filtro por parámetro en la URL ---
   const searchParams = new URLSearchParams(location.search);
   const filterParamRaw = searchParams.get("filter");
   const filterParam = filterParamRaw ? filterParamRaw.toUpperCase() : "";
+
+  // Escuchar evento mobileSearch para actualizar searchTerm (sin afectar lógica desktop)
+  useEffect(() => {
+    const handleMobileSearch = (e: Event) => {
+      const value = (e as CustomEvent).detail.toLowerCase();
+      setSearchTerm(value);
+    };
+    window.addEventListener("mobileSearch", handleMobileSearch);
+    return () => window.removeEventListener("mobileSearch", handleMobileSearch);
+  }, []);
   
 // Estado para almacenar las ligas dinámicas
 const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
@@ -69,6 +91,10 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   // Estado para categoría y subcategoría seleccionadas (nuevo)
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
+  // Estado para controlar visibilidad del drawer de filtros (desktop/sidebar)
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  // Estado para mostrar SidebarFilter en mobile (nuevo)
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   // 🔥 Cargar productos de Firebase al montar
   useEffect(() => {
@@ -385,7 +411,8 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   }
 
   return (
-    <section className="bg-[#f9f9f9] text-black flex flex-col min-h-screen">
+    <section className="bg-[#f9f9f9] text-black flex flex-col min-h-screen pt-[90px] md:pt-[110px]">
+      <ShopNavbar />
       <Helmet>
   <title>Tienda Online | Looma</title>
   <meta
@@ -401,32 +428,9 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
 
   
   
-      <div className="relative">
-        <div className="absolute top-4 right-4 z-20">
-          <CartIcon />
-        </div>
-      </div>
-      <div className="max-w-7xl mx-auto px-6 pt-6">
-        <div className="flex justify-between sm:hidden mt-4 mb-2 gap-2">
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="flex-1 flex items-center justify-center gap-2 text-sm text-gray-700 bg-white border border-gray-300 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition"
-          >
-            <FiFilter className="text-lg" />
-            {t("shop.filters", "Filtros")}
-          </button>
-        </div>
-      </div>
-  
-      <div className="w-full flex justify-between items-start px-6 pt-6 z-50 relative max-w-7xl mx-auto">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-800 bg-white border border-gray-300 rounded-full px-4 py-2 hover:bg-black hover:text-white transition-shadow shadow-sm hover:shadow-md w-fit"
-        >
-          ← {t("shop.backToHome", "Volver al inicio")}
-        </Link>
-      </div>
-      <div className="md:grid md:grid-cols-[250px_1fr] max-w-7xl mx-auto p-6 gap-8">
+      {/* NAV MOBILE SOLO VISIBLE EN MOBILE */}
+      {/* Botón "Volver al inicio", botón "Filtros" (desktop) y CartIcon eliminados según requerimiento */}
+      <div className="md:grid md:grid-cols-[250px_1fr] max-w-7xl mx-auto px-4 md:px-6 gap-8">
         {/* Sidebar */}
         <motion.aside
           className="hidden md:block space-y-6 pr-6 border-r border-gray-200"
@@ -456,6 +460,10 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             setSelectedCategory={setSelectedCategory}
             selectedSubcategory={selectedSubcategory}
             setSelectedSubcategory={setSelectedSubcategory}
+            // --- PATCH: resaltar nombre de categoría principal en SidebarFilter ---
+            renderCategoryName={(category: Category) => (
+              <p className="font-bold">{category.name}</p>
+            )}
           />
 
           {/* Para móviles: sidebar en modal */}
@@ -569,7 +577,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
         </motion.aside>
 
         {/* Contenido principal - Productos */}
-        <main className="mt-8 md:mt-0">
+        <main>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">
               {searchTerm
@@ -631,8 +639,81 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             </section>
           )}
 
-          {/* Dropdown de ordenamiento */}
-          <div className="flex justify-end items-center mt-4">
+          {/* MOBILE: Filtros y ordenar por botones (solo visible en mobile) */}
+          <div className="flex gap-2 w-full mb-4 md:hidden">
+            <button
+              onClick={() => setShowMobileFilter(!showMobileFilter)}
+              className="w-1/2 min-w-[150px] border rounded-md bg-white text-black text-sm font-medium py-2 px-4 shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
+            >
+              <span>{t("shop.openFilters", "Filtros")}</span>
+              <ChevronDownIcon className="h-4 w-4 text-gray-500 ml-2" />
+            </button>
+
+            <Listbox value={selectedSort} onChange={handleSortChange}>
+              <div className="relative w-1/2">
+                <Listbox.Label className="sr-only">{t("shop.sortBy", "Ordenar por")}</Listbox.Label>
+                <Listbox.Button className="w-full min-w-[150px] border rounded-md bg-white text-black text-sm font-medium py-2 px-4 shadow-sm hover:bg-gray-50 transition flex justify-between items-center">
+                  <span className="mr-2">{t("shop.sortBy", "Ordenar por")}:</span>
+                  <span>
+                    {selectedSort.label}
+                  </span>
+                  <ChevronDownIcon className="h-4 w-4 text-gray-500 ml-2" />
+                </Listbox.Button>
+                <Transition
+                  as={Fragment}
+                  leave="transition ease-in duration-100"
+                  leaveFrom="opacity-100"
+                  leaveTo="opacity-0"
+                >
+                  <Listbox.Options className="absolute z-20 mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none text-sm">
+                    {sortOptions.map((option) => (
+                      <Listbox.Option
+                        key={option.value}
+                        value={option}
+                        className={({ active }) =>
+                          `cursor-pointer select-none relative py-2 pl-10 pr-4 ${
+                            active ? "bg-blue-100 text-blue-900" : "text-gray-900"
+                          }`
+                        }
+                      >
+                        {({ selected }) => (
+                          <>
+                            {selected && (
+                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                ✓
+                              </span>
+                            )}
+                            <span>
+                              {option.label}
+                            </span>
+                          </>
+                        )}
+                      </Listbox.Option>
+                    ))}
+                  </Listbox.Options>
+                </Transition>
+              </div>
+            </Listbox>
+          </div>
+
+          {/* MOBILE: SidebarFilter collapsible panel */}
+          {showMobileFilter && (
+            <div className="md:hidden mt-4">
+              <SidebarFilter
+                categories={categories}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
+                selectedSubcategory={selectedSubcategory}
+                setSelectedSubcategory={setSelectedSubcategory}
+                renderCategoryName={(category: Category) => (
+                  <p className="font-bold">{category.name}</p>
+                )}
+              />
+            </div>
+          )}
+
+          {/* DESKTOP: Ordenar por (solo visible en desktop) */}
+          <div className="hidden md:flex justify-end items-center mt-4">
             <Listbox value={sortOption} onChange={setSortOption}>
               {({ open }) => (
                 <div className="relative w-52">
@@ -646,8 +727,10 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                         za: t("shop.sortNameZA", "Nombre: Z a A"),
                       }[sortOption] || t("shop.sortBy", "Ordenar por")}
                     </span>
-                    <ChevronDown
-                      className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                    <ChevronDownIcon
+                      className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+                        open ? 'rotate-180' : ''
+                      }`}
                     />
                   </Listbox.Button>
                   <Listbox.Options className="absolute mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 text-sm">
@@ -674,7 +757,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                             </span>
                             {selected && (
                               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
-                                <Check className="h-4 w-4" />
+                                <CheckIcon className="h-4 w-4" />
                               </span>
                             )}
                           </>
@@ -687,7 +770,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             </Listbox>
           </div>
           {/* Grid de productos */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 mt-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-6">
             <Suspense
               fallback={Array.from({ length: 8 }).map((_, index) => (
                 <ProductSkeleton key={index} />
@@ -695,7 +778,12 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             >
               {filteredProducts.length > 0 ? (
                 filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <div
+                    key={product.id}
+                    className="hover:shadow-md transition-shadow duration-300"
+                  >
+                    <ProductCard product={product} />
+                  </div>
                 ))
               ) : (
                 <div className="col-span-full py-16 min-h-[300px] text-center space-y-4">
@@ -735,6 +823,17 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
           <ArrowUp className="h-5 w-5" />
         </button>
       )}
+
+      {/* Drawer de filtros mobile */}
+      <MobileFilterDrawer
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        categories={categories}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedSubcategory={selectedSubcategory}
+        setSelectedSubcategory={setSelectedSubcategory}
+      />
 
       {/* Footer removed: now included via LayoutRoutes */}
     </section>

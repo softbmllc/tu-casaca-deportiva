@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isShopPage = location.pathname.startsWith("/shop");
 
   return (
-    <div className="flex flex-col min-h-screen w-full overflow-x-hidden bg-transparent text-black">
+    <div className={`flex flex-col min-h-screen w-full overflow-x-hidden text-black ${location.pathname === "/" ? "bg-transparent" : "bg-neutral-50"}`}>
       {/* Solo ocultamos el HEADER si es página de producto o de shop */}
       {!isProductPage && !isShopPage && (
         <header className="bg-white/50 backdrop-blur-md text-black fixed top-0 w-full z-50 shadow-sm py-0.5">

@@ -67,19 +67,19 @@ useEffect(() => {
         const querySnapshot = await getDocs(
           query(
             collection(db, "orders"),
-            where("cliente.email", "==", client?.email || "")
+            where("client.email", "==", client?.email || "")
           )
         );
         const pedidosData = querySnapshot.docs
           .map((doc) => {
             const data = doc.data();
-            if (data?.cliente?.email === client?.email) {
+            if (data?.client?.email === client?.email) {
               return {
                 id: doc.id,
                 total: data.total,
                 fecha: data.fecha,
                 estado: data.estado,
-                cliente: data.cliente,
+                cliente: data.client,
               } as Pedido;
             }
             return null;

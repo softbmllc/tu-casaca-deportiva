@@ -66,9 +66,6 @@ interface FormData {
   stock: StockRecord;
 }
 
-// Constantes para Cloudinary
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/ddkyumyw3/image/upload";
-const UPLOAD_PRESET = "unsigned_preset";
 
 // Función para generar un slug limpio (sin timestamp ni random)
 const generateCleanSlug = (title: string): string => {
@@ -205,7 +202,6 @@ useEffect(() => {
         );
       }
 
-      console.log("[CreateProductForm] Categorías y subcategorías cargadas desde Firebase");
     } catch (error) {
       console.error("[CreateProductForm] Error cargando categorías:", error);
     }
@@ -394,9 +390,6 @@ useEffect(() => {
           0
         ),
       };
-      // 🔥 Verificación de nombres de categoría y subcategoría
-      console.log("[Verificación]", categoryName, subcategoryName);
-      console.log("[CreateProductForm] Producto listo para guardar:", newProduct);
 
       await createProduct(newProduct);
       setSuccessMessage("¡Producto creado correctamente!");

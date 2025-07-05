@@ -4,7 +4,6 @@ import Sidebar from "../components/admin/Sidebar";
 import ClientList from "../components/admin/ClientList";
 import ProductList from "../components/admin/ProductList";
 import ProductForm from "../components/admin/ProductForm";
-import OrderList from "../components/admin/OrderList";
 import UserList from "../components/admin/UserList";
 import AdminCategoryManager from "../components/admin/AdminCategoryManager"; // ✅ archivo nuevo
 import OrderAdmin from "../components/admin/OrderAdmin";

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { fetchClientsFromFirebase, deleteClientFromFirebase } from "../../firebaseUtils";
 import { useNavigate } from "react-router-dom";
-import { Client } from "../../data/types";
+import { ClientWithId } from "../../data/types";
 
 interface Props {
   onSelectClient?: (id: string) => void;
@@ -10,8 +10,8 @@ interface Props {
 
 export default function ClientList({ onSelectClient }: Props) {
   const [search, setSearch] = useState("");
-  const [clients, setClients] = useState<Client[]>([]);
-  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [clients, setClients] = useState<ClientWithId[]>([]);
+  const [clientToDelete, setClientToDelete] = useState<ClientWithId | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {

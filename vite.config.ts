@@ -9,9 +9,5 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'), // 👈 define el alias "@"
     },
   },
-  server: {
-    proxy: {
-      '/api': 'http://localhost:4000',
-    },
-  },
+  server: {},
 });

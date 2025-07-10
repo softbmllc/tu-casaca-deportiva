@@ -109,13 +109,11 @@ export interface CartBreakdown {
 
 export function calculateCartBreakdown(
   cartItems: CartItem[],
-  taxRate: number = 0.075,
-  freeShippingThreshold: number = 60,
-  shippingCost: number = 4.99
+  taxRate: number = 0.075
 ): CartBreakdown {
   const subtotal = cartItems.reduce((sum, item) => sum + item.priceUSD * item.quantity, 0);
   const taxes = parseFloat((subtotal * taxRate).toFixed(2));
-  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingCost;
+  const shipping = 0;
   const total = parseFloat((subtotal + taxes + shipping).toFixed(2));
 
   return {

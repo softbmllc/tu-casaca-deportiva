@@ -161,6 +161,7 @@ const isValidEmail = (email: string): boolean => {
   };
 
   console.log("🧾 items en CartPage:", items);
+  // Envío gratis y taxes se calculan internamente
   const breakdown = calculateCartBreakdown(items);
 
   const handleQuantityChange = (item: CartItem, newQty: number) => {
@@ -469,7 +470,7 @@ const isValidEmail = (email: string): boolean => {
                       </div>
                       <div className="flex justify-between">
                         <span>{t("cart.shipping")}</span>
-                        <span>{`US$${breakdown.shipping.toFixed(2)}`}</span>
+                        <span>{t("checkout.freeShipping", "Gratis")}</span>
                       </div>
                       <div className="flex justify-between text-lg font-semibold border-t pt-2">
                         <span>Total</span>

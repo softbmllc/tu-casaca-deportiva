@@ -1,5 +1,6 @@
 // src/pages/SuccessPage.tsx
 
+import { Helmet } from "react-helmet";
 import SuccessNavbar from "../components/SuccessNavbar";
 import Footer from "../components/Footer";
 import { useLocation } from "react-router-dom";
@@ -239,6 +240,10 @@ export default function SuccessPage() {
 
   return (
     <>
+      <Helmet>
+        <title>Gracias por tu compra | Bionova</title>
+        <meta name="description" content="Tu pedido ha sido recibido correctamente. Pronto te contactaremos por email." />
+      </Helmet>
       <SuccessNavbar />
       <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
         <div className="mb-4">

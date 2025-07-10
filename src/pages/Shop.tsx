@@ -414,17 +414,26 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
     <section className="bg-[#f9f9f9] text-black flex flex-col min-h-screen pt-[90px] md:pt-[110px]">
       <ShopNavbar />
       <Helmet>
-  <title>Tienda Online | Looma</title>
-  <meta
-    name="description"
-    content="Descubrí productos innovadores de tecnología, fitness y estilo de vida. Envíos rápidos desde USA. Compra con confianza en Looma."
-  />
-  <meta
-    name="keywords"
-    content="productos, tecnología, fitness, dropshipping, Looma, gadgets, tienda online"
-  />
-  <link rel="canonical" href="https://looma.store/shop" />
-</Helmet>
+        <title>Bionova – Shop supplements by category</title>
+        <meta
+          name="description"
+          content="Browse premium supplements from Fuxion, Pure Encapsulations and Double Wood. Fast US shipping. Explore all categories."
+        />
+        <meta
+          name="keywords"
+          content="supplements, vitamins, Fuxion, Pure Encapsulations, Double Wood, shop supplements"
+        />
+        <link rel="canonical" href="https://getbionova.com/shop" />
+        <meta property="og:title" content="Bionova – Shop supplements by category" />
+        <meta property="og:description" content="Browse premium supplements from Fuxion, Pure Encapsulations and Double Wood. Fast US shipping. Explore all categories." />
+        <meta property="og:image" content="/seo-image.jpg" />
+        <meta property="og:url" content="https://getbionova.com/shop" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Bionova – Shop supplements by category" />
+        <meta name="twitter:description" content="Browse premium supplements from Fuxion, Pure Encapsulations and Double Wood. Fast US shipping. Explore all categories." />
+        <meta name="twitter:image" content="/seo-image.jpg" />
+      </Helmet>
 
   
   

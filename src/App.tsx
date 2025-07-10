@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import LayoutRoutes from "./components/LayoutRoutes";
 import Hero from "./components/Hero";
+import { Helmet } from "react-helmet";
 import CategorySection from "./components/CategorySection";
 import PromoSlider from "./components/PromoSlider";
 import AboutPreview from "./components/AboutPreview";
@@ -40,6 +41,19 @@ function ClientDetailWrapper() {
 function Home() {
   return (
     <>
+      <Helmet>
+        <title>Bionova – Premium supplements for your wellness</title>
+        <meta name="description" content="Online store for high-quality supplements. Shipping across the US. Shop Fuxion, Pure Encapsulations and Double Wood." />
+        <meta property="og:title" content="Bionova – Premium supplements for your wellness" />
+        <meta property="og:description" content="Online store for high-quality supplements. Shipping across the US. Shop Fuxion, Pure Encapsulations and Double Wood." />
+        <meta property="og:image" content="/seo-image.jpg" />
+        <meta property="og:url" content="https://getbionova.com/" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Bionova – Premium supplements for your wellness" />
+        <meta name="twitter:description" content="Online store for high-quality supplements. Shipping across the US. Shop Fuxion, Pure Encapsulations and Double Wood." />
+        <meta name="twitter:image" content="/seo-image.jpg" />
+      </Helmet>
       <Hero />
       <CategorySection />
       <PromoSlider />

@@ -25,7 +25,7 @@ export default function HeroSection() {
   ];
 
   return (
-    <section className="relative min-h-[100vh] flex flex-col items-center justify-center overflow-hidden pt-[96px] sm:pt-0 md:pt-0 xl:pt-0">
+    <section className="relative min-h-[100vh] flex flex-col items-center justify-center overflow-hidden pt-[32px] sm:pt-0 md:pt-0 xl:pt-0">
 
       {/* Removed backgroundImage div as no video or background is used */}
       <div className="absolute inset-0 z-0 bg-neutral-50"></div>
@@ -69,7 +69,7 @@ export default function HeroSection() {
             description: t("hero.description"),
             button: t("hero.button"),
             textColor: "text-[#0088D5]",
-            buttonColor: "bg-[#0088D5] hover:bg-blue-600",
+            buttonColor: "bg-[#0088D5]",
           },
           {
             key: "pure",
@@ -96,7 +96,7 @@ export default function HeroSection() {
         ].map((slide, index) => (
           <SwiperSlide key={slide.key}>
             <motion.div
-              className="flex flex-col sm:flex-row items-center justify-start sm:justify-between gap-4 w-full px-4 pt-0 sm:pt-0 sm:items-center mt-[-60px] sm:mt-0"
+              className="flex flex-col sm:flex-row items-center justify-start sm:justify-between gap-4 w-full px-4 pt-0 sm:pt-0 sm:items-center -mt-12 sm:mt-0"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1 }}

@@ -14,9 +14,10 @@ interface Client {
   phone: string;
   email: string;
   address: string;
+  address2?: string;
   city: string;
-  department: string;
-  postalCode: string;
+  state: string;
+  zip?: string;
   country: string;
   password?: string;
 }
@@ -109,9 +110,10 @@ useEffect(() => {
         email: client.email,
         phone: client.phone,
         address: client.address,
+        address2: client.address2,
         city: client.city,
-        department: client.department,
-        postalCode: client.postalCode,
+        state: client.state,
+        zip: client.zip,
         country: client.country,
         ...(client.password ? { password: client.password } : {})
       });
@@ -194,6 +196,17 @@ useEffect(() => {
               />
             </div>
             <div>
+              <label className="block font-semibold">Dirección Adicional</label>
+              <input
+                type="text"
+                name="address2"
+                value={client.address2 || ""}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                disabled={!editing}
+              />
+            </div>
+            <div>
               <label className="block font-semibold">Ciudad</label>
               <input
                 type="text"
@@ -205,11 +218,11 @@ useEffect(() => {
               />
             </div>
             <div>
-              <label className="block font-semibold">Departamento</label>
+              <label className="block font-semibold">Estado</label>
               <input
                 type="text"
-                name="department"
-                value={client.department}
+                name="state"
+                value={client.state}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
                 disabled={!editing}
@@ -219,8 +232,8 @@ useEffect(() => {
               <label className="block font-semibold">Código Postal</label>
               <input
                 type="text"
-                name="postalCode"
-                value={client.postalCode}
+                name="zip"
+                value={client.zip}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
                 disabled={!editing}

@@ -1,13 +1,17 @@
 // src/components/admin/ProductList.tsx
+
 import { useEffect, useState } from "react";
-import { Product } from "../../data/types";
+import { Product, Category, Subcategory } from "../../data/types";
 import { fetchProducts, deleteProduct, fetchProductById, updateProduct } from "../../firebaseUtils";
 import EditProductModal from "./EditProductModal";
 import ModalConfirm from "./ModalConfirm";
+import { normalizeProduct } from "@/utils/normalizeProduct";
+import { fetchCategories, fetchAllSubcategories } from "@/firebaseUtils";
 
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [filter, setFilter] = useState("Todas");
+  const [searchTerm, setSearchTerm] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteName, setConfirmDeleteName] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -15,13 +19,32 @@ export default function ProductList() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  console.log("🔍 subcategories cargadas:", subcategories);
+
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadData = async () => {
       setLoading(true);
       setError(null);
       try {
+        const fetchedCategories = await fetchCategories();
+        const fetchedSubcategories = (await fetchAllSubcategories()) as Subcategory[];
+
+        // ✅ Guardamos en el estado para usos futuros
+        setCategories(fetchedCategories);
+        setSubcategories(fetchedSubcategories);
+
         const productsData = await fetchProducts();
-        setProducts(productsData);
+
+        // 🧠 Usamos las variables locales directamente (no el estado)
+        console.log("🧪 Paso previo a normalizeProduct – subcategories disponibles:", fetchedSubcategories);
+
+        const normalizedProducts = productsData.map((p) =>
+          normalizeProduct(p, fetchedCategories, fetchedSubcategories)
+        );
+
+        setProducts(normalizedProducts.filter((p) => p !== null));
       } catch (error) {
         console.error("Error al cargar productos:", error);
         setError("No se pudieron cargar los productos. Intenta nuevamente.");
@@ -29,14 +52,20 @@ export default function ProductList() {
         setLoading(false);
       }
     };
-    loadProducts();
+
+    loadData();
   }, []);
 
   const handleEdit = async (id: string) => {
     try {
-      const product = await fetchProductById(id);
-      if (product) {
-        setEditingProduct(product);
+      const raw = await fetchProductById(id);
+      if (raw) {
+        // ⚠️ Cargamos categorías y subcategorías FRESCAS para que normalizeProduct tenga la data necesaria
+        const freshCategories = await fetchCategories();
+        const freshSubcategories = await fetchAllSubcategories();
+
+        const normalized = normalizeProduct(raw, freshCategories, freshSubcategories);
+        setEditingProduct(normalized);
         setIsModalOpen(true);
       } else {
         setError(`No se encontró el producto con ID: ${id}`);
@@ -51,8 +80,21 @@ export default function ProductList() {
     try {
       if (updatedProduct.id) {
         await updateProduct(updatedProduct.id, updatedProduct);
+        const fresh = await fetchProductById(updatedProduct.id);
+
+        // 🔁 Refrescamos subcategorías manualmente desde Firebase para asegurar consistencia
+        const freshSubcategories = await fetchAllSubcategories();
+
+        if (fresh) {
+          const normalized = normalizeProduct(fresh, categories, freshSubcategories);
+          setEditingProduct(normalized);
+        }
+
         const refreshedProducts = await fetchProducts();
-        setProducts(refreshedProducts);
+        const normalizedRefreshed = refreshedProducts.map((p) =>
+          normalizeProduct(p, categories, freshSubcategories)
+        );
+        setProducts(normalizedRefreshed.filter((p) => p !== null));
         setIsModalOpen(false);
         setEditingProduct(null);
       }
@@ -123,6 +165,10 @@ export default function ProductList() {
               : p.category) === filter
         );
 
+  const visibleProducts = filteredProducts.filter((p) =>
+    p.title?.es?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="bg-white p-4 rounded shadow">
       <h2 className="text-xl font-bold mb-4">Publicaciones</h2>
@@ -139,7 +185,7 @@ export default function ProductList() {
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-2 border rounded shadow focus:ring-black"
+          className="px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
         >
           {uniqueLeagues.map((league) => (
             <option key={league} value={league}>
@@ -149,17 +195,29 @@ export default function ProductList() {
         </select>
       </div>
 
+      {/* Buscador de productos por título */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar por título..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black w-full md:w-1/3"
+        />
+      </div>
+
       {loading ? (
         <div className="text-center py-8">Cargando productos...</div>
-      ) : filteredProducts.length === 0 ? (
+      ) : visibleProducts.length === 0 ? (
         <div className="text-center py-8 text-gray-500 italic">No hay productos.</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b">
+              <tr className="border-b bg-gray-50 text-gray-700 font-semibold">
                 <th className="py-2 text-left">Título</th>
-                <th className="py-2 text-left">Liga</th>
+                <th className="py-2 text-left">Marca</th>
+                <th className="py-2 text-left">Subcategoría</th>
                 <th className="py-2 text-left">Precio</th>
                 <th className="py-2 text-left">Stock</th>
                 <th className="py-2 text-left">Estado</th>
@@ -167,31 +225,40 @@ export default function ProductList() {
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className="border-b">
+              {visibleProducts.map((product) => (
+                <tr key={product.id} className="border-b hover:bg-gray-50 transition-colors">
                   <td className="py-2">{product.title.es}</td>
                   <td className="py-2">
                     {typeof product.category === "object"
                       ? product.category?.name
                       : product.category || "Sin categoría"}
                   </td>
-                  <td className="py-2">US$ {product.priceUSD}</td>
+                  <td className="py-2">
+                    {typeof product.subcategory === "object"
+                      ? product.subcategory?.name || "Sin subcategoría"
+                      : "Sin subcategoría"}
+                  </td>
+                  <td className="py-2">
+                    US$ {product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD}
+                  </td>
                   <td className="py-2">{product.stockTotal ?? 0}</td>
                   <td className="py-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                       {product.active ? "Activo" : "Inactivo"}
                     </span>
                   </td>
-                  <td className="py-2 space-x-2">
-                    <button onClick={() => handleEdit(product.id!)} className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs">
-                      Editar
-                    </button>
-                    <button onClick={() => toggleActive(product.id!)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs">
-                      {product.active ? "Desactivar" : "Activar"}
-                    </button>
-                    <button onClick={() => handleDeleteClick(product.id!, product.title.es)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">
-                      Eliminar
-                    </button>
+                  <td className="py-2">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <button onClick={() => handleEdit(product.id!)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border border-gray-300 text-gray-800 rounded hover:bg-gray-100 transition">
+                        ✏️ Editar
+                      </button>
+                      <button onClick={() => toggleActive(product.id!)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-yellow-50 border border-yellow-200 text-yellow-800 rounded hover:bg-yellow-100 transition">
+                        🔄 {product.active ? "Desactivar" : "Activar"}
+                      </button>
+                      <button onClick={() => handleDeleteClick(product.id!, product.title.es)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 border border-red-300 text-red-800 rounded hover:bg-red-100 transition">
+                        🗑️ Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -212,12 +279,14 @@ export default function ProductList() {
 
       {isModalOpen && editingProduct && (
         <EditProductModal
+          key={editingProduct.id}
           product={editingProduct}
           onSave={handleSaveProduct}
           onClose={() => {
             setIsModalOpen(false);
             setEditingProduct(null);
           }}
+          subcategories={subcategories} // 🔁 Pasamos las subcategorías como prop
         />
       )}
     </div>

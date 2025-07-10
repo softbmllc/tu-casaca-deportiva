@@ -36,8 +36,9 @@ export default function ProductCard({ product, className, imgClassName }: Produc
       ? product.subtitle[language] || ""
       : "";
 
-  // Asegurar que tenemos precios
-  const productPriceUSD = product.priceUSD || 0;
+  // Asegurar que tenemos precios: primero variante, luego priceUSD, luego 0
+  const productPriceUSD =
+    product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD ?? 0;
 
   console.log("🧩 DEBUG CARD —", product.slug, product.title);
 
@@ -54,17 +55,17 @@ export default function ProductCard({ product, className, imgClassName }: Produc
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       key={`product-card-${product.id}-${safeSlug}`} // Key único para evitar problemas de renderizado
-      className={`h-[320px] relative ring-2 ring-offset-2 ${borderColor} rounded-2xl shadow-sm transition-transform duration-300 hover:scale-[1.015] ${className || ""}`}
+      className={`relative ring-2 ring-offset-2 ${borderColor} rounded-2xl shadow-sm transition-transform duration-300 hover:scale-[1.015] ${className || ""}`}
     >
       <Link
         to={productDetailUrl}
         className="h-full flex flex-col justify-between group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition relative"
       >
-        <div className="aspect-square overflow-hidden">
+        <div className="aspect-square overflow-hidden flex items-center justify-center">
           <img
             src={productImage}
             alt={productName}
-            className={`${imgClassName || "w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"}`}
+            className={`${imgClassName || "w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-105"}`}
             loading="lazy"
             onError={(e) => {
               // Fallback para imágenes que no cargan

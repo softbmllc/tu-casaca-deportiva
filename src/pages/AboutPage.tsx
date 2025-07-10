@@ -1,3 +1,5 @@
+// src/pages/AboutPage.tsx
+
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,7 +35,7 @@ const AboutPage = () => {
           href="/shop"
           className="inline-block bg-blue-600 text-white font-semibold px-6 py-3 rounded-md hover:bg-blue-700 transition"
         >
-          {t('about.cta')}
+          {t('about.cta_shop')}
         </a>
       </div>
     </section>

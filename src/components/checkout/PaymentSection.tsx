@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Elements,
-  CardElement,
+  PaymentElement,
   useStripe,
   useElements
 } from "@stripe/react-stripe-js";
@@ -26,34 +26,6 @@ const CheckoutForm = () => {
   const { user } = useAuth();
   const [clientSecret, setClientSecret] = useState("");
 
-  useEffect(() => {
-    if (total <= 0) return; // ⛔️ Evita ejecutar si total aún no está listo
-
-    console.log("🧪 Total enviado al backend:", total);
-
-    fetch("http://localhost:4000/api/create-payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: Math.round(total * 100) }) // total en centavos
-    })
-      .then(async res => {
-        if (!res.ok) {
-          throw new Error("Error al crear el pago");
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-        } else {
-          console.error("No se recibió clientSecret:", data);
-        }
-      })
-      .catch(err => {
-        console.error("❌ Error creando el intent:", err.message);
-      });
-  }, [total]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
@@ -66,24 +38,31 @@ const CheckoutForm = () => {
       return;
     }
 
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: elements.getElement(CardElement)!
-      }
+    const result = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.origin + "/success",
+      },
     });
 
     if (result.error) {
       alert(result.error.message);
     } else {
-      if (result.paymentIntent?.status === "succeeded") {
+      if (
+        result &&
+        typeof result === 'object' &&
+        'paymentIntent' in result &&
+        typeof (result as any).paymentIntent === 'object' &&
+        (result as any).paymentIntent?.status === "succeeded"
+      ) {
         const shippingData = JSON.parse(localStorage.getItem("shippingData") || "{}");
         // Nueva versión mejorada de orderData
         const orderData = {
           ...prepareInitialOrderData(cartItems, shippingData),
           clientEmail: user?.email || localStorage.getItem("email") || shippingData?.email || "",
           createdAt: new Date().toISOString(),
-          paymentIntentId: result.paymentIntent?.id,
-          paymentIntentStatus: result.paymentIntent?.status,
+          paymentIntentId: (result as any).paymentIntent?.id,
+          paymentIntentStatus: (result as any).paymentIntent?.status,
           paymentMethod: "Stripe",
           status: "Pagado",
           clientInfo: {
@@ -142,8 +121,8 @@ const CheckoutForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <CardElement className="p-4 border rounded" />
+    <form onSubmit={handleSubmit} id="stripe-checkout-form" className="space-y-4">
+      <PaymentElement className="p-4 border rounded" />
       <button
         type="submit"
         disabled={!stripe}
@@ -156,10 +135,47 @@ const CheckoutForm = () => {
 };
 
 const PaymentSection: React.FC = () => {
+  const { total, cartItems } = useCart();
+  const { user } = useAuth();
+  const [clientSecret, setClientSecret] = useState("");
+
+  useEffect(() => {
+    if (total <= 0) return;
+
+    const shippingData = JSON.parse(localStorage.getItem("shippingData") || "{}");
+    const email = user?.email || localStorage.getItem("email") || shippingData?.email || "";
+
+    fetch("/api/create-payment-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: cartItems,
+        clientEmail: email,
+        shippingInfo: shippingData,
+      }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.clientSecret) setClientSecret(data.clientSecret);
+        else console.error("No se recibió clientSecret:", data);
+      })
+      .catch(err => {
+        console.error("❌ Error creando el intent:", err.message);
+      });
+  }, [total]);
+
+  const options = {
+    clientSecret,
+  };
+
+  if (!clientSecret) {
+    return <p className="text-center py-10">Cargando formulario de pago...</p>;
+  }
+
   return (
     <div className="mt-6 bg-white shadow-md rounded p-4 border border-gray-200">
       <h2 className="text-lg font-semibold mb-4">Pago Seguro</h2>
-      <Elements stripe={stripePromise}>
+      <Elements stripe={stripePromise} options={options}>
         <CheckoutForm />
       </Elements>
     </div>

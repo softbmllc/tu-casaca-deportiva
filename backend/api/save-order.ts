@@ -24,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const rawBody = await new Promise<Buffer>((resolve, reject) => {
       const chunks: Uint8Array[] = [];
-      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('data', (chunk: Buffer) => chunks.push(chunk));
       req.on('end', () => resolve(Buffer.concat(chunks)));
       req.on('error', reject);
     });

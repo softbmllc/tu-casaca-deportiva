@@ -2,3 +2,22 @@ node_modules
 .vercel
 .env.local
 secrets/firebase-admin.json
+
+# Dependencias
+node_modules/
+
+# Build y caché
+dist/
+.vite/
+*.tsbuildinfo
+
+# Archivos sensibles
+.env
+.env.local
+secrets/firebase-admin.json
+
+# Archivos del sistema
+.DS_Store
+
+# Vercel (si lo manejás desde CLI)
+.vercel/

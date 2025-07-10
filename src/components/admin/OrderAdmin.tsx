@@ -1,5 +1,26 @@
 // src/components/admin/OrderAdmin.tsx
 
+// Utilidad para obtener info del cliente desde diferentes fuentes
+const getClienteInfo = (pedido: Order) => {
+  const cliente = (typeof pedido.client === 'object' && pedido.client !== null)
+    ? pedido.client
+    : typeof pedido.clientInfo === 'object'
+    ? pedido.clientInfo
+    : typeof pedido.shippingInfo === 'object'
+    ? pedido.shippingInfo
+    : {};
+
+  return {
+    nombre: cliente.nombre || cliente.name || "-",
+    telefono: cliente.telefono || cliente.phone || "-",
+    direccion: cliente.direccion || cliente.address || pedido.address || pedido.shippingInfo?.address || "-",
+    address: cliente.address || pedido.address || pedido.shippingInfo?.address || "-",
+    address2: cliente.address2 || (cliente as any)?.apto || (cliente as any)?.address_line2 || (pedido.shippingInfo?.address2 || "-"),
+    email: cliente.email || "-"
+  };
+};
+// src/components/admin/OrderAdmin.tsx
+
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
@@ -21,6 +42,8 @@ interface ClientInfo {
   phone?: string;
   telefono?: string;
   address?: string;
+  address2?: string;
+  direccion?: string;
   country?: string;
 }
 
@@ -69,25 +92,27 @@ export default function OrderAdmin() {
       const snapshot = await getDocs(collection(db, "orders"));
       const docs = snapshot.docs.map((docSnap) => {
         const data = docSnap.data();
-        const cliente = data.cliente || {}; // asegurar compatibilidad con estructura previa
+        const cliente = data.cliente || {};
+        const clientRaw = data.clientInfo || data.client || {};
+        const shippingRaw = data.shippingInfo || {};
 
         return {
           id: docSnap.id,
           client: {
-            name: cliente.nombre || data.client || "-",
-            email: cliente.email || data.email || "-",
-            phone: cliente.telefono || data.phone || "-",
+            name: clientRaw.name || clientRaw.nombre || cliente.nombre || "-",
+            email: clientRaw.email || cliente.email || "-",
+            phone: clientRaw.phone || clientRaw.telefono || cliente.telefono || "-",
           },
-          address: cliente.direccion || data.address || "-",
-          city: cliente.ciudad || data.city || "-",
-          department: cliente.departamento || data.department || "-",
-          postalCode: cliente.codigoPostal || data.postalCode || "-",
-          items: data.items,
-          total: data.total,
+          address: shippingRaw.address || cliente.direccion || data.address || "-",
+          city: shippingRaw.city || cliente.ciudad || data.city || "-",
+          department: shippingRaw.state || cliente.departamento || data.department || "-",
+          postalCode: shippingRaw.postalCode || cliente.codigoPostal || data.postalCode || shippingRaw.zip || shippingRaw.zipCode || "-",
+          items: data.items || [],
+          total: data.total || 0,
           amountPaid: data.amountPaid || data.total || 0,
-          status: data.status,
+          status: data.status || "En proceso",
           createdAt: data.createdAt?.toDate?.() ?? new Date(),
-          shippingInfo: data.shippingInfo || null,
+          shippingInfo: shippingRaw,
           totalAmount: data.totalAmount || data.total || 0,
         } as Order;
       });
@@ -98,7 +123,7 @@ export default function OrderAdmin() {
   }, []);
 
   const cycleStatus = (status: Order["status"]): Order["status"] => {
-    const order = ["En Proceso", "Cancelado", "Confirmado", "Entregado", "Enviado"];
+    const order = ["En proceso", "Cancelado", "Confirmado", "Entregado", "Enviado"];
     const index = order.indexOf(status);
     return order[(index + 1) % order.length] as Order["status"];
   };
@@ -197,10 +222,9 @@ export default function OrderAdmin() {
       filtroEstado === "Todos"
         ? true
         : pedido.status === filtroEstado;
-    const rawNombre = pedido.shippingInfo?.name ?? (typeof pedido.client === "object" ? pedido.client?.name : pedido.client);
-    const nombre = typeof rawNombre === "string" ? rawNombre : "";
-    const rawEmail = pedido.shippingInfo?.email ?? (typeof pedido.client === "object" ? pedido.client?.email : "");
-    const email = typeof rawEmail === "string" ? rawEmail : "";
+    const clienteInfo = getClienteInfo(pedido);
+    const nombre = clienteInfo.nombre || "Sin nombre";
+    const email = clienteInfo.email || "";
     const busquedaMatch =
       nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       email.toLowerCase().includes(busqueda.toLowerCase());
@@ -248,6 +272,7 @@ export default function OrderAdmin() {
           <option value="Confirmado">Confirmado</option>
           <option value="Entregado">Entregado</option>
           <option value="Cancelado">Cancelado</option>
+          <option value="Enviado">Enviado</option>
         </select>
 
         {/* Buscador */}
@@ -274,108 +299,132 @@ export default function OrderAdmin() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
-            {pedidosFiltrados.map((pedido) => (
-              <tr key={pedido.id}>
-                <td className="px-4 py-2 text-sm text-gray-800">{formatDate(pedido.createdAt)}</td>
-                <td className="px-4 py-2 text-sm text-gray-800">{pedido.shippingInfo?.name || 'Sin nombre'}</td>
-                <td className="px-4 py-2 text-sm text-gray-800">{pedido.shippingInfo?.email}</td>
-                <td className="px-4 py-2 text-sm text-gray-800">
-                  ${(
-                    pedido.totalAmount ??
-                    pedido.amountPaid ??
-                    pedido.total ??
-                    0
-                  ).toFixed(2)}
-                </td>
-                <td className="px-4 py-2 text-sm">
-                  <span className={`px-2 py-1 rounded text-white text-xs ${pedido.status === 'Entregado' ? 'bg-green-500' : pedido.status === 'En Proceso' ? 'bg-yellow-500' : pedido.status === 'Cancelado' ? 'bg-red-500' : 'bg-gray-500'}`}>
-                    {pedido.status}
-                  </span>
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-800 flex gap-2">
-                  <button
-                    onClick={() => handleVerDetalle(pedido)}
-                    className="text-blue-600 hover:underline text-sm"
-                  >
-                    Ver detalle
-                  </button>
-                  <button
-                    onClick={() => handleImprimirEtiqueta(pedido)}
-                    className="text-green-600 hover:underline text-sm"
-                  >
-                    Imprimir
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`¿Estás seguro que deseas eliminar la orden ${pedido.id}?`)) {
-                        deleteDoc(doc(db, "orders", pedido.id.toString()));
-                        setOrders(orders.filter(o => o.id !== pedido.id));
-                      }
-                    }}
-                    className="text-red-600 hover:underline text-sm"
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {pedidosFiltrados.map((pedido) => {
+              const clienteInfo = getClienteInfo(pedido);
+              return (
+                <tr key={pedido.id}>
+                  <td className="px-4 py-2 text-sm text-gray-800">{formatDate(pedido.createdAt)}</td>
+                  <td className="px-4 py-2 text-sm text-gray-800">{clienteInfo.nombre}</td>
+                  <td className="px-4 py-2 text-sm text-gray-800">
+                    {clienteInfo.email}
+                  </td>
+                  <td className="px-4 py-2 text-sm text-gray-800">
+                    ${(
+                      pedido.totalAmount ??
+                      pedido.amountPaid ??
+                      pedido.total ??
+                      0
+                    ).toFixed(2)}
+                  </td>
+                  <td className="px-4 py-2 text-sm">
+                    <span className={`px-2 py-1 rounded text-white text-xs ${
+                      pedido.status === 'Entregado' ? 'bg-green-500' :
+                      pedido.status === 'En Proceso' ? 'bg-yellow-500' :
+                      pedido.status === 'Cancelado' ? 'bg-red-500' :
+                      'bg-gray-500'
+                    }`}>
+                      {pedido.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-sm text-gray-800 flex gap-2">
+                    <button
+                      onClick={() => handleVerDetalle(pedido)}
+                      className="text-blue-600 hover:underline text-sm"
+                    >
+                      Ver detalle
+                    </button>
+                    <button
+                      onClick={() => handleImprimirEtiqueta(pedido)}
+                      className="text-green-600 hover:underline text-sm"
+                    >
+                      Imprimir
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`¿Estás seguro que deseas eliminar la orden ${pedido.id}?`)) {
+                          deleteDoc(doc(db, "orders", pedido.id.toString()));
+                          setOrders(orders.filter(o => o.id !== pedido.id));
+                        }
+                      }}
+                      className="text-red-600 hover:underline text-sm"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded shadow-lg max-w-2xl w-full">
-            <h2 className="text-xl font-bold mb-4">Detalle del Pedido</h2>
-            <div className="mb-4">
-              <p><strong>ID:</strong> {selectedOrder.id}</p>
-              <p><strong>Nombre:</strong> {selectedOrder.shippingInfo?.name || "-"}</p>
-              <p><strong>Email:</strong> {selectedOrder.shippingInfo?.email || "-"}</p>
-              <p><strong>Teléfono:</strong> {selectedOrder.shippingInfo?.phone || "-"}</p>
-              <p><strong>Dirección:</strong> {selectedOrder.shippingInfo?.address || "-"}{selectedOrder.shippingInfo?.address2 && `, ${selectedOrder.shippingInfo.address2}`}, {selectedOrder.shippingInfo?.city || "-"}, {selectedOrder.shippingInfo?.state || "-"}, {selectedOrder.shippingInfo?.postalCode || "-"}</p>
-            </div>
-            <div className="mb-4">
-              <h3 className="font-bold mb-2">Productos:</h3>
-              <table className="w-full border text-sm">
-                <thead>
-                  <tr>
-                    <th className="border px-2 py-1">Producto</th>
-                    <th className="border px-2 py-1">Variante</th>
-                    <th className="border px-2 py-1">Cantidad</th>
-                    <th className="border px-2 py-1">Precio Unitario</th>
-                    <th className="border px-2 py-1">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.isArray(selectedOrder.items) &&
-                    selectedOrder.items.map((item, index) => {
-                      if (typeof item === "string") return null;
-                      const title = item.title?.es || item.name?.es || "Producto";
-                      const variant = item.size || item.options || "-";
-                      const quantity = item.quantity ?? 0;
-                      const price = item.price ?? 0;
-                      const subtotal = (price * quantity).toFixed(2);
+      {selectedOrder && (() => {
+        const clienteInfo = getClienteInfo(selectedOrder);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded shadow-lg max-w-2xl w-full">
+              <h2 className="text-xl font-bold mb-4">Detalle del Pedido</h2>
+              <div className="mb-4">
+                <p><strong>ID:</strong> {selectedOrder.id}</p>
+                <p><strong>Nombre:</strong> {clienteInfo.nombre}</p>
+                <p><strong>Email:</strong> {clienteInfo.email}</p>
+                <p><strong>Teléfono:</strong> {clienteInfo.telefono}</p>
+                <p>
+                  <strong>Dirección:</strong>{" "}
+                  {
+                    [
+                      clienteInfo.address,
+                      clienteInfo.address2,
+                      selectedOrder.city,
+                      selectedOrder.department,
+                      selectedOrder.postalCode
+                    ].filter(Boolean).join(', ') || '-'
+                  }
+                </p>
+              </div>
+              <div className="mb-4">
+                <h3 className="font-bold mb-2">Productos:</h3>
+                <table className="w-full border text-sm">
+                  <thead>
+                    <tr>
+                      <th className="border px-2 py-1">Producto</th>
+                      <th className="border px-2 py-1">Variante</th>
+                      <th className="border px-2 py-1">Cantidad</th>
+                      <th className="border px-2 py-1">Precio Unitario</th>
+                      <th className="border px-2 py-1">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.isArray(selectedOrder.items) &&
+                      selectedOrder.items.map((item, index) => {
+                        if (typeof item === "string") return null;
+                        const title = item.title?.es || item.name?.es || "Producto";
+                        const variant = item.size || item.options || "-";
+                        const quantity = item.quantity ?? 0;
+                        const price = item.price ?? 0;
+                        const subtotal = (price * quantity).toFixed(2);
 
-                      return (
-                        <tr key={index}>
-                          <td className="border px-2 py-1">{title}</td>
-                          <td className="border px-2 py-1">{variant}</td>
-                          <td className="border px-2 py-1">{quantity}</td>
-                          <td className="border px-2 py-1">${price.toFixed(2)}</td>
-                          <td className="border px-2 py-1">${subtotal}</td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
+                        return (
+                          <tr key={index}>
+                            <td className="border px-2 py-1">{title}</td>
+                            <td className="border px-2 py-1">{variant}</td>
+                            <td className="border px-2 py-1">{quantity}</td>
+                            <td className="border px-2 py-1">${price.toFixed(2)}</td>
+                            <td className="border px-2 py-1">${subtotal}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 text-right">
+                <strong>Total:</strong> ${selectedOrder.totalAmount?.toFixed(2) || "0.00"}
+              </div>
+              <button onClick={() => setSelectedOrder(null)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">Cerrar</button>
             </div>
-            <div className="mt-4 text-right">
-              <strong>Total:</strong> ${selectedOrder.totalAmount?.toFixed(2) || "0.00"}
-            </div>
-            <button onClick={() => setSelectedOrder(null)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">Cerrar</button>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

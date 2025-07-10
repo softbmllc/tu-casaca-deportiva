@@ -10,7 +10,7 @@ export async function uploadImageToImageKit(file: File): Promise<string | null> 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("fileName", file.name);
-    formData.append("publicKey", import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY);
+    formData.append("publicKey", authParams.publicKey);
     formData.append("signature", authParams.signature);
     formData.append("expire", authParams.expire.toString());
     formData.append("token", authParams.token);

@@ -1,5 +1,7 @@
 // src/components/admin/EditProductModal.tsx
+
 import React, { useState } from 'react';
+import { ReactSortable } from "react-sortablejs";
 import { useEffect } from "react";
 import ImageUploader from "./ImageUploader";
 import TiptapEditor from "./TiptapEditor";
@@ -7,6 +9,8 @@ import { Product } from "../../data/types";
 import { updateProduct, fetchCategories, fetchSubcategories } from "../../firebaseUtils";
 import { generateSlug } from "../../utils/generateSlug";
 import { uploadImageToImageKit } from "../../utils/imagekitUtils";
+
+import { normalizeProduct } from "../../utils/normalizeProduct";
 
 // Drag and Drop
 import {
@@ -29,6 +33,10 @@ import {
 
 import { CSS } from "@dnd-kit/utilities";
 
+type ImageItem = {
+  id: string;
+  url: string;
+};
 
 // Tipo para ligas almacenadas en localStorage
 type League = {
@@ -47,6 +55,11 @@ interface Props {
   product: Product;
   onSave: (updatedProduct: Product) => void;
   onClose: () => void;
+  subcategories: {
+    id: string;
+    name: string | { es?: string; en?: string };
+    categoryId: string;
+  }[];
 }
 
 
@@ -124,23 +137,42 @@ function SortableImageItem({
   );
 }
 
-export default function EditProductModal({ product, onSave, onClose }: Props) {
-  const [formData, setFormData] = useState<Product>({ ...product });
+export default function EditProductModal({ product, onSave, onClose, subcategories }: Props) {
+  const [formData, setFormData] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
 
-  const [categories, setCategories] = useState<{ id: string; name: string; categoryId: string }[]>([]);
-  const [subcategories, setSubcategories] = useState<{ id: string; name: string; categoryId: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string | { es?: string; en?: string }; categoryId: string }[]>([]);
 
-  const [selectedCategory, setSelectedCategory] = useState(
-    typeof product.category === "string" ? product.category : product.category?.id || ""
-  );
-  const [selectedSubcategory, setSelectedSubcategory] = useState(() => {
-    if (typeof product.subcategory === "string") return product.subcategory;
-    if (typeof product.subcategory === "object" && product.subcategory?.id) return product.subcategory.id;
-    return "";
-  });
+  // Estado de control para inicialización
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Cargar categorías desde Firebase al montar
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const fetchedCategories = await fetchCategories();
+        setCategories(
+          fetchedCategories.map((cat) => ({
+            ...cat,
+            categoryId: cat.id,
+          }))
+        );
+      } catch (error) {
+        console.error("❌ Error al cargar categorías:", error);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  // Estado para la subcategoría seleccionada
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
+
+  // Debug visual para categorías
+  console.log("📦 Categorías cargadas:", categories);
+  
   const [selectedTeam, setSelectedTeam] = useState<string>("");
 
   // Descripciones en inglés y español (inputs controlados)
@@ -155,44 +187,85 @@ export default function EditProductModal({ product, onSave, onClose }: Props) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-useEffect(() => {
-  const loadAllData = async () => {
-    try {
-      const categories = await fetchCategories();
-      const allSubcategoriesWithCategoryId = (await Promise.all(
-        categories.map(async (category: { id: string }) => {
-          const subs = await fetchSubcategories(category.id);
-          return subs.map((sub) => ({ ...sub, categoryId: category.id }));
-        })
-      )).flat();
-
-      setCategories(categories.map((cat) => ({ ...cat, categoryId: cat.id })));
-      // setSubcategories(allSubcategories.map((sub) => ({ ...sub, categoryId: "" })));
-      setSubcategories(allSubcategoriesWithCategoryId);
-    } catch (error) {
-      console.error("[EditProductModal] Error al cargar datos desde Firebase:", error);
+  useEffect(() => {
+    if (
+      hasInitialized ||
+      !product ||
+      subcategories.length === 0 ||
+      categories.length === 0
+    ) {
+      return;
     }
-  };
 
-  loadAllData();
-}, []);
+    const initialCategory = categories.find((cat) => cat.id === product.category?.id);
+    const initialSubcategory = subcategories.find((s) => s.id === product.subcategory?.id);
+
+    setSelectedCategory(initialCategory?.id || product.category?.id || "");
+    setSelectedSubcategory(initialSubcategory?.id || product.subcategory?.id || "");
+
+    setFormData({
+      ...product,
+      category: {
+        id: initialCategory?.id || product.category?.id || "",
+        name:
+          typeof initialCategory?.name === "string"
+            ? initialCategory.name
+            : typeof initialCategory?.name === "object"
+            ? initialCategory.name?.es || initialCategory.name?.en || ""
+            : "",
+      },
+      subcategory: {
+        id: initialSubcategory?.id || product.subcategory?.id || "",
+        name:
+          typeof initialSubcategory?.name === "string"
+            ? initialSubcategory.name
+            : typeof initialSubcategory?.name === "object"
+            ? initialSubcategory.name?.es || initialSubcategory.name?.en || ""
+            : "",
+        categoryId: initialSubcategory?.categoryId || product.subcategory?.categoryId || "",
+      },
+    });
+
+    setHasInitialized(true);
+  }, [product, categories, subcategories, hasInitialized]);
+
+
 
 
 const handleChange = (field: keyof Product, value: any) => {
-  setFormData((prev) => ({ ...prev, [field]: value }));
+  setFormData((prev) => prev ? { ...prev, [field]: value } : prev);
 };
 
 
-const [images, setImages] = useState<(string | null)[]>(
-  product.images?.filter((img): img is string => typeof img === 'string') || []
+const [images, setImages] = useState<ImageItem[]>(
+  product.images?.filter((img): img is string => typeof img === "string").map((url, index) => ({
+    id: `${index}-${url}`,
+    url,
+  })) || []
 );
+
+// Permite eliminar una imagen por índice
+const handleRemoveImage = (index: number) => {
+  const updated = [...images];
+  updated.splice(index, 1);
+  setImages(updated);
+};
+
+const handleImageUploadChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const url = await handleImageUpload(file);
+  if (url) {
+    setImages((prev) => [...prev, { id: `${Date.now()}`, url }]);
+  } else {
+    console.error("Error: no se pudo obtener la URL de la imagen subida.");
+  }
+};
 
 // Mantener sincronizadas las imágenes con formData
 useEffect(() => {
-  setFormData((prev) => ({
-    ...prev,
-    images: images.filter((img): img is string => img !== null),
-  }));
+  setFormData((prev) => prev ? { ...prev, images: images.map((img) => img.url) } : prev);
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [images]);
 
@@ -209,103 +282,127 @@ const handleUpload = async (file: File): Promise<string | null> => {
   }
 };
 
-const handleSaveProduct = async () => {
-  setError("");
-  setSaving(true);
-  try {
-    if (!formData.title?.en.trim()) {
-      setError("El nombre del producto es obligatorio.");
+  const handleSaveProduct = async () => {
+    setError("");
+    setSaving(true);
+    try {
+      if (!formData) {
+        setError("Error interno: datos del producto no están listos.");
+        setSaving(false);
+        return;
+      }
+      if (!formData.title?.en.trim()) {
+        setError("El nombre del producto es obligatorio.");
+        setSaving(false);
+        return;
+      }
+      // Validación de categoría y subcategoría usando los valores seleccionados
+      if (!selectedCategory || !selectedSubcategory) {
+        setError("Debe seleccionar categoría y subcategoría.");
+        setSaving(false);
+        return;
+      }
+      if (!formData.images || formData.images.length === 0) {
+        setError("Debe subir al menos una imagen del producto.");
+        setSaving(false);
+        return;
+      }
+      const productId = String(formData.id);
+      const { id, ...productData } = formData;
+
+      // Sincroniza variants en formData antes de guardar
+      formData.variants = variants;
+
+      const selectedCategoryObj = categories.find((cat) => cat.id === selectedCategory);
+      const selectedSubcategoryObj =
+        subcategories.find((sub) => sub.id === selectedSubcategory) || { id: "", name: "" };
+
+      const calculatedStockTotal = variants.reduce((total, variant) => {
+        return total + variant.options.reduce((sum, opt: any) => sum + (opt.stock || 0), 0);
+      }, 0);
+
+      // Obtener el objeto completo de la subcategoría seleccionada
+      const selectedSubcategoryObject = subcategories.find(
+        (s) => s.id === selectedSubcategory
+      );
+
+      // Solo incluir subcategory (minúscula) en updatedProduct, nunca subCategory
+      const updatedProduct: Product = {
+        ...product,
+        ...productData,
+        images: images.map((img) => img.url),
+        id: productId,
+        stockTotal: calculatedStockTotal,
+        title: {
+          en: productData.title?.en?.trim() || "",
+          es: productData.title?.es?.trim() || "",
+        },
+        slug: productData.slug ?? generateSlug(productData.title?.en ?? ""),
+        priceUSD: productData.priceUSD || 0,
+        stock: {},
+        category: {
+          id: selectedCategoryObj?.id ?? selectedCategory ?? "",
+          name:
+            typeof selectedCategoryObj?.name === "string"
+              ? selectedCategoryObj.name
+              : typeof selectedCategoryObj?.name === "object"
+              ? selectedCategoryObj?.name.es || selectedCategoryObj?.name.en || ""
+              : "",
+        },
+        subcategory: {
+          id: selectedSubcategoryObject?.id ?? "",
+          name:
+            typeof selectedSubcategoryObject?.name === "string"
+              ? selectedSubcategoryObject?.name
+              : typeof selectedSubcategoryObject?.name === "object"
+              ? selectedSubcategoryObject?.name.es || selectedSubcategoryObject?.name.en || ""
+              : "",
+          categoryId: selectedSubcategoryObject?.categoryId ?? "",
+        },
+        defaultDescriptionType: productData.defaultDescriptionType || "none",
+        extraDescriptionTop: productData.extraDescriptionTop || "",
+        extraDescriptionBottom: productData.extraDescriptionBottom || "",
+        description: {
+          en: descriptionEN.trim(),
+          es: descriptionES.trim(),
+        },
+        allowCustomization: productData.allowCustomization || false,
+        descriptionPosition: productData.descriptionPosition || "bottom",
+        active: productData.active !== undefined ? productData.active : true,
+      };
+
+      await updateProduct(productId, {
+        ...updatedProduct,
+        variants: variants,
+      });
+      
+      onSave({
+        ...updatedProduct,
+        variants: variants,
+      });
+    } catch (error) {
+      console.error("Error al guardar producto:", error);
+      setError("Error al guardar el producto. Intenta nuevamente.");
+    } finally {
       setSaving(false);
-      return;
     }
-    if (!selectedCategory || !selectedSubcategory) {
-      setError("Debe seleccionar categoría y subcategoría.");
-      setSaving(false);
-      return;
-    }
-    if (!formData.images || formData.images.length === 0) {
-      setError("Debe subir al menos una imagen del producto.");
-      setSaving(false);
-      return;
-    }
-    const productId = String(formData.id);
-    const { id, ...productData } = formData;
-
-    // Sincroniza variants en formData antes de guardar
-    formData.variants = variants;
-
-    const selectedCategoryObj = categories.find((cat) => cat.id === selectedCategory);
-    const selectedSubcategoryObj = subcategories.find((sub) => sub.id === selectedSubcategory);
-
-    const calculatedStockTotal = variants.reduce((total, variant) => {
-      return total + variant.options.reduce((sum, opt: any) => sum + (opt.stock || 0), 0);
-    }, 0);
-
-    const updatedProduct: Product = {
-      id: productId,
-      ...productData,
-      stockTotal: calculatedStockTotal,
-      // productName: productData.productName?.trim() || "", // Removed: not part of Product type
-      title: {
-        en: productData.title?.en?.trim() || "",
-        es: productData.title?.es?.trim() || "",
-      },
-      slug: productData.slug ?? generateSlug(productData.title?.en ?? ""),
-      images: productData.images || [],
-      priceUSD: productData.priceUSD || 0,
-      stock: {},
-      category: {
-        id: selectedCategoryObj?.id ?? "",
-        name: selectedCategoryObj?.name ?? "",
-      },
-      subcategory: {
-        id: selectedSubcategoryObj?.id ?? "",
-        name: selectedSubcategoryObj?.name ?? "",
-      },
-      defaultDescriptionType: productData.defaultDescriptionType || "none",
-      extraDescriptionTop: productData.extraDescriptionTop || "",
-      extraDescriptionBottom: productData.extraDescriptionBottom || "",
-      description: {
-        en: descriptionEN.trim(),
-        es: descriptionES.trim(),
-      },
-      allowCustomization: productData.allowCustomization || false,
-      descriptionPosition: productData.descriptionPosition || "bottom",
-      active: productData.active !== undefined ? productData.active : true,
-    };
-
-    await updateProduct(productId, {
-      ...updatedProduct,
-      variants: variants,
-    });
-    
-    onSave({
-      ...updatedProduct,
-      variants: variants,
-    });
-  } catch (error) {
-    console.error("Error al guardar producto:", error);
-    setError("Error al guardar el producto. Intenta nuevamente.");
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
 const handleDragEnd = (event: DragEndEvent) => {
   const { active, over } = event;
   if (over && active.id !== over.id) {
     setImages((prevImages) => {
-      const oldImages = prevImages.filter((img): img is string => img !== null);
-      const activeIndex = oldImages.findIndex((url) => url === active.id);
-      const overIndex = oldImages.findIndex((url) => url === over.id);
-      return arrayMove(oldImages, activeIndex, overIndex);
+      const activeIndex = prevImages.findIndex((img) => img.id === active.id);
+      const overIndex = prevImages.findIndex((img) => img.id === over.id);
+      return arrayMove(prevImages, activeIndex, overIndex);
     });
   }
 };
 
 const moveImageLeft = (index: number) => {
-  if (index > 0 && formData.images) {
+  if (formData && index > 0 && formData.images) {
     setFormData((prev) => {
+      if (!prev) return prev;
       const newImages = [...(prev.images || [])];
       [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
       return { ...prev, images: newImages };
@@ -314,8 +411,9 @@ const moveImageLeft = (index: number) => {
 };
 
 const moveImageRight = (index: number) => {
-  if (formData.images && index < formData.images.length - 1) {
+  if (formData && formData.images && index < formData.images.length - 1) {
     setFormData((prev) => {
+      if (!prev) return prev;
       const newImages = [...(prev.images || [])];
       [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
       return { ...prev, images: newImages };
@@ -325,11 +423,22 @@ const moveImageRight = (index: number) => {
 
 const removeImage = (index: number) => {
   setFormData((prev) => {
+    if (!prev) return prev;
     const newImages = [...(prev.images || [])];
     newImages.splice(index, 1);
     return { ...prev, images: newImages };
   });
 };
+
+
+// Loader visual si formData aún no está listo
+if (!formData) {
+  return (
+    <div className="fixed inset-0 z-50 bg-white bg-opacity-75 flex items-center justify-center">
+      <span className="text-gray-600">Cargando datos del producto...</span>
+    </div>
+  );
+}
 
 return (
   <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -352,265 +461,328 @@ return (
         </div>
 
         <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">Editar Producto</h3>
+          <h3 className="text-2xl font-semibold text-gray-800 mb-6 border-b pb-2 flex items-center gap-2" id="modal-title">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 112.828 2.828L11.828 13.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
+            </svg>
+            Editar Producto
+          </h3>
 
           {error && (
             <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">{error}</div>
           )}
 
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
+          <div className="space-y-6 divide-y divide-gray-200 max-h-[70vh] overflow-y-auto px-2 py-4">
             {/* Datos básicos */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="lg:col-span-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Título Interno</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Título (EN)</label>
-                    <input
-                      type="text"
-                      value={formData.title?.en || ""}
-                      onChange={(e) => handleChange("title", { ...formData.title, en: e.target.value })}
-                      className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Título (ES)</label>
-                    <input
-                      type="text"
-                      value={formData.title?.es || ""}
-                      onChange={(e) => handleChange("title", { ...formData.title, es: e.target.value })}
-                      className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
-                    />
+            <div className="bg-gray-50 p-4 rounded-md shadow-inner">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-4">
+                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Título Interno</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Título (EN)</label>
+                      <input
+                        type="text"
+                        value={formData.title?.en || ""}
+                        onChange={(e) => handleChange("title", { ...formData.title, en: e.target.value })}
+                        className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Título (ES)</label>
+                      <input
+                        type="text"
+                        value={formData.title?.es || ""}
+                        onChange={(e) => handleChange("title", { ...formData.title, es: e.target.value })}
+                        className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+                      />
+                    </div>
                   </div>
                 </div>
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Categoría</label>
+                  <div className="relative">
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => {
+                        setSelectedCategory(e.target.value);
+                        setSelectedTeam("");
+                      }}
+                      className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+                      required
+                    >
+                      <option value="">Seleccionar Categoría</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {typeof cat.name === "string" ? cat.name : cat.name?.es || cat.name?.en}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                      <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 3a1 1 0 01.707.293l4 4a1 1 0 01-1.414 1.414L10 5.414 6.707 8.707a1 1 0 01-1.414-1.414l4-4A1 1 0 0110 3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Subcategoría</label>
+                  {selectedSubcategory === "" && (
+                    <div className="mb-2 text-sm text-yellow-700 bg-yellow-100 border border-yellow-300 p-2 rounded">
+                      Este producto no tiene subcategoría asignada. Seleccioná una antes de guardar.
+                    </div>
+                  )}
+                  <div className="relative">
+                    <select
+                      name="subcategory"
+                      value={selectedSubcategory || ""}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        setSelectedSubcategory(selectedId);
+                        const selected = subcategories.find((s) => s.id === selectedId);
+                        if (selected) {
+                          setFormData((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  subcategory: {
+                                    id: selected.id,
+                                    name:
+                                      typeof selected.name === "string"
+                                        ? selected.name
+                                        : selected.name?.es || selected.name?.en || "",
+                                    categoryId: selected.categoryId,
+                                  },
+                                }
+                              : prev
+                          );
+                        }
+                      }}
+                      className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+                      required
+                    >
+                      <option value="">Seleccionar subcategoría</option>
+                      {selectedSubcategory && (
+                        <option value={selectedSubcategory}>
+                          {
+                            (() => {
+                              const selected = subcategories.find(s => s.id === selectedSubcategory);
+                              if (!selected) return "Subcategoría";
+                              const name = selected.name;
+                              return typeof name === "string" ? name : name?.es || name?.en || "Subcategoría";
+                            })()
+                          }
+                        </option>
+                      )}
+                      {subcategories
+                        .filter((sub) =>
+                          sub.categoryId === selectedCategory &&
+                          sub.id !== selectedSubcategory // evitar duplicar la que ya mostramos arriba
+                        )
+                        .map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            {typeof sub.name === "string" ? sub.name : sub.name?.es || sub.name?.en}
+                          </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                      <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 3a1 1 0 01.707.293l4 4a1 1 0 01-1.414 1.414L10 5.414 6.707 8.707a1 1 0 01-1.414-1.414l4-4A1 1 0 0110 3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Precio USD</label>
+                  <input
+                    type="number"
+                    value={formData.priceUSD || 0}
+                    disabled
+                    onChange={(e) => handleChange("priceUSD", parseFloat(e.target.value))}
+                    className="remove-arrows shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                {/* Precio UYU eliminado */}
               </div>
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setSelectedSubcategory("");
-                    setSelectedTeam("");
-                  }}
-                  className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                  required
-                >
-                  <option value="">Seleccionar Categoría</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subcategoría</label>
-                <select
-                  value={selectedSubcategory}
-                  onChange={(e) => {
-                    setSelectedSubcategory(e.target.value);
-                    setSelectedTeam("");
-                  }}
-                  className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                  required
-                >
-                  <option value="">Seleccionar Subcategoría</option>
-                  {subcategories
-                    .filter((sub) => sub.categoryId === selectedCategory)
-                    .map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {typeof sub.name === "string"
-                          ? sub.name
-                          : typeof sub.name === "object" && sub.name !== null && "en" in sub.name && "es" in sub.name
-                          ? (sub.name as { en?: string; es?: string }).en ?? (sub.name as { en?: string; es?: string }).es ?? ""
-                          : ""}
-                      </option>
-                    ))}
-                </select>
-              </div>
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Precio USD</label>
-                <input
-                  type="number"
-                  value={formData.priceUSD || 0}
-                  onChange={(e) => handleChange("priceUSD", parseFloat(e.target.value))}
-                  className="remove-arrows shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
-                  min="0"
-                  step="0.01"
-                  required
-                />
-              </div>
-              {/* Precio UYU eliminado */}
             </div>
 
-
-
             {/* Descripción */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (EN)</label>
-                <TiptapEditor content={descriptionEN} onChange={setDescriptionEN} withDefaultStyles={true} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (ES)</label>
-                <TiptapEditor content={descriptionES} onChange={setDescriptionES} withDefaultStyles={true} />
+            <div className="pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Descripción (EN)</label>
+                  <TiptapEditor content={descriptionEN} onChange={setDescriptionEN} withDefaultStyles={true} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Descripción (ES)</label>
+                  <TiptapEditor content={descriptionES} onChange={setDescriptionES} withDefaultStyles={true} />
+                </div>
               </div>
             </div>
 
             {/* Variantes */}
-<div className="mt-6">
-  <label className="block font-semibold mb-2">Variantes del producto</label>
-  {variants.map((variant, vIndex) => (
-    <div key={vIndex} className="mb-4 border p-3 rounded-md bg-gray-50">
-      <div className="flex gap-4 mb-2">
-        <input
-          type="text"
-          className="w-1/2 border p-2"
-          placeholder="Nombre en español (Ej: Tamaño)"
-          value={variant.label.es}
-          onChange={(e) => {
-            const updated = [...variants];
-            updated[vIndex].label.es = e.target.value;
-            setVariants(updated);
-          }}
-        />
-        <input
-          type="text"
-          className="w-1/2 border p-2"
-          placeholder="Nombre en inglés (Ej: Size)"
-          value={variant.label.en}
-          onChange={(e) => {
-            const updated = [...variants];
-            updated[vIndex].label.en = e.target.value;
-            setVariants(updated);
-          }}
-        />
-      </div>
-      {variant.options.map((option, oIndex) => (
-        <div key={oIndex} className="grid grid-cols-3 gap-2 mb-1 items-end">
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Valor</label>
-            <input
-              type="text"
-              className="border p-2 w-full"
-              placeholder="Ej: 60 cápsulas"
-              value={option.value}
-              onChange={(e) => {
-                const updated = [...variants];
-                updated[vIndex].options[oIndex].value = e.target.value;
-                setVariants(updated);
-              }}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Precio USD</label>
-            <input
-              type="number"
-              step="0.01"
-              min={0}
-              className="border p-2 w-full"
-              placeholder="Ej: 19.99"
-              value={option.priceUSD}
-              onChange={(e) => {
-                const updated = [...variants];
-                updated[vIndex].options[oIndex].priceUSD = parseFloat(e.target.value);
-                setVariants(updated);
-              }}
-            />
-          </div>
-          <div className="flex gap-1 items-end">
-            <div className="w-full">
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Stock</label>
-              <input
-                type="number"
-                min={0}
-                className="border p-2 w-full"
-                placeholder="Ej: 10"
-                value={option.stock || 0}
-                onChange={(e) => {
-                  const updated = [...variants];
-                  updated[vIndex].options[oIndex].stock = parseInt(e.target.value);
-                  setVariants(updated);
+            <div className="bg-gray-50 p-4 rounded-md shadow-inner mt-6">
+              <label className="block font-semibold tracking-wide text-gray-800 mb-2">Variantes del producto</label>
+              {variants.map((variant, vIndex) => (
+                <div key={vIndex} className="mb-4 border p-3 rounded-md bg-white">
+                  <div className="flex gap-4 mb-2">
+                    <input
+                      type="text"
+                      className="w-1/2 border-gray-300 focus:ring-black focus:border-black border p-2"
+                      placeholder="Nombre en español (Ej: Tamaño)"
+                      value={variant.label.es}
+                      onChange={(e) => {
+                        const updated = [...variants];
+                        updated[vIndex].label.es = e.target.value;
+                        setVariants(updated);
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="w-1/2 border-gray-300 focus:ring-black focus:border-black border p-2"
+                      placeholder="Nombre en inglés (Ej: Size)"
+                      value={variant.label.en}
+                      onChange={(e) => {
+                        const updated = [...variants];
+                        updated[vIndex].label.en = e.target.value;
+                        setVariants(updated);
+                      }}
+                    />
+                  </div>
+                  {variant.options.map((option, oIndex) => (
+                    <div key={oIndex} className="grid grid-cols-3 gap-2 mb-1 items-end">
+                      <div>
+                        <label className="block text-xs font-semibold tracking-wide text-gray-800 mb-1">Valor</label>
+                        <input
+                          type="text"
+                          className="border-gray-300 focus:ring-black focus:border-black border p-2 w-full"
+                          placeholder="Ej: 60 cápsulas"
+                          value={option.value}
+                          onChange={(e) => {
+                            const updated = [...variants];
+                            updated[vIndex].options[oIndex].value = e.target.value;
+                            setVariants(updated);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold tracking-wide text-gray-800 mb-1">Precio USD</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          className="border-gray-300 focus:ring-black focus:border-black border p-2 w-full"
+                          placeholder="Ej: 19.99"
+                          value={option.priceUSD}
+                          onChange={(e) => {
+                            const updated = [...variants];
+                            updated[vIndex].options[oIndex].priceUSD = parseFloat(e.target.value);
+                            setVariants(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="flex gap-1 items-end">
+                        <div className="w-full">
+                          <label className="block text-xs font-semibold tracking-wide text-gray-800 mb-1">Stock</label>
+                          <input
+                            type="number"
+                            min={0}
+                            className="border-gray-300 focus:ring-black focus:border-black border p-2 w-full"
+                            placeholder="Ej: 10"
+                            value={option.stock || 0}
+                            onChange={(e) => {
+                              const updated = [...variants];
+                              updated[vIndex].options[oIndex].stock = parseInt(e.target.value);
+                              setVariants(updated);
+                            }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...variants];
+                            updated[vIndex].options = updated[vIndex].options.filter((_, i) => i !== oIndex);
+                            setVariants(updated);
+                          }}
+                          className="ml-1 px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="text-blue-600 text-sm mt-2"
+                    onClick={() => {
+                      const updated = [...variants];
+                      updated[vIndex].options.push({ value: "", priceUSD: 0 });
+                      setVariants(updated);
+                    }}
+                  >
+                    + Agregar opción
+                  </button>
+                  {/* Eliminar variante */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newVariants = variants.filter((_, i) => i !== vIndex);
+                      setVariants(newVariants);
+                    }}
+                    className="bg-red-500 text-white px-2 py-1 rounded mt-2 ml-2"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="text-blue-600 mt-2"
+                onClick={() => {
+                  setVariants([...variants, { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0 }] }]);
                 }}
-              />
+              >
+                + Agregar variante
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const updated = [...variants];
-                updated[vIndex].options = updated[vIndex].options.filter((_, i) => i !== oIndex);
-                setVariants(updated);
-              }}
-              className="ml-1 px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      ))}
-      <button
-        type="button"
-        className="text-blue-600 text-sm mt-2"
-        onClick={() => {
-          const updated = [...variants];
-          updated[vIndex].options.push({ value: "", priceUSD: 0 });
-          setVariants(updated);
-        }}
-      >
-        + Agregar opción
-      </button>
-      {/* Eliminar variante */}
-      <button
-        type="button"
-        onClick={() => {
-          const newVariants = variants.filter((_, i) => i !== vIndex);
-          setVariants(newVariants);
-        }}
-        className="bg-red-500 text-white px-2 py-1 rounded mt-2 ml-2"
-      >
-        Eliminar
-      </button>
-    </div>
-  ))}
-  <button
-    type="button"
-    className="text-blue-600 mt-2"
-    onClick={() => {
-      setVariants([...variants, { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0 }] }]);
-    }}
-  >
-    + Agregar variante
-  </button>
-</div>
 
             {/* Imágenes */}
-            <div className="space-y-4">
-              <label className="flex justify-between items-center">
-                Imágenes
-                <span className="text-gray-400 text-sm ml-2">(arrastrá para ordenar)</span>
-              </label>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext
-                  items={images.filter((img): img is string => img !== null)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {images
-                      .filter((img): img is string => img !== null)
-                      .map((url, index) => (
-                        <SortableImageItem
-                          key={url}
-                          id={url}
-                          url={url}
-                          onRemove={() => removeImage(index)}
-                          onMoveLeft={() => moveImageLeft(index)}
-                          onMoveRight={() => moveImageRight(index)}
-                        />
-                      ))}
+            <div className="bg-gray-50 p-4 rounded-md shadow-inner mt-6">
+              <label className="block text-sm font-semibold tracking-wide text-gray-800 mb-2">Imágenes</label>
+              <ReactSortable<ImageItem> list={images} setList={(newList) => setImages(newList)} animation={150} className="flex flex-wrap gap-2">
+                {images.map((item, index) => (
+                  <div key={item.id} className="relative w-24 h-24 border rounded overflow-hidden">
+                    <img src={item.url} alt={`imagen-${index}`} className="object-cover w-full h-full" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-0 right-0 bg-red-600 text-white rounded-bl px-1 text-xs"
+                    >
+                      ✕
+                    </button>
                   </div>
-                </SortableContext>
-              </DndContext>
+                ))}
+              </ReactSortable>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Agregar nueva imagen</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleImageUpload(file).then((url) => {
+                        if (url) setImages((prev) => [...prev, { id: `${Date.now()}`, url }]);
+                      });
+                    }
+                  }}
+                  className="text-sm"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -621,14 +793,14 @@ return (
             type="button"
             onClick={handleSaveProduct}
             disabled={saving}
-            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-black text-base font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-400"
+            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-black text-white hover:bg-gray-900 text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-400"
           >
             {saving ? "Guardando..." : "Guardar Cambios"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-100 text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
           >
             Cancelar
           </button>
@@ -638,3 +810,4 @@ return (
   </div>
 );
 }
+import { handleImageUpload } from "../../utils/handleImageUpload";

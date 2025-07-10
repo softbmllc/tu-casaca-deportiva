@@ -1,3 +1,5 @@
+import { db } from "../firebase"; // Asegurate de que este import exista en el archivo final
+import { collection, doc, setDoc } from "firebase/firestore"; // También al comienzo si aún no están
 //src/utils/cartUtils.ts
 import { CartItem } from "../data/types";
 
@@ -79,4 +81,19 @@ export function validateForm(
   }
 
   return { isValid, errors };
+}
+
+export async function saveCartToFirebase(email: string, cartItems: CartItem[]): Promise<void> {
+  if (!email || !Array.isArray(cartItems)) {
+    console.error("❌ No se pudo guardar el carrito: email o cartItems inválidos.");
+    return;
+  }
+
+  try {
+    const cartRef = doc(collection(db, "carts"), email);
+    await setDoc(cartRef, { cartItems, updatedAt: new Date().toISOString() });
+    console.log("✅ Carrito guardado en Firestore para:", email);
+  } catch (error) {
+    console.error("❌ Error al guardar el carrito en Firestore:", error);
+  }
 }

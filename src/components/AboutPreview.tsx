@@ -1,3 +1,5 @@
+// src/components/AboutPreview.tsx
+
 import { useTranslation } from 'react-i18next';
 
 export default function AboutPreview() {

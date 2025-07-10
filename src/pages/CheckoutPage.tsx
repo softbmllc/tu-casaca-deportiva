@@ -8,9 +8,13 @@ import ShippingInfo from '../components/checkout/ShippingInfo';
 import PaymentSection from '../components/checkout/PaymentSection';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../utils/orderUtils';
+import { saveCartToFirebase } from '../utils/cartUtils';
+import { useAuth } from '../context/AuthContext';
 
 export default function CheckoutPage() {
   const { cartItems, shippingInfo } = useCart();
+  const { user } = useAuth();
+  const email = user?.email || '';
   console.log("📦 Datos recibidos en CheckoutPage:", shippingInfo);
 
   const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY as string);
@@ -64,6 +68,19 @@ export default function CheckoutPage() {
               const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY as string);
               if (!stripe) {
                 console.error("Stripe no se pudo inicializar");
+                return;
+              }
+
+              if (!email || cartItems.length === 0) {
+                console.error("❌ Email o carrito vacío al intentar guardar en Firebase.");
+                return;
+              }
+
+              try {
+                await saveCartToFirebase(email, cartItems);
+                console.log("✅ Carrito guardado en Firebase antes del checkout.");
+              } catch (error) {
+                console.error("❌ Error al guardar carrito en Firebase:", error);
                 return;
               }
 

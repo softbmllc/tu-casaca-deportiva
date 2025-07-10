@@ -25,7 +25,7 @@ const saveOrder = async (req: Request, res: Response) => {
     const orderRef = db.collection("orders").doc();
     await orderRef.set(orderData);
 
-    res.status(200).json({ message: "Order saved", orderId: orderRef.id });
+    return res.status(200).json({ success: true, message: "Order saved", orderId: orderRef.id });
   } catch (error: any) {
     console.error("Error saving order:", error);
     res.status(500).json({ error: error.message });

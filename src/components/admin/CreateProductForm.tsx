@@ -124,7 +124,7 @@ const [formData, setFormData] = useState({
   name: "",
   title: "",
   category: "",
-  subCategory: "",
+  subcategory: "",
   team: "",
   priceUSD: 0,
   images: [],
@@ -161,7 +161,7 @@ const fileInputRef = useRef<HTMLInputElement>(null);
 const [selectedCategory, setSelectedCategory] = useState("");
 const [selectedSubcategory, setSelectedSubcategory] = useState("");
 const [selectedTeam, setSelectedTeam] = useState("");
-// Extensiones locales para permitir name multilingüe en category y subCategory
+// Extensiones locales para permitir name multilingüe en category y subcategory
 type MultilingualName = string | { es?: string; en?: string };
 
 interface LocalCategory {
@@ -169,14 +169,14 @@ interface LocalCategory {
   name: MultilingualName;
 }
 
-interface LocalSubCategory {
+interface LocalSubcategory {
   id: string;
   name: MultilingualName;
 }
 
-interface LocalProduct extends Omit<Product, "category" | "subCategory"> {
+interface LocalProduct extends Omit<Product, "category" | "subcategory"> {
   category: LocalCategory;
-  subCategory: LocalSubCategory;
+  subcategory: LocalSubcategory;
 }
 
 const [product, setProduct] = useState<Partial<LocalProduct>>({});
@@ -359,7 +359,7 @@ useEffect(() => {
       const categoryName = typeof categoryRawName === "string" ? categoryRawName : (categoryRawName[language] || categoryRawName.es || "");
       const subcategoryRawName = subcategories.find((sub) => sub.id === selectedSubcategory)?.name || "";
       const subcategoryName = typeof subcategoryRawName === "string" ? subcategoryRawName : (subcategoryRawName[language] || subcategoryRawName.es || "");
-      // Cambiado: Guardar los campos title, titleEn, description, descriptionEn como strings separados
+      // Guardar los campos title, titleEn, description, descriptionEn como strings separados
       const newProduct: Partial<Product> = {
         title: {
           es: formData.title.trim() || titleEn.trim(),
@@ -371,7 +371,16 @@ useEffect(() => {
         },
         slug: slug,
         category: { id: selectedCategory, name: categoryName },
-        subcategory: { id: selectedSubcategory, name: subcategoryName },
+        subcategory: selectedSubcategory
+          ? {
+              id: selectedSubcategory,
+              name:
+                typeof subcategories.find((sub) => sub.id === selectedSubcategory)?.name === "string"
+                  ? subcategories.find((sub) => sub.id === selectedSubcategory)?.name as string
+                  : (subcategories.find((sub) => sub.id === selectedSubcategory)?.name as { es?: string })?.es || "",
+              categoryId: selectedCategory,
+            }
+          : { id: "", name: "", categoryId: selectedCategory },
         priceUSD: data.priceUSD,
         defaultDescriptionType: data.defaultDescriptionType || "none",
         extraDescriptionTop: data.extraDescriptionTop || "",
@@ -382,7 +391,10 @@ useEffect(() => {
         allowCustomization: data.customizable,
         customName: "",
         customNumber: "",
-        variants: variants,
+        variants: variants.map((variant) => ({
+          ...variant,
+          title: variant.label,
+        })),
         sku: formData.sku || "",
         stockTotal: variants.reduce(
           (total, variant) =>
@@ -514,7 +526,7 @@ useEffect(() => {
       const value = e.target.value;
       setSelectedSubcategory(value);
       const subcategoryName = subcategories.find((sub) => sub.id === value)?.name || "";
-      setProduct((prev) => ({ ...prev, subCategory: { id: value, name: subcategoryName } }));
+      setProduct((prev) => ({ ...prev, subcategory: { id: value, name: subcategoryName } }));
     }}
     disabled={!selectedCategory}
   >

@@ -122,7 +122,7 @@
   }
 ,
   "highlights": {
-    "title": "Bienestar en acción",
+    "title": "Ciencia, nutrición y resultados",
     "subtitle": "Descubrí cómo nuestros suplementos mejoran tu salud cada día."
   },
   "about": {
@@ -133,7 +133,8 @@
     "address": "20200 NW 2nd Ave, STE 108\nMiami Gardens, FL 33169, USA",
     "emailLabel": "Email de contacto",
     "email": "info@getbionova.com",
-    "cta": "Conocé nuestros productos",
+    "cta": "Descubrí quiénes somos",
+    "cta_shop": "Ir a la tienda",
     "subtitle": "NUESTRO COMPROMISO",
     "headline": "Ciencia, naturaleza y bienestar en cada fórmula",
     "preview": "En Bionova te acercamos suplementos naturales de alta calidad, cuidadosamente seleccionados de marcas líderes como Fuxion, Pure Encapsulations y Double Wood. Combinamos evidencia científica con el poder de la naturaleza para apoyar tu salud de forma integral y confiable."
@@ -142,5 +143,27 @@
     "title": "¿Necesitás ayuda? Estamos para vos.",
     "description": "Podés escribirnos en cualquier momento a nuestro correo electrónico y te responderemos a la brevedad. Nuestro equipo está basado en Miami y te asistirá en inglés o español, según prefieras.",
     "cta": "Escribinos por email"
+  }
+  ,
+  "form": {
+    "fullName": "Nombre completo",
+    "address": "Dirección",
+    "address2": "Apto, unidad, edificio, piso (opcional)",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "city": "Ciudad",
+    "state": "Estado",
+    "zip": "Código ZIP",
+    "registerMe": "Registrarme",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña"
+  }
+  ,
+  "cart": {
+    "title": "Tu carrito",
+    "summary": "Resumen del pedido",
+    "quantity": "Cantidad",
+    "total": "Total",
+    "checkout": "Proceder al pago"
   }
 }

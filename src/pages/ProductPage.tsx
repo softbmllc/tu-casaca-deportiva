@@ -190,7 +190,7 @@ export default function ProductPage() {
             </h1>
             <div className="mt-2 sm:mt-4 mb-6">
               <div className="text-4xl font-extrabold text-black">
-                US$ {(selectedOption?.priceUSD ?? product.priceUSD).toFixed(2)}
+                US$ {(selectedOption?.priceUSD ?? product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD).toFixed(2)}
               </div>
             </div>
             {product.subtitle && <p className="text-gray-600 mb-4">{product.subtitle}</p>}
@@ -248,16 +248,7 @@ export default function ProductPage() {
 
             <hr className="my-6 border-gray-200" />
 
-            {/* Descripción del producto */}
-            {productDescription && (
-              <div
-                className="prose prose-blue prose-lg max-w-none mb-8 text-gray-800 [&>p]:mb-4 [&>h2]:mt-8 [&>ul]:mb-4 [&>ul>li]:mb-2"
-                dangerouslySetInnerHTML={{ __html: productDescription }}
-              />
-            )}
-
-            {/* Botones */}
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <div className="grid md:grid-cols-2 gap-6 mt-6 mb-8">
               <button
                 disabled={isOutOfStock}
                 onClick={() => {
@@ -325,9 +316,16 @@ export default function ProductPage() {
                   </>
                 )}
               </button>
-
-              {/* (El botón de ver carrito ya no se muestra aquí, está arriba si corresponde) */}
             </div>
+
+            {/* Descripción del producto */}
+            {productDescription && (
+              <div
+                className="prose prose-blue prose-lg max-w-none mb-8 text-gray-800 [&>p]:mb-4 [&>h2]:mt-8 [&>ul]:mb-4 [&>ul>li]:mb-2"
+                dangerouslySetInnerHTML={{ __html: productDescription }}
+              />
+            )}
+
           </div>
         </div>
 

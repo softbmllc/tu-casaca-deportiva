@@ -1,4 +1,5 @@
 // src/components/Layout.tsx
+
 import { Link, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { ShoppingCart, Rocket } from "lucide-react";
@@ -60,8 +61,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           {isMenuOpen && (
-            <div className="sm:hidden px-4 pb-2">
-              <nav className="flex flex-col gap-2 text-sm">
+            <div className="sm:hidden px-4 pb-2 flex justify-center">
+              <nav className="flex flex-col gap-2 text-sm items-center text-center">
                 <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-[#004AAD] font-semibold">
                   {t("nav.shop", "Tienda")}
                 </Link>

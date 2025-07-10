@@ -55,8 +55,8 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
   return (
     <div className="relative">
       {title && (
-        <div className="container px-4 mx-auto flex justify-between items-center mt-12 md:mt-32 border-t pt-12">
-          <h2 className="text-2xl sm:text-5xl font-semibold leading-tight text-left text-neutral-900 tracking-tight whitespace-normal mt-12 md:mt-20 mb-6 sm:mb-10">
+        <div className="container px-4 mx-auto flex justify-between items-center mt-4 md:mt-8 border-t pt-4 mb-6 md:mb-10">
+          <h2 className="text-xl sm:text-3xl font-medium leading-snug text-left text-neutral-900 whitespace-normal mt-2 mb-4 sm:mt-4 sm:mb-6">
             {title}
           </h2>
           <div className="hidden sm:flex gap-2">
@@ -80,7 +80,7 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
 
       <div
         ref={scrollRef}
-        className="flex gap-5 overflow-x-auto pb-2 scroll-smooth hide-scrollbar snap-x snap-mandatory"
+        className="flex gap-5 overflow-x-auto px-4 pb-2 pt-2 scroll-smooth hide-scrollbar snap-x snap-mandatory"
       >
         {filtered.map((product) => {
           const translatedTitle = typeof product.title === 'object' && product.title !== null
@@ -92,7 +92,7 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
           const slug = product.slug;
 
           return (
-            <div key={product.id} className="flex-shrink-0 snap-start scroll-ml-4 w-[270px]">
+            <div key={product.id} className="flex-shrink-0 snap-start scroll-ml-4 w-[220px] sm:w-[270px]">
               <ProductCard
                 product={{
                   ...product,

@@ -3,7 +3,8 @@
 export async function createPaymentIntent(amount: number) {
   try {
     console.log("🧾 Datos que se mandan a create-payment-intent:", { amount });
-    const res = await fetch('https://bionova-five.vercel.app/api/create-payment-intent', {
+    const baseURL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const res = await fetch(`${baseURL}/api/create-payment-intent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

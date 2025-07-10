@@ -1,4 +1,5 @@
-//sc/components/CartNavbar.tsx
+//src/components/CartNavbar.tsx
+
 import { Link } from "react-router-dom";
 import { FaGlobe } from "react-icons/fa";
 import i18n from "..";
@@ -14,7 +15,7 @@ export default function CartNavbar() {
     <header className="bg-white/50 backdrop-blur-md text-black fixed top-0 w-full z-50 shadow-sm py-0.5">
       {/* Mobile */}
       <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
-        <Link to="/" className="flex items-center">
+        <Link to="/shop" className="flex items-center">
           <img
             src={logo}
             alt="Bionova"
@@ -42,7 +43,7 @@ export default function CartNavbar() {
       {isMenuOpen && (
         <div className="sm:hidden px-4 pb-2">
           <nav className="flex flex-col gap-2 text-sm items-center text-center">
-            <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-[#004AAD] font-semibold">
+            <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-[#004AAD] font-semibold">
               {t("nav.shop", "Tienda")}
             </Link>
           </nav>
@@ -51,7 +52,7 @@ export default function CartNavbar() {
 
       {/* Desktop */}
       <div className="hidden sm:flex max-w-7xl mx-auto px-4 py-1 items-center justify-between">
-        <Link to="/" className="flex items-center">
+        <Link to="/shop" className="flex items-center">
           <img
             src={logo}
             alt="Bionova"
@@ -59,7 +60,7 @@ export default function CartNavbar() {
           />
         </Link>
         <nav className="flex items-center gap-6 text-base">
-          <Link to="/" className="text-[#004AAD] hover:text-[#003B85] font-semibold">{t("nav.shop", "Tienda")}</Link>
+          <Link to="/shop" className="text-[#004AAD] hover:text-[#003B85] font-semibold">{t("nav.shop", "Tienda")}</Link>
         </nav>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">

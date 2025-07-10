@@ -13,16 +13,12 @@ export default function ProductPageNavbar() {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
 
   return (
     <header className="bg-white/50 backdrop-blur-md text-black fixed top-0 w-full z-50 shadow-sm py-0.5">
       {/* Mobile */}
       <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowSearch(!showSearch)}>
-            <FaSearch className="text-[#004AAD] w-5 h-5" />
-          </button>
           <Link to="/" className="flex items-center">
             <img
               src={logo}
@@ -56,17 +52,7 @@ export default function ProductPageNavbar() {
         </div>
       </div>
 
-      {/* Search Input in Mobile */}
-      {showSearch && (
-        <div className="sm:hidden px-4 pb-1">
-          <input
-            type="text"
-            placeholder={t("search.placeholder", "Buscar productos...")}
-            className="w-full border border-[#004AAD] rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#004AAD]"
-            autoFocus
-          />
-        </div>
-      )}
+
 
       {/* Mobile Dropdown Menu */}
       {isMenuOpen && (

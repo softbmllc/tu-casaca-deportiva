@@ -16,7 +16,7 @@ export type Product = {
   extraDescription?: string;
   priceUSD: number;
   category: { id: string; name: string };
-  subcategory: { id: string; name: string };
+  subcategory: Subcategory;
   team: { id: string; name: string };
   league: string;
   images?: string[];
@@ -56,7 +56,7 @@ export interface League {
 export interface Team {
   id: string;
   name: string;
-  subCategoryId: string;
+  subcategoryId: string;
 }
 
 export type CartItem = {
@@ -80,7 +80,14 @@ export type CartItem = {
   variantId?: string;
   variant?: {
     id?: string;
-    label?: string;
+    label?: {
+      es: string;
+      en: string;
+    };
+  };
+  variantTitle?: {
+    es: string;
+    en: string;
   };
 };
 

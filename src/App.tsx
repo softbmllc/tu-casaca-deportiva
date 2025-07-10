@@ -23,6 +23,10 @@ import AdminCategoryManager from "./components/admin/AdminCategoryManager"; // �
 import OrderAdmin from "./components/admin/OrderAdmin";
 import ClientDetail from "./components/admin/ClientDetail";
 import Shop from "./pages/Shop";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
 
 function ClientDetailWrapper() {
   const { id } = useParams();
@@ -77,7 +81,14 @@ export default function App() {
             <Route path="/admin/*" element={<RequireAuth><AdminPanel /></RequireAuth>} />
 
             {/* ✅ Ruta pública sin layout */}
-            <Route path="/carrito" element={<CartPage />} />
+            <Route
+              path="/carrito"
+              element={
+                <Elements stripe={stripePromise}>
+                  <CartPage />
+                </Elements>
+              }
+            />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/success" element={<SuccessPage />} />
 

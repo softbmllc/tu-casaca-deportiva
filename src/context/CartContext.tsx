@@ -175,15 +175,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     const title =
-      typeof newItem.title === "string"
+      typeof newItem.title === "object"
         ? newItem.title
-        : typeof newItem.title === "object" && newItem.title !== null
-        ? (newItem.title["en"] ?? Object.values(newItem.title)[0] ?? "")
-        : "";
+        : {
+            es: newItem.title || "",
+            en: newItem.title || "",
+          };
+
+    const variant =
+      newItem.variant && typeof newItem.variant.label === "object"
+        ? newItem.variant
+        : typeof newItem.variantTitle === "object"
+        ? {
+            label: {
+              es: newItem.variantTitle.es || newItem.variantTitle.en || "",
+              en: newItem.variantTitle.en || newItem.variantTitle.es || "",
+            },
+          }
+        : typeof newItem.variantTitle === "string"
+        ? {
+            label: {
+              es: newItem.variantTitle,
+              en: newItem.variantTitle,
+            },
+          }
+        : undefined;
 
     const itemToAdd: CartItem = {
       ...newItem,
-      title: newItem.title as { en: string; es: string }, // aseguramos el tipo original
+      title,
+      variant: variant as CartItem["variant"],
       quantity: newItem.quantity || 1,
     };
 

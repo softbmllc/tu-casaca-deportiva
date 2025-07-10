@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 
 import { Product, League, Team, Category, ClientWithId } from "./data/types";
+import type { CartItem } from "./data/types";
 
 // 🔥 Función para traer un producto específico por ID
 export async function fetchProductById(id: string): Promise<Product | null> {
@@ -76,7 +77,7 @@ export async function fetchProducts(): Promise<Product[]> {
       priceUSD: data.priceUSD || 0,
       league: data.league || "Fútbol",
       category: data.category || { id: "", name: "" },
-      subcategory: data.subCategory || { id: "", name: "" },
+      subcategory: data.subcategory || { id: "", name: "" },
       team: data.team || { id: "", name: "" },
       subtitle: data.subtitle || "",
       description: data.description || "",
@@ -148,7 +149,7 @@ function mapProductData(id: string, data: any): Product {
     priceUSD: data.priceUSD || 0,
     league: data.league || "Fútbol",
     category: data.category || { id: "", name: "" },
-    subcategory: data.subCategory || { id: "", name: "" },
+    subcategory: data.subcategory || { id: "", name: "" },
     team: data.team || { id: "", name: "" },
     subtitle: data.subtitle || "",
     description: data.description || "",
@@ -193,7 +194,30 @@ export async function updateProduct(productId: string, updatedData: Partial<Prod
         })),
       }));
     }
-    await updateDoc(productRef, updatedData);
+    // Sanea el campo subcategory antes de guardar, asegurando estructura { id, name: string, categoryId: string }
+    let updatedProduct = { ...updatedData };
+    if (
+      updatedData.subcategory &&
+      typeof updatedData.subcategory === "object"
+    ) {
+      const selectedSubcategory = updatedData.subcategory as any;
+
+      let subcategoryName = "";
+      if (typeof selectedSubcategory.name === "string") {
+        subcategoryName = selectedSubcategory.name;
+      } else if (typeof selectedSubcategory.name === "object") {
+        subcategoryName = selectedSubcategory.name.es || selectedSubcategory.name.en || "";
+      }
+
+      updatedProduct.subcategory = {
+        id: selectedSubcategory.id,
+        name: subcategoryName,
+        categoryId: selectedSubcategory.categoryId || "",
+      };
+    }
+
+    // 🔒 Eliminamos posibles restos de campos antiguos
+    await updateDoc(productRef, updatedProduct);
     console.log("Producto actualizado:", productId);
   } catch (error) {
     console.error("Error actualizando producto:", error);
@@ -364,7 +388,7 @@ export async function importProductFromCJ(cjProductId: string) {
       slug: `${cjProductId}-${data.name.toLowerCase().replace(/\s+/g, "-")}`,
       description: data.productInfo?.description || "",
       category: { id: "", name: "Dropshipping" },
-      subCategory: { id: "", name: "CJ" },
+      subcategory: { id: "", name: "CJ" },
       active: true,
       variants: data.productVariantInfoList?.map((variant: any) => ({
         id: variant.variantSku,
@@ -445,6 +469,10 @@ export async function saveOrderToFirebase(order: {
     const ordersRef = collection(db, "orders");
     await addDoc(ordersRef, order);
     console.log("✅ Pedido guardado en Firebase:", order);
+    console.log("🧾 Detalles de la orden:", JSON.stringify(order, null, 2));
+
+    // Nueva lógica: actualizar stock usando updateStockAfterOrder
+    await updateStockAfterOrder(order.cartItems);
   } catch (error) {
     console.error("❌ Error al guardar el pedido:", error);
     throw error;
@@ -519,5 +547,214 @@ export async function fetchOrdersFromFirebase() {
   } catch (error) {
     console.error("❌ Error al traer pedidos desde Firebase:", error);
     return [];
+  }
+}
+
+// 🔥 Función para guardar el carrito en Firebase
+export async function saveCartToFirebase(email: string, items: CartItem[]): Promise<void> {
+  try {
+    const cartRef = doc(db, "carts", email);
+    await setDoc(cartRef, { items });
+    console.log("🛒 Carrito guardado en Firebase:", items);
+  } catch (error) {
+    console.error("❌ Error al guardar carrito:", error);
+    throw error;
+  }
+}
+
+// 🔥 Función para obtener el carrito de Firebase por email
+export async function getCartFromFirebase(email: string): Promise<CartItem[]> {
+  const docRef = doc(db, "carts", email);
+  const docSnap = await getDoc(docRef);
+  return docSnap.exists() ? docSnap.data().items || [] : [];
+}
+
+
+// 🔥 Función para guardar un cliente en Firebase (sin registrar Auth)
+export async function saveClientToFirebase(client: Client): Promise<void> {
+  try {
+    const dbFirestore = getFirestore();
+    const clientDocRef = firestoreDoc(dbFirestore, "clients", client.email);
+
+    const existingDoc = await firestoreGetDoc(clientDocRef);
+
+    await setDoc(clientDocRef, {
+      ...client,
+      updatedAt: new Date().toISOString(),
+      uid: existingDoc.exists() ? existingDoc.data()?.uid || "" : "",
+    });
+
+    console.log("✅ Cliente guardado correctamente en Firebase:", client.email);
+  } catch (error) {
+    console.error("❌ Error al guardar cliente en Firebase:", error);
+    throw error;
+  }
+}
+
+
+
+
+// 🔥 Función para descontar stock de una variante específica de un producto
+export async function decrementVariantStock(productId: string, variantId: string, quantity: number) {
+  try {
+    const productRef = doc(db, "products", productId);
+    const productSnap = await getDoc(productRef);
+
+    if (!productSnap.exists()) {
+      console.warn(`Producto con ID ${productId} no encontrado.`);
+      return;
+    }
+
+    const productData = productSnap.data() as Product;
+
+    if (!productData.variants) {
+      console.warn(`Producto con ID ${productId} no tiene variantes.`);
+      return;
+    }
+
+    const updatedVariants = productData.variants.map((variant) => {
+      const updatedOptions = variant.options.map((option) => {
+        if (option.variantId === variantId) {
+          const newStock = (option.stock || 0) - quantity;
+          return {
+            ...option,
+            stock: newStock < 0 ? 0 : newStock,
+          };
+        }
+        return option;
+      });
+
+      return {
+        ...variant,
+        options: updatedOptions,
+      };
+    });
+
+    await updateDoc(productRef, {
+      variants: updatedVariants,
+    });
+  } catch (error) {
+    console.error("Error al descontar stock:", error);
+  }
+}
+
+
+// 🔥 Actualiza el stock de productos después de un pedido
+async function updateStockAfterOrder(cartItems: CartItem[]) {
+  const db = getFirestore();
+  const productUpdates = new Map<string, { variantId: string; quantity: number }[]>();
+
+  for (const item of cartItems) {
+    if (!item.id || !item.variantId || !item.quantity) continue;
+
+    if (!productUpdates.has(item.id)) {
+      productUpdates.set(item.id, []);
+    }
+
+    productUpdates.get(item.id)?.push({
+      variantId: item.variantId,
+      quantity: item.quantity,
+    });
+  }
+
+  for (const [productId, updates] of productUpdates.entries()) {
+    const productRef = doc(db, "products", productId);
+    const productSnap = await getDoc(productRef);
+
+    if (!productSnap.exists()) continue;
+
+    const productData = productSnap.data() as Product;
+
+    let stockTotal = 0;
+    const updatedVariants = productData.variants?.map((variant) => {
+      const updatedOptions = variant.options.map((option) => {
+        const update = updates.find(
+          (u) => `${variant.label?.es || variant.label?.en}-${option.value}` === u.variantId
+        );
+        if (update && option.stock !== undefined) {
+          option.stock = Math.max(0, option.stock - update.quantity);
+        }
+        stockTotal += option.stock || 0;
+        return option;
+      });
+
+      return {
+        ...variant,
+        options: updatedOptions,
+      };
+    });
+
+    await updateDoc(productRef, {
+      variants: updatedVariants,
+      stockTotal,
+    });
+  }
+}
+// 🔥 Función para obtener todas las subcategorías del sistema (colección independiente)
+export const fetchAllSubcategories = async (): Promise<
+  { id: string; name: string; categoryId: string }[]
+> => {
+  try {
+    const snapshot = await getDocs(collection(db, "subcategories"));
+    const subcategories = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      const rawName = data.name;
+      const name =
+        typeof rawName === "string"
+          ? rawName
+          : typeof rawName?.es === "string"
+          ? rawName.es
+          : typeof rawName?.en === "string"
+          ? rawName.en
+          : "";
+
+      return {
+        id: doc.id,
+        name,
+        categoryId: data.categoryId || "", // Aseguramos que siempre tenga categoryId
+      };
+    });
+
+    console.log("🧩 Subcategorías obtenidas:", subcategories);
+    return subcategories;
+  } catch (error) {
+    console.error("❌ Error al obtener subcategorías:", error);
+    return [];
+  }
+};
+// 🔥 Función para registrar un usuario administrador tanto en Auth como en Firestore
+export async function registerAdminUser({
+  name,
+  email,
+  password,
+  isSuperAdmin = false,
+}: {
+  name: string;
+  email: string;
+  password: string;
+  isSuperAdmin?: boolean;
+}): Promise<void> {
+  try {
+    const auth = getAuth();
+    const dbFirestore = getFirestore();
+
+    // Crear en Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCredential.user.uid;
+
+    // Guardar en Firestore
+    const userDocRef = firestoreDoc(dbFirestore, "usuarios", email);
+    await setDoc(userDocRef, {
+      name,
+      email,
+      uid,
+      isSuperAdmin,
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log("✅ Usuario administrador creado:", email);
+  } catch (error: any) {
+    console.error("❌ Error al registrar usuario administrador:", error.message || error);
+    throw error;
   }
 }

@@ -1,6 +1,7 @@
 // src/pages/CartPage.tsx
 
 import { CartFormData } from "@/data/types";
+import EmptyCart from "@/components/cart/EmptyCart";
 import { useCart } from "../context/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, Fragment, useRef, useEffect } from "react";
@@ -25,7 +26,7 @@ import { registerClient, saveOrderToFirebase, saveCartToFirebase, saveClientToFi
 import { extractStateFromAddress, extractAddressComponents } from "@/utils/locationUtils";
 import { prepareInitialOrderData } from '../utils/orderUtils';
 import { createPaymentIntent } from '../utils/stripeUtils';
-import { calculateTotal } from '../utils/cartUtils';
+import { calculateTotal, calculateCartBreakdown } from '../utils/cartUtils';
 
 // Importá la función para buscar ciudad y estado por ZIP
 import { getCityAndStateFromZip } from "../utils/getCityAndStateFromZip";
@@ -124,87 +125,6 @@ export default function CartPage() {
     };
   };
 
-  // Función para simular un pedido (versión corregida para evitar undefined en Firebase)
-  const simularPedido = async () => {
-    try {
-      // Simulación de usuario autenticado: usá shippingInfo.email como "usuario"
-      const user = { email: shippingInfo.email };
-      if (!user || !user.email) {
-        toast.error("Debés iniciar sesión para simular el pedido.");
-        return;
-      }
-
-      // Usar los ítems del carrito y shippingInfo
-      const cartItems = items.map(item => ({
-        id: item.id,
-        nombre: typeof item.name === "string"
-          ? item.name
-          : typeof item.name === "object" && item.name !== null && "es" in item.name
-            ? (item.name as { es: string }).es
-            : "Sin nombre",
-        precio: item.priceUSD,
-        cantidad: item.quantity,
-        variantTitle: item.variantTitle || "Variante",
-        variantValue: item.size,
-        customName: item.customName || "",
-        customNumber: item.customNumber || "",
-      }));
-
-      // Calcular total
-      const calculateTotal = (cartItems: any[]) =>
-        cartItems.reduce((sum, item) => {
-          const precio = Number(item.precio) || 0;
-          const cantidad = Number(item.cantidad) || 0;
-          return sum + (precio * cantidad);
-        }, 0);
-
-      // --- Completar ciudad y estado si faltan usando el ZIP ---
-      // Creamos una copia editable de shippingInfo
-      const userData = { ...shippingInfo };
-      if (!userData.city || !userData.state) {
-        const zipData = await getCityAndStateFromZip(userData.postalCode || "");
-        if (zipData) {
-          userData.city = zipData.city || userData.city;
-          userData.state = zipData.state || userData.state;
-        }
-      }
-
-      // orderData: todos los campos definidos (vacío si falta)
-      const orderData = {
-        email: user.email,
-        cartItems,
-        total: calculateTotal(cartItems),
-        direccion: userData.address || "",
-        ciudad: userData.city || "",
-        estado: userData.state || "",
-        codigoPostal: userData.postalCode || "",
-        pais: "USA",
-        nombreCompleto: userData.name || "",
-        telefono: userData.phone || "",
-        fecha: new Date().toISOString(),
-        estadoPedido: "Simulado",
-      };
-
-      // Validación extra antes de guardar en Firestore
-      console.log("🔍 orderData completo:", JSON.stringify(orderData, null, 2));
-      const hasUndefined = Object.entries(orderData).find(([key, value]) => value === undefined);
-      if (hasUndefined) {
-        console.error("❌ Campo undefined encontrado:", hasUndefined[0], hasUndefined[1]);
-        toast.error(`Campo inválido: ${hasUndefined[0]}`);
-        return;
-      }
-
-      const orderRef = doc(collection(db, "orders"));
-      // DEBUG: Log dbEntry before sending to Firebase
-      console.log("dbEntry que se está enviando a Firebase:", orderData);
-      await setDoc(orderRef, orderData);
-
-      toast.success("Pedido simulado con éxito");
-    } catch (error) {
-      console.error("Error al guardar el pedido:", error);
-      toast.error("No se puede guardar el pedido, revisá la consola para más detalles.");
-    }
-  };
 
 
 // Utilidad para validar email con regex profesional
@@ -241,13 +161,7 @@ const isValidEmail = (email: string): boolean => {
   };
 
   console.log("🧾 items en CartPage:", items);
-  const total = (() => {
-    const sum = items.reduce((acc, item) => {
-      const price = item.priceUSD;
-      return acc + price * item.quantity;
-    }, 0);
-    return parseFloat(sum.toFixed(2));
-  })();
+  const breakdown = calculateCartBreakdown(items);
 
   const handleQuantityChange = (item: CartItem, newQty: number) => {
     if (newQty >= 1 && newQty <= 99) {
@@ -274,49 +188,9 @@ const isValidEmail = (email: string): boolean => {
             <div className="max-w-5xl mx-auto px-6 py-10">
               <h1 className="text-3xl font-bold mb-6">{t("cart.title")}</h1>
 
-              {items.length === 0 && (
-                <p className="text-sm text-center text-gray-600 mb-8">
-                  ¿Ya tenés cuenta?{" "}
-                  <span
-                    onClick={() => setShowLoginModal(true)}
-                    className="text-blue-600 underline cursor-pointer hover:text-blue-800"
-                  >
-                    Iniciar sesión
-                  </span>{" "}
-                  o{" "}
-                  <span
-                    onClick={() => setShowRegisterModal(true)}
-                    className="text-blue-600 underline cursor-pointer hover:text-blue-800"
-                  >
-                    registrarte
-                  </span>{" "}
-                  para guardar tus datos y acceder a beneficios.
-                </p>
-              )}
-
-              {items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-                  <div className="bg-white rounded-full shadow-md p-6 mb-6">
-                    <img
-                      src="/images/empty-cart-illustration.jpg"
-                      alt="Carrito vacío"
-                      className="w-24 h-24 object-contain opacity-80"
-                    />
-                  </div>
-
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">{t("cart.empty")}</h2>
-                  <p className="text-gray-500 mb-6">¡Pero no te vayas con las manos vacías!</p>
-
-                  <Link
-                    to="/"
-                    className="inline-block px-6 py-3 bg-black text-white rounded-full font-semibold hover:scale-[1.03] hover:bg-gray-900 transition-all"
-                  >
-                    Ver catálogo
-                  </Link>
-                </div>
-              ) : (
+              {items.length === 0 ? <EmptyCart /> : (
                 <>
-                  {/* resto del código si hay productos */}
+                  {/* contenido actual del carrito cuando hay productos */}
                   {/* Formulario de envío */}
                   <div className="space-y-4 mb-10">
                     {/* Fila 1: Nombre (50%) + Dirección (50%) */}
@@ -494,101 +368,113 @@ const isValidEmail = (email: string): boolean => {
                     <h2 className="text-xl font-semibold">{t("cart.summary")}</h2>
                   </div>
 
-                  <ul className="divide-y divide-gray-200 mb-6">
-                    {items.map((item, index) => {
-                      // Estandarizar title como objeto multilenguaje
-                      if (typeof item.title === "string") {
-                        item.title = { es: item.title, en: item.title };
-                      } else if (!item.title) {
-                        item.title = { es: "Sin título", en: "Untitled" };
-                      }
-                      // Estandarizar variantTitle como objeto multilenguaje
-                      if (typeof item.variantTitle === "string") {
-                        item.variantTitle = { es: item.variantTitle, en: item.variantTitle };
-                      } else if (!item.variantTitle) {
-                        item.variantTitle = { es: t("cart.variant"), en: "Variant" };
-                      }
-                      // --- Nueva lógica para título y variante ---
-                      const localizedTitle =
-                        typeof item.title === "object"
-                          ? item.title[language] || Object.values(item.title)[0]
-                          : item.title || "Sin título";
-                      const variantLabel =
-                        item.variant?.label && typeof item.variant.label === "object"
-                          ? item.variant.label[language] || Object.values(item.variant.label)[0]
-                          : item.variant?.label || null;
-                      const price = item.priceUSD;
-                      const totalItem = price * item.quantity;
-                      return (
-                        <li key={`${item.id}-${item.size}`} className="py-4 flex gap-4 items-center">
-                          <Link to={`/producto/${item.slug}`}>
-                            <img
-                              src={item.image}
-                              alt={localizedTitle}
-                              className="w-20 h-20 object-cover rounded-md border"
-                            />
-                          </Link>
-                          <div className="flex-1">
-                            <Link to={`/producto/${item.slug}`}>
-                              <p className="font-semibold text-sm mb-1 hover:underline">
-                                {localizedTitle}
-                              </p>
-                            </Link>
-                            <p className="text-sm text-gray-500 mb-1">
-                              {`US$${item.priceUSD.toFixed(2)} c/u`}
-                            </p>
-                            <div className="text-sm text-gray-500 flex flex-wrap items-center gap-3">
-                              {variantLabel && (
-                                <div>
-                                  {typeof variantLabel === "object"
-                                    ? `${variantLabel[language as keyof typeof variantLabel] || Object.values(variantLabel)[0]}: `
-                                    : `${variantLabel}: `}
-                                  <span>{item.size}</span>
+                  {/* Determinar el idioma actual para títulos tipados */}
+                  {/*
+                    currentLang se determina aquí para usarse en el mapeo de items.
+                  */}
+                  {(() => {
+                    const currentLang: 'en' | 'es' = i18n.language.startsWith('en') ? 'en' : 'es';
+                    return (
+                      <ul className="divide-y divide-gray-200 mb-6">
+                        {items.map((item, index) => {
+                          // Estandarizar title como objeto multilenguaje
+                          if (typeof item.title === "string") {
+                            item.title = { es: item.title, en: item.title };
+                          } else if (!item.title) {
+                            item.title = { es: "Sin título", en: "Untitled" };
+                          }
+                          // Estandarizar variantTitle como objeto multilenguaje
+                          if (typeof item.variantTitle === "string") {
+                            item.variantTitle = { es: item.variantTitle, en: item.variantTitle };
+                          }
+                          // --- Nueva lógica para título y variante (prioriza currentLang, luego language, luego fallback) ---
+                          const localizedTitle =
+                            typeof item.title === "object"
+                              ? item.title[currentLang] || item.title[language] || Object.values(item.title)[0]
+                              : item.title || "Sin título";
+
+                          const finalVariantLabel =
+                            item.variantTitle && typeof item.variantTitle === "object"
+                              ? item.variantTitle[currentLang] || item.variantTitle[language] || Object.values(item.variantTitle)[0]
+                              : typeof item.variantTitle === "string"
+                                ? item.variantTitle
+                                : "Variante";
+                          const price = item.priceUSD;
+                          const totalItem = price * item.quantity;
+                          return (
+                            <li key={`${item.id}-${item.size}`} className="py-4 flex gap-4 items-start sm:items-center">
+                              <Link to={`/producto/${item.slug}`}>
+                                <img
+                                  src={item.image}
+                                  alt={localizedTitle}
+                                  className="w-20 h-20 object-cover rounded-md border"
+                                />
+                              </Link>
+                              <div className="flex-1">
+                                <Link to={`/producto/${item.slug}`}>
+                                  <p className="font-semibold text-sm mb-1 hover:underline">
+                                    {localizedTitle}
+                                  </p>
+                                </Link>
+                                <p className="text-sm text-gray-500 mb-1">
+                                  {`US$${item.priceUSD.toFixed(2)} c/u`}
+                                </p>
+                                <div className="text-sm text-gray-500 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-1 sm:gap-3">
+                                  {finalVariantLabel && item.size && (
+                                    <span className="text-gray-600">
+                                      {finalVariantLabel}: <span>{item.size}</span>
+                                    </span>
+                                  )}
+                                  <span>
+                                    {t("cart.quantity")}:{" "}
+                                    <span className="inline-block border border-gray-300 px-2 py-0.5 rounded-md bg-gray-50 text-gray-800">
+                                      {item.quantity}
+                                    </span>
+                                  </span>
                                 </div>
-                              )}
-                              <span>
-                                {t("cart.quantity")}:{" "}
-                                <span className="inline-block border border-gray-300 px-2 py-0.5 rounded-md bg-gray-50 text-gray-800">
-                                  {item.quantity}
-                                </span>
-                              </span>
-                              <button
-                                onClick={() => handleRemoveItem(item)}
-                                className="ml-2 text-red-500 hover:text-red-700 transition"
-                                title={t("cart.remove")}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                            {item.customName && item.customNumber && (
-                              <p className="text-sm text-gray-500">
-                                Personalizado: {typeof item.customName === "object"
-                                  ? ((item.customName as Record<'en' | 'es', string>)?.[language] || "Sin nombre")
-                                  : item.customName} #{item.customNumber}
-                              </p>
-                            )}
-                            {/* {item.description && (
-                              <p className="text-xs text-gray-400 mt-1">
-                                {typeof item.description === "object"
-                                  ? (item.description as Record<'en' | 'es', string>)?.[language]
-                                  : item.description}
-                              </p>
-                            )} */}
-                          </div>
-                          <div className="text-right text-sm whitespace-nowrap font-semibold">
-                            <span>{`US$${totalItem.toFixed(2)}`}</span>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                                {item.customName && item.customNumber && (
+                                  <p className="text-sm text-gray-500">
+                                    Personalizado: {typeof item.customName === "object"
+                                      ? ((item.customName as Record<'en' | 'es', string>)?.[language] || "Sin nombre")
+                                      : item.customName} #{item.customNumber}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right flex flex-col justify-between items-end">
+                                <span className="text-sm font-semibold">{`US$${totalItem.toFixed(2)}`}</span>
+                                <button
+                                  onClick={() => handleRemoveItem(item)}
+                                  className="mt-2 text-red-500 hover:text-red-700 transition"
+                                  title={t("cart.remove")}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    );
+                  })()}
 
                   <div className="bg-gray-100 p-6 rounded-2xl shadow-inner mt-10">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-lg font-medium text-gray-700">{t("cart.total")}</span>
-                      <span className="text-2xl font-bold text-gray-900">
-                        <span>{`US$${total.toFixed(2)}`}</span>
-                      </span>
+                    <div className="space-y-2 text-gray-700 text-sm">
+                      <div className="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>{`US$${breakdown.subtotal.toFixed(2)}`}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{t("cart.taxes")}</span>
+                        <span>{`US$${breakdown.taxes.toFixed(2)}`}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{t("cart.shipping")}</span>
+                        <span>{`US$${breakdown.shipping.toFixed(2)}`}</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-semibold border-t pt-2">
+                        <span>Total</span>
+                        <span>{`US$${breakdown.total.toFixed(2)}`}</span>
+                      </div>
                     </div>
 
                     {/* Botón para ir al checkout */}
@@ -607,7 +493,7 @@ const isValidEmail = (email: string): boolean => {
                         const registrarse = !!shippingInfo.wantsToRegister;
 
                         if (!nombre || !email || !phone || !address || !city || !state || !zip) {
-                          toast.error("Completá todos los campos obligatorios.");
+                          toast.error(t("cart.requiredFields"));
                           return;
                         }
 
@@ -644,6 +530,8 @@ const isValidEmail = (email: string): boolean => {
                         }
                         // Guardá en localStorage antes de redirigir
                         localStorage.setItem("clientData", JSON.stringify(clientData));
+                        // Guardar el total en localStorage para el checkout
+                        localStorage.setItem("checkoutTotal", breakdown.total.toFixed(2));
                         navigate('/checkout');
                       }}
                     >
@@ -654,8 +542,10 @@ const isValidEmail = (email: string): boolean => {
                   {items.length > 0 && (
                     <div className="mt-10 bg-white">
                       <div className="pb-20">
+                        <h3 className="text-xl font-semibold">
+                          {t("cart.recommendationsTitle")}
+                        </h3>
                         <RelatedProducts
-                          title="También te podría gustar"
                           excludeSlugs={items.map((i) => i.slug)}
                           categoryName="Fútbol"
                         />

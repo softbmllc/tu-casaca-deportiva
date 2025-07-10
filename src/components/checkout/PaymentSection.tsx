@@ -126,7 +126,7 @@ const CheckoutForm = () => {
       <button
         type="submit"
         disabled={!stripe}
-        className="w-full bg-black text-white py-2 rounded hover:bg-gray-900"
+        className="w-full bg-[#3B82F6] text-white py-2 rounded-md hover:scale-105 hover:shadow-md transition-all duration-200 focus:ring-2 focus:ring-[#3B82F6] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Pagar
       </button>
@@ -152,6 +152,7 @@ const PaymentSection: React.FC = () => {
         items: cartItems,
         clientEmail: email,
         shippingInfo: shippingData,
+        amount: Math.round(parseFloat(localStorage.getItem("checkoutTotal") || "0") * 100)
       }),
     })
       .then(res => res.json())
@@ -173,8 +174,11 @@ const PaymentSection: React.FC = () => {
   }
 
   return (
-    <div className="mt-6 bg-white shadow-md rounded p-4 border border-gray-200">
-      <h2 className="text-lg font-semibold mb-4">Pago Seguro</h2>
+    <div className="mt-6 bg-white shadow-lg rounded-lg border border-gray-200 px-8 py-6 w-full max-w-3xl mx-auto transition-all duration-300">
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 mb-1">
+        Pago Seguro
+      </h2>
+      <p className="text-sm text-gray-500 mb-4">Usá tu tarjeta con seguridad</p>
       <Elements stripe={stripePromise} options={options}>
         <CheckoutForm />
       </Elements>

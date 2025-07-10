@@ -1,3 +1,5 @@
+// src/components/AddToCartButton.tsx
+
 import React, { useState } from "react";
 import { FiShoppingCart } from "react-icons/fi";
 

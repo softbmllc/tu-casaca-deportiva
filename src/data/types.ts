@@ -179,6 +179,12 @@ export interface Order {
   createdAt?: string;
   estado: 'En proceso' | 'Confirmado' | 'Cancelado' | 'Entregado';
   status?: string;
+  breakdown?: {
+    subtotal: number;
+    taxes: number;
+    shipping: number;
+    total: number;
+  };
 }
 export type CartFormData = {
   name: string;

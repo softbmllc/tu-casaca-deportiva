@@ -4,6 +4,7 @@ import { db } from "../firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { Order, CartItem } from "@/data/types";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { calculateCartBreakdown } from "./cartUtils";
 
 // Define el tipo de la información de envío
 interface ShippingInfo {
@@ -56,22 +57,25 @@ export function prepareInitialOrderData(
     country?: string;
   }
 ): Order {
+  const enrichedItems: CartItem[] = cartItems.map((item) => ({
+    id: item.id,
+    slug: '',
+    title: { en: item.name, es: item.name },
+    image: '',
+    priceUSD: item.price,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    size: item.size,
+    customName: item.customName || '',
+    customNumber: item.customNumber || '',
+    variantLabel: item.variantLabel || '',
+  }));
+
+  const breakdown = calculateCartBreakdown(enrichedItems);
   return {
     id: '',
-    cartItems: cartItems.map((item) => ({
-      id: item.id,
-      slug: '',
-      title: { en: item.name, es: item.name },
-      image: '',
-      priceUSD: item.price,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      size: item.size,
-      customName: item.customName || '',
-      customNumber: item.customNumber || '',
-      variantLabel: (item as any).variantLabel || '',
-    })),
+    cartItems: enrichedItems,
     client: {
       name: client.name,
       email: client.email,
@@ -83,7 +87,8 @@ export function prepareInitialOrderData(
       country: client.country || '',
     },
     clientEmail: client.email,
-    totalAmount: cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0),
+    totalAmount: breakdown.total,
+    breakdown,
     paymentIntentId: '',
     paymentStatus: 'pending',
     paymentMethod: 'Por definir',

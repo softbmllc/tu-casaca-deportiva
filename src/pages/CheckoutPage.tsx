@@ -31,88 +31,80 @@ export default function CheckoutPage() {
           <span className="text-gray-400">Pago</span>
         </div>
       </div>
-      <main className="max-w-4xl mx-auto px-4 pt-32 pb-8">
-
-        {/* Resumen del Pedido */}
-        <section className="mb-8">
-          {/* Aquí se mostrará el listado de productos, cantidades y total */}
-          <div className="bg-gray-100 p-4 rounded">
+      <main className="w-full px-4 pt-32 pb-16">
+        <div className="grid grid-cols-1 gap-8 items-start max-w-3xl mx-auto">
+          {/* Columna izquierda: Resumen del Pedido */}
+          <div className="bg-white shadow-md p-6 rounded-md border border-gray-200">
             <OrderSummary />
           </div>
-        </section>
 
-        {/* Datos de Envío */}
-        <section className="mb-8">
-          
-          {/* Mostrar datos que el cliente ya completó en CartPage */}
-          <div className="md:bg-white md:shadow-md md:rounded-md md:p-6 md:border md:border-gray-200 md:text-sm md:text-base md:space-y-1">
-            <ShippingInfo />
+          {/* Columna derecha: Datos de Envío + Pago */}
+          <div className="space-y-8">
+            <div className="bg-white shadow-md p-6 rounded-md border border-gray-200">
+              <ShippingInfo />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Método de Pago</h2>
+              <Elements stripe={stripePromise}>
+                <PaymentSection />
+              </Elements>
+            </div>
+            <div className="text-right">
+              <button
+                className="w-full sm:w-auto bg-black text-white px-6 py-3 rounded shadow-md font-semibold text-sm hover:bg-gray-900 transition-transform duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+                onClick={async () => {
+                  const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY as string);
+                  if (!stripe) {
+                    console.error("Stripe no se pudo inicializar");
+                    return;
+                  }
+
+                  if (!email || cartItems.length === 0) {
+                    console.error("❌ Email o carrito vacío al intentar guardar en Firebase.");
+                    return;
+                  }
+
+                  try {
+                    await saveCartToFirebase(email, cartItems);
+                    console.log("✅ Carrito guardado en Firebase antes del checkout.");
+                  } catch (error) {
+                    console.error("❌ Error al guardar carrito en Firebase:", error);
+                    return;
+                  }
+
+                  const items = cartItems.map((item) => ({
+                    name: item.title || "Producto",
+                    quantity: item.quantity || 1,
+                    price: typeof item.price === 'string' ? parseFloat(item.price) : item.price || 0
+                  }));
+
+                  try {
+                    const response = await fetch('/api/create-payment-intent', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        items,
+                        amount: Math.round(parseFloat(localStorage.getItem("checkoutTotal") || "0") * 100)
+                      }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!data.url) {
+                      throw new Error("No se recibió la URL de redirección desde Stripe");
+                    }
+
+                    window.location.href = data.url;
+
+                  } catch (error) {
+                    console.error("❌ Error al iniciar Stripe Checkout:", error);
+                  }
+                }}
+              >
+                Finalizar Compra
+              </button>
+            </div>
           </div>
-        </section>
-
-        {/* Método de Pago */}
-        <hr className="my-4 border-t border-gray-300" />
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-2">Método de Pago</h2>
-          {/* Aquí se integrará Stripe Elements y un botón para PayPal */}
-          <Elements stripe={stripePromise}>
-            <PaymentSection />
-          </Elements>
-        </section>
-
-        {/* Botón Finalizar */}
-        <div className="text-right">
-          <button
-            className="w-full sm:w-auto bg-black text-white px-6 py-3 rounded shadow-md font-semibold text-sm hover:bg-gray-900 transition-transform duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
-            onClick={async () => {
-              const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY as string);
-              if (!stripe) {
-                console.error("Stripe no se pudo inicializar");
-                return;
-              }
-
-              if (!email || cartItems.length === 0) {
-                console.error("❌ Email o carrito vacío al intentar guardar en Firebase.");
-                return;
-              }
-
-              try {
-                await saveCartToFirebase(email, cartItems);
-                console.log("✅ Carrito guardado en Firebase antes del checkout.");
-              } catch (error) {
-                console.error("❌ Error al guardar carrito en Firebase:", error);
-                return;
-              }
-
-              const items = cartItems.map((item) => ({
-                name: item.title || "Producto",
-                quantity: item.quantity || 1,
-                price: typeof item.price === 'string' ? parseFloat(item.price) : item.price || 0
-              }));
-
-              try {
-                const response = await fetch('/api/create-payment-intent', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ items }),
-                });
-
-                const data = await response.json();
-
-                if (!data.url) {
-                  throw new Error("No se recibió la URL de redirección desde Stripe");
-                }
-
-                // Redirigir al checkout de Stripe
-                window.location.href = data.url;
-
-              } catch (error) {
-                console.error("❌ Error al iniciar Stripe Checkout:", error);
-              }
-            }}
-          >
-            Finalizar Compra
-          </button>
         </div>
       </main>
     </>

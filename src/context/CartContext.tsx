@@ -1,4 +1,5 @@
 // src/context/CartContext.tsx
+
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { loadCartFromFirebase, saveCartToFirebase } from "../utils/cartFirebase";
@@ -184,20 +185,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const variant =
       newItem.variant && typeof newItem.variant.label === "object"
-        ? newItem.variant
+        ? {
+            label: {
+              es: newItem.variant.label.es || "Tamaño",
+              en: newItem.variant.label.en || "Size"
+            }
+          }
         : typeof newItem.variantTitle === "object"
         ? {
             label: {
-              es: newItem.variantTitle.es || newItem.variantTitle.en || "",
-              en: newItem.variantTitle.en || newItem.variantTitle.es || "",
-            },
+              es: newItem.variantTitle.es || "Tamaño",
+              en: newItem.variantTitle.en || "Size"
+            }
           }
         : typeof newItem.variantTitle === "string"
         ? {
             label: {
               es: newItem.variantTitle,
-              en: newItem.variantTitle,
-            },
+              en: newItem.variantTitle
+            }
           }
         : undefined;
 
@@ -291,3 +297,4 @@ export function useCart() {
   }
   return context;
 }
+  

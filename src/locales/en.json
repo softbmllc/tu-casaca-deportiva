@@ -160,6 +160,14 @@
     "quantity": "Quantity",
     "total": "Total",
     "checkout": "Checkout",
-    "variant": "Variant"
+    "variant": "Variant",
+    "taxes": "Taxes",
+    "shipping": "Shipping",
+    "emptyTitle": "Your cart is empty",
+    "emptySubtitle": "Browse our wellness products and find your ideal match",
+    "emptySubtitlePro": "Your wellness begins with a better choice",
+    "goToShop": "Go to shop",
+    "recommendationsTitle": "You might also like",
+    "requiredFields": "Please fill in all required fields."
   }
 }

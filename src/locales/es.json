@@ -164,6 +164,14 @@
     "summary": "Resumen del pedido",
     "quantity": "Cantidad",
     "total": "Total",
-    "checkout": "Proceder al pago"
+    "checkout": "Proceder al pago",
+    "taxes": "Impuestos",
+    "shipping": "Envío",
+    "recommendationsTitle": "También te podría gustar",
+    "emptyTitle": "Tu carrito está vacío",
+    "emptySubtitle": "Tu bienestar empieza con una buena elección.",
+    "emptySubtitlePro": "Tu bienestar empieza con una buena elección.",
+    "goToShop": "Ir a la tienda",
+    "requiredFields": "Completá todos los campos obligatorios."
   }
 }

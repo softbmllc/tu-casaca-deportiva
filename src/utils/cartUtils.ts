@@ -1,6 +1,8 @@
+//src/utils/cartUtils.ts
+
 import { db } from "../firebase"; // Asegurate de que este import exista en el archivo final
 import { collection, doc, setDoc } from "firebase/firestore"; // También al comienzo si aún no están
-//src/utils/cartUtils.ts
+
 import { CartItem } from "../data/types";
 
 export function calculateTotal(cartItems: CartItem[]): number {
@@ -96,4 +98,30 @@ export async function saveCartToFirebase(email: string, cartItems: CartItem[]): 
   } catch (error) {
     console.error("❌ Error al guardar el carrito en Firestore:", error);
   }
+}
+
+export interface CartBreakdown {
+  subtotal: number;
+  taxes: number;
+  shipping: number;
+  total: number;
+}
+
+export function calculateCartBreakdown(
+  cartItems: CartItem[],
+  taxRate: number = 0.075,
+  freeShippingThreshold: number = 60,
+  shippingCost: number = 4.99
+): CartBreakdown {
+  const subtotal = cartItems.reduce((sum, item) => sum + item.priceUSD * item.quantity, 0);
+  const taxes = parseFloat((subtotal * taxRate).toFixed(2));
+  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingCost;
+  const total = parseFloat((subtotal + taxes + shipping).toFixed(2));
+
+  return {
+    subtotal: parseFloat(subtotal.toFixed(2)),
+    taxes,
+    shipping,
+    total,
+  };
 }

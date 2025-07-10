@@ -300,6 +300,7 @@ export default function ProductPage() {
                     size: selectedOption?.value || '',
                     options: selectedOption?.value || '',
                     variantId: selectedOption?.variantId || '',
+                    variantTitle: product?.variants?.[0]?.label || { en: 'Option', es: 'Opción' },
                   });
                   scrollToTop();
 

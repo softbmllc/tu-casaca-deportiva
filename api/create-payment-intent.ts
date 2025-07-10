@@ -33,13 +33,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing or invalid shippingInfo' });
     }
 
-    const amount = items.reduce((total: number, item: any) => {
-      const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price || 0;
-      return total + (price * (item.quantity || 1));
-    }, 0);
+    const rawAmount = req.body.amount;
+
+    if (typeof rawAmount !== "number" || rawAmount <= 0) {
+      return res.status(400).json({ error: "Monto inválido recibido para el pago" });
+    }
+
+    const amount = Math.round(rawAmount); // ya viene en centavos desde el frontend
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
+      amount: amount,
       currency: 'usd',
       receipt_email: clientEmail,
       metadata: {

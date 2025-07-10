@@ -4,9 +4,9 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 const videoUrls = [
-  "https://ik.imagekit.io/devrodri/FUXION2_f6kk4g.mp4",
-  "https://ik.imagekit.io/devrodri/PURE2_detyqs.mp4",
-  "https://ik.imagekit.io/devrodri/PURE7_l5zvrs.mov"
+  "/videos/fuxion2.mp4",
+  "/videos/pure2.mp4",
+  "/videos/pure7.mp4"
 ];
 
 export default function VideoShowcase() {

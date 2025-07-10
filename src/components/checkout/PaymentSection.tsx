@@ -123,13 +123,6 @@ const CheckoutForm = () => {
   return (
     <form onSubmit={handleSubmit} id="stripe-checkout-form" className="space-y-4">
       <PaymentElement className="p-4 border rounded" />
-      <button
-        type="submit"
-        disabled={!stripe}
-        className="w-full bg-[#3B82F6] text-white py-2 rounded-md hover:scale-105 hover:shadow-md transition-all duration-200 focus:ring-2 focus:ring-[#3B82F6] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Pagar
-      </button>
     </form>
   );
 };

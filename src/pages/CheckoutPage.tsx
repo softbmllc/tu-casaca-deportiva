@@ -11,6 +11,7 @@ import { createOrder } from '../utils/orderUtils';
 import { saveCartToFirebase } from '../utils/cartUtils';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import Footer from '../components/Footer';
 
 export default function CheckoutPage() {
   const { cartItems, shippingInfo } = useCart();
@@ -63,6 +64,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </>
   );
 }

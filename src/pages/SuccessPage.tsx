@@ -1,6 +1,7 @@
 // src/pages/SuccessPage.tsx
 
 import SuccessNavbar from "../components/SuccessNavbar";
+import Footer from "../components/Footer";
 import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { saveOrderToFirebase } from "../firebaseUtils";
@@ -311,6 +312,7 @@ export default function SuccessPage() {
           </>
         )}
       </section>
+      <Footer />
     </>
   );
 }

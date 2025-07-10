@@ -194,4 +194,26 @@
     "contact": "Contact",
     "edit": "Edit"
   }
+,
+  "success": {
+  "title": "Payment successful!",
+  "subtitle": "Thank you for your purchase. We will send you an email with the order details.",
+  "tagline": "Thank you for choosing Bionova. Your well-being is our priority.",
+  "orderSummary": "Order Summary",
+  "subtotal": "Subtotal:",
+  "taxes": "Taxes (7.5%):",
+  "shipping": "Shipping:",
+  "shippingFree": "Free",
+  "total": "Total:",
+  "paymentId": "Payment ID:",
+  "status": "Status:",
+  "backToStore": "Back to store",
+  "whatsappHelp": "Questions? Chat with us on WhatsApp"
+},
+  "successNavbar": {
+    "home": "Home",
+    "shop": "Shop",
+    "about": "About",
+    "contact": "Contact"
+  }
 }

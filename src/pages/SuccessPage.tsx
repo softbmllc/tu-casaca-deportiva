@@ -1,5 +1,6 @@
 // src/pages/SuccessPage.tsx
 
+import SuccessNavbar from "../components/SuccessNavbar";
 import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { saveOrderToFirebase } from "../firebaseUtils";
@@ -7,6 +8,7 @@ import { getCartFromFirebase } from "../firebaseUtils";
 import { registerClient } from "../firebaseUtils";
 import { fetchClientsFromFirebase } from "../firebaseUtils";
 import { useCart } from "../context/CartContext";
+import { useTranslation } from "react-i18next";
 
 export default function SuccessPage() {
   const location = useLocation();
@@ -15,6 +17,7 @@ export default function SuccessPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [cartData, setCartData] = useState<any[]>([]);
   const [clientData, setClientData] = useState<any>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const ejecutarPostPago = async () => {
@@ -228,47 +231,86 @@ export default function SuccessPage() {
     ejecutarPostPago();
   }, []);
 
+  const subtotal = cartData.reduce((acc, item) => acc + (item.price * (item.quantity || 1)), 0);
+  const taxes = parseFloat((subtotal * 0.075).toFixed(2));
+  const shipping = 0;
+  const total = parseFloat((subtotal + taxes + shipping).toFixed(2));
+
   return (
-    <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
-      <h1 className="text-3xl font-bold mb-4 text-green-600">¡Pago exitoso!</h1>
-      <p className="text-gray-700 mb-2">
-        Gracias por tu compra. Te enviaremos un WhatsApp para coordinar el envío.
-      </p>
-
-      {cartData.length > 0 && (
-        <div className="mt-6 text-left max-w-md w-full bg-white border rounded-lg shadow p-4">
-          <h2 className="text-lg font-semibold mb-2">Resumen del pedido</h2>
-          <ul className="text-sm text-gray-700 space-y-1">
-            {cartData.map((item, index) => {
-              const name = typeof item.name === 'object' ? item.name.es : item.name;
-              const title = typeof item.title === 'object' ? item.title.es : item.title;
-              return (
-                <li key={index} className="flex justify-between border-b py-1">
-                  <span>{title || name} x{item.quantity || 1}</span>
-                  <span>${(item.price * (item.quantity || 1)).toFixed(2)}</span>
-                </li>
-              );
-            })}
-          </ul>
+    <>
+      <SuccessNavbar />
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
+        <div className="mb-4">
+          <svg className="w-16 h-16 text-green-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
         </div>
-      )}
+        <h1 className="text-4xl font-bold mb-2 text-green-600">{t("success.title")}</h1>
+        <p className="text-lg text-gray-700 mb-6">
+          {t("success.subtitle")}
+        </p>
+        <p className="text-sm text-gray-500 mb-4">
+          {t("success.tagline")}
+        </p>
 
-      {paymentId && (
-        <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg mt-4 text-sm">
-          <p><strong>ID de pago:</strong> {paymentId}</p>
-          <p><strong>Estado:</strong> {status}</p>
-        </div>
-      )}
+        {cartData.length > 0 && (
+          <div className="mt-6 text-left max-w-md w-full bg-white border border-gray-200 rounded-xl shadow-md p-6">
+            <h2 className="text-lg font-semibold mb-2">{t("success.orderSummary")}</h2>
+            <ul className="text-sm text-gray-700 space-y-1">
+              {cartData.map((item, index) => {
+                const name = typeof item.name === 'object' ? item.name.es : item.name;
+                const title = typeof item.title === 'object' ? item.title.es : item.title;
+                return (
+                  <li key={index} className="flex justify-between border-b py-1">
+                    <span>{title || name} x{item.quantity || 1}</span>
+                    <span>${(item.price * (item.quantity || 1)).toFixed(2)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="border-t pt-2 mt-2 space-y-1 text-sm text-gray-900">
+              <div className="flex justify-between">
+                <span>{t("success.subtotal")}</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>{t("success.taxes")}</span>
+                <span>${taxes.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>{t("success.shipping")}</span>
+                <span>{t("success.shippingFree")}</span>
+              </div>
+              <div className="flex justify-between font-semibold border-t pt-2">
+                <span>{t("success.total")}</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
-      <button
-        onClick={() => {
-          clearCart();
-          window.location.href = "/";
-        }}
-        className="mt-6 bg-black text-white px-6 py-3 rounded-full hover:bg-black/90 transition"
-      >
-        Volver al inicio
-      </button>
-    </section>
+        {paymentId && (
+          <>
+            <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg mt-4 text-sm">
+              <p><strong>{t("success.paymentId")}</strong> {paymentId}</p>
+              <p><strong>{t("success.status")}</strong> {status}</p>
+            </div>
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+              <a href="/" className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-5 py-2 rounded-full transition text-sm">
+                {t("success.backToStore")}
+              </a>
+              <a
+                href="https://wa.me/1XXXXXXXXXX?text=Hola!%20Acabo%20de%20realizar%20una%20compra%20en%20Bionova"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-full transition text-sm"
+              >
+                {t("success.whatsappHelp")}
+              </a>
+            </div>
+          </>
+        )}
+      </section>
+    </>
   );
 }

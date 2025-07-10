@@ -199,4 +199,20 @@
     "contact": "Contacto",
     "edit": "Editar"
   }
+,
+  "success": {
+    "title": "¡Pago exitoso!",
+    "subtitle": "Gracias por tu compra. Te enviaremos un correo electrónico con los detalles del pedido.",
+    "tagline": "Gracias por elegir Bionova. Tu bienestar es nuestra prioridad.",
+    "orderSummary": "Resumen del pedido",
+    "subtotal": "Subtotal:",
+    "taxes": "Impuestos (7.5%):",
+    "shipping": "Envío:",
+    "shippingFree": "Gratis",
+    "total": "Total:",
+    "paymentId": "ID de pago:",
+    "status": "Estado:",
+    "backToStore": "Volver a la tienda",
+    "whatsappHelp": "¿Tenés dudas? Escribinos por WhatsApp"
+  }
 }

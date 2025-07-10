@@ -215,5 +215,11 @@
     "shop": "Shop",
     "about": "About",
     "contact": "Contact"
+  },
+  "seo": {
+    "home": {
+      "title": "Bionova – Premium supplements for your wellness in the US",
+      "description": "Online store for high-quality supplements: Fuxion, Pure Encapsulations and Double Wood. Fast shipping across the US. Pay securely with PayPal and Stripe."
+    }
   }
 }

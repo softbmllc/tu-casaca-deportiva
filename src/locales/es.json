@@ -215,4 +215,11 @@
     "backToStore": "Volver a la tienda",
     "whatsappHelp": "¿Tenés dudas? Escribinos por WhatsApp"
   }
+,
+  "seo": {
+    "home": {
+      "title": "Bionova – Suplementos premium para tu bienestar en EE.UU.",
+      "description": "Tienda online de suplementos de alta calidad: Fuxion, Pure Encapsulations y Double Wood. Envío a todo EE.UU. Compra segura con PayPal y Stripe."
+    }
+  }
 }

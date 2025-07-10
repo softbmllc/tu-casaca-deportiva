@@ -10,6 +10,8 @@ import { FaInstagram, FaGlobe } from "react-icons/fa";
 import i18n from "..";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import { Helmet } from "react-helmet";
+import { getSeoData } from "../utils/seo";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { items } = useCart();
@@ -18,11 +20,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const locale = i18n.language as 'es' | 'en';
+  const seo = getSeoData(location.pathname, locale);
+
   const isProductPage = location.pathname.startsWith("/producto/");
   const isShopPage = location.pathname.startsWith("/shop");
 
   return (
-    <div className={`flex flex-col min-h-screen w-full overflow-x-hidden text-black ${location.pathname === "/" ? "bg-transparent" : "bg-neutral-50"}`}>
+    <>
+      <Helmet>
+        <title>{seo.title}</title>
+        <meta name="description" content={seo.description} />
+        <meta property="og:title" content={seo.title} />
+        <meta property="og:description" content={seo.description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={typeof window !== "undefined" ? window.location.href : ""} />
+        <meta property="og:image" content="/seo-image.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seo.title} />
+        <meta name="twitter:description" content={seo.description} />
+        <meta name="twitter:image" content="/seo-image.jpg" />
+        <html lang={locale} />
+      </Helmet>
+      <div className={`flex flex-col min-h-screen w-full overflow-x-hidden text-black ${location.pathname === "/" ? "bg-transparent" : "bg-neutral-50"}`}>
       {/* Solo ocultamos el HEADER si es página de producto o de shop */}
       {!isProductPage && !isShopPage && (
         <header className="bg-white/50 backdrop-blur-md text-black fixed top-0 w-full z-50 shadow-sm py-0.5">
@@ -116,5 +136,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <Footer />
     </div>
+    </>
   );
 }

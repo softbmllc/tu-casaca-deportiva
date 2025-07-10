@@ -116,7 +116,40 @@ export default function ProductPage() {
   return (
     <div className="bg-[#f7f7f7] min-h-[100dvh] flex flex-col">
       <div className="w-full overflow-x-hidden text-black relative z-10 flex-grow">
-        <Helmet><title>{`${product.title?.[lang] || product.title} | Looma`}</title></Helmet>
+        <Helmet>
+          <title>{`${product.title?.[lang] || product.title} | Bionova`}</title>
+          <meta
+            name="description"
+            content={
+              typeof product.description === 'object'
+                ? product.description?.[lang] || 'Suplemento premium disponible en Bionova.'
+                : product.description || 'Suplemento premium disponible en Bionova.'
+            }
+          />
+          <meta property="og:title" content={`${product.title?.[lang] || product.title} | Bionova`} />
+          <meta
+            property="og:description"
+            content={
+              typeof product.description === 'object'
+                ? product.description?.[lang] || 'Suplemento premium disponible en Bionova.'
+                : product.description || 'Suplemento premium disponible en Bionova.'
+            }
+          />
+          <meta property="og:type" content="product" />
+          <meta property="og:image" content={product.images?.[0] || "/seo-image.jpg"} />
+          <meta property="og:url" content={typeof window !== "undefined" ? window.location.href : ""} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={`${product.title?.[lang] || product.title} | Bionova`} />
+          <meta
+            name="twitter:description"
+            content={
+              typeof product.description === 'object'
+                ? product.description?.[lang] || 'Suplemento premium disponible en Bionova.'
+                : product.description || 'Suplemento premium disponible en Bionova.'
+            }
+          />
+          <meta name="twitter:image" content={product.images?.[0] || "/seo-image.jpg"} />
+        </Helmet>
 
         {/* Top-level floating controls */}
         <ProductPageNavbar />

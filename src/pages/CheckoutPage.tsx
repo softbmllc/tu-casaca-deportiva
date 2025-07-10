@@ -49,6 +49,12 @@ export default function CheckoutPage() {
                 <PaymentSection />
               </Elements>
             </div>
+            <div className="hidden">
+              {/* Botón Finalizar Compra ocultado intencionalmente */}
+              <button className="w-full sm:w-auto bg-black text-white px-6 py-3 rounded shadow-md font-semibold text-sm">
+                Finalizar Compra
+              </button>
+            </div>
           </div>
         </div>
       </main>

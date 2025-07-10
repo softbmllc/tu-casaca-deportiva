@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://loomastore.com/sitemap.xml
+Sitemap: https://getbionova.com/sitemap.xml

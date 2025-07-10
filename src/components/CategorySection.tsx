@@ -15,14 +15,14 @@ export default function CategorySection() {
   className="py-10 sm:py-24 text-center scroll-mt-16 bg-white"
 >
       <Helmet>
-        <title>Categorías | Looma</title>
+        <title>Shop by Brand | Bionova</title>
         <meta
           name="keywords"
-          content="ropa para mascotas, hogar, fitness, gadgets, electrónicos, productos dropshipping USA, Looma"
+          content="supplements, Fuxion, Pure Encapsulations, Double Wood, premium supplements, shop by brand, Bionova"
         />
         <meta
           name="description"
-          content="Explorá productos de hogar, fitness, electrónica y más. Elegí tu categoría favorita y descubrí lo último en estilo y funcionalidad."
+          content="Explore high-quality supplements by brand. Choose Fuxion, Pure Encapsulations or Double Wood and shop with confidence at Bionova."
         />
       </Helmet>
 

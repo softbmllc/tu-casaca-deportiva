@@ -32,9 +32,9 @@ app.post("/api/create_preference", async (req, res) => {
         items,
         payer,
         back_urls: {
-          success: "https://looma-store.vercel.app/success",
-          failure: "https://looma-store.vercel.app/failure",
-          pending: "https://looma-store.vercel.app/pending",
+          success: "https://getbionova.com/success",
+          failure: "https://getbionova.com/failure",
+          pending: "https://getbionova.com/pending",
         },
         auto_return: "approved",
         notification_url: "https://61c3-2601-582-c302-8510-49fc-e263-4e02-1189.ngrok-free.app/webhook"

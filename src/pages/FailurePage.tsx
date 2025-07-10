@@ -7,10 +7,10 @@ export default function FailurePage() {
   return (
     <section className="min-h-screen flex items-center justify-center px-4 py-20 bg-white text-center">
       <Helmet>
-        <title>Pago rechazado | Looma</title>
+        <title>Payment failed | Bionova</title>
         <meta
           name="description"
-          content="Tu pago fue rechazado. Podés intentarlo nuevamente desde el carrito o contactarnos por WhatsApp."
+          content="Your payment could not be processed. Please try again from the cart or contact us via WhatsApp for assistance."
         />
       </Helmet>
 

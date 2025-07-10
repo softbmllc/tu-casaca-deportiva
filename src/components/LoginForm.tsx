@@ -29,7 +29,7 @@ export default function LoginForm() {
       {/* Logo */}
       <img
         src="/logo1.png"
-        alt="Looma"
+        alt="Bionova"
         className="w-24 h-24 object-contain mb-4"
       />
 
@@ -80,7 +80,7 @@ export default function LoginForm() {
 
       {/* Footer */}
       <p className="text-gray-400 text-xs mt-6">
-        &copy; {new Date().getFullYear()} Looma. Todos los derechos reservados.
+        &copy; {new Date().getFullYear()} Bionova. All rights reserved.
       </p>
     </div>
   );

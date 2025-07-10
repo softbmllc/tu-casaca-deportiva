@@ -3,9 +3,9 @@ import React from "react";
 import { useEffect } from "react";
 
 const videoUrls = [
-  "https://res.cloudinary.com/ddkyumyw3/video/upload/v1746401493/showcase2_pfqyma.mov",
-  "https://res.cloudinary.com/ddkyumyw3/video/upload/v1746401497/showcase3_kk5jf7.mov",
-  "https://res.cloudinary.com/ddkyumyw3/video/upload/v1746401499/showcase1_gvptxu.mov"
+  "https://ik.imagekit.io/devrodri/showcase2_pfqyma.mov",
+  "https://ik.imagekit.io/devrodri/showcase3_kk5jf7.mov",
+  "https://ik.imagekit.io/devrodri/showcase1_gvptxu.mov"
 ];
 
 export default function VideoShowcase() {

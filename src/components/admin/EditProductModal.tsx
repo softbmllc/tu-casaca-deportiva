@@ -1,5 +1,6 @@
 // src/components/admin/EditProductModal.tsx
 import { useState, useEffect } from "react";
+import { uploadImageToImageKit } from "../../utils/imagekitUtils";
 import { Product } from "../../data/types";
 import { updateProduct, fetchLeagues, fetchSubcategories } from "../../firebaseUtils";
 import { generateSlug } from "../../utils/generateSlug";
@@ -162,45 +163,6 @@ useEffect(() => {
   loadAllData();
 }, []);
 
-// Subida de imágenes a ImageKit
-const handleImageUploadImageKit = async (files: File[]) => {
-  const uploadedUrls: string[] = [];
-
-  for (const file of files) {
-    const formData = new FormData();
-    const sigResponse = await fetch("/api/imagekit-signature");
-    const { signature, expire, token } = await sigResponse.json();
-
-    formData.append("file", file);
-    formData.append("publicKey", import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY);
-    formData.append("signature", signature);
-    formData.append("expire", expire);
-    formData.append("token", token);
-    formData.append("fileName", file.name);
-    formData.append("folder", "products");
-
-    try {
-      const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(
-          `Error al subir imagen a ImageKit: ${res.status} - ${JSON.stringify(err)}`
-        );
-      }
-
-      const data = await res.json();
-      uploadedUrls.push(data.url);
-    } catch (error) {
-      console.error("Error uploading to ImageKit", error);
-    }
-  }
-
-  return uploadedUrls;
-};
 
 const handleChange = (field: keyof Product, value: any) => {
   setFormData((prev) => ({ ...prev, [field]: value }));
@@ -224,7 +186,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         return;
       }
     }
-    const urls = await handleImageUploadImageKit(files);
+    const uploadPromises = files.map(file => uploadImageToImageKit(file));
+    const urls = (await Promise.all(uploadPromises)).filter((url): url is string => !!url);
     setFormData((prev) => ({
       ...prev,
       images: [...(prev.images || []), ...urls],

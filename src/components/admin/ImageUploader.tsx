@@ -2,6 +2,36 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
+const uploadToImageKit = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("fileName", file.name);
+  formData.append("useUniqueFileName", "true");
+
+  const publicKey = "public_V7IJIzd4BjNYOQRVUw50wb/R9nk=";
+  const privateKey = import.meta.env.VITE_IMAGEKIT_PRIVATE_KEY;
+  const authHeader = "Basic " + btoa(`${privateKey}:`);
+
+  console.log("[uploadToImageKit] Enviando archivo:", file.name);
+
+  const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+    method: "POST",
+    headers: {
+      Authorization: authHeader,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    console.error("[uploadToImageKit] Error body:", errorBody);
+    throw new Error("Error al subir imagen: " + errorBody);
+  }
+
+  const data = await res.json();
+  return data.url;
+};
+
 interface ImageUploaderProps {
   images: string[];
   onChange: (images: string[]) => void;
@@ -15,7 +45,7 @@ export default function ImageUploader({ images, onChange }: ImageUploaderProps) 
     setLocalImages(images || []);
   }, [images]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError("");
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -33,35 +63,25 @@ export default function ImageUploader({ images, onChange }: ImageUploaderProps) 
 
     const newImages: string[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    const uploadPromises = Array.from(files).map(async (file) => {
       if (file.size > 5000000) {
         setError("Una o más imágenes superan los 5MB");
-        return;
+        return null;
       }
 
-      // Renombrar el archivo para evitar problemas con nombres especiales
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          // Generar un nombre seguro para la imagen
-          const timestamp = Date.now();
-          const fileExt = file.name.split('.').pop();
-          const safeFilename = `image_${timestamp}.${fileExt}`;
-          
-          // Agregar a las imágenes locales para visualización
-          newImages.push(e.target.result as string);
-          
-          // Si todas las imágenes están listas, actualizar
-          if (newImages.length === files.length) {
-            const updatedImages = [...localImages, ...newImages];
-            setLocalImages(updatedImages);
-            onChange(updatedImages);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
-    }
+      try {
+        const imageUrl = await uploadToImageKit(file);
+        newImages.push(imageUrl);
+      } catch (error) {
+        setError("Error al subir una imagen a ImageKit");
+      }
+    });
+
+    await Promise.all(uploadPromises);
+
+    const updatedImages = [...localImages, ...newImages];
+    setLocalImages(updatedImages);
+    onChange(updatedImages);
   };
 
   const removeImage = (index: number) => {

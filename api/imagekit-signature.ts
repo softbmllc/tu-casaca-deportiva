@@ -1,24 +1,27 @@
 // /api/imagekit-signature.ts
-import { IncomingMessage, ServerResponse } from 'http';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
 
-export default async function handler(req: IncomingMessage, res: ServerResponse) {
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  const publicKey = process.env.IMAGEKIT_PUBLIC_KEY;
   const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  const urlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT;
 
-  if (!privateKey) {
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Missing private key' }));
-    return;
+  if (!publicKey || !privateKey || !urlEndpoint) {
+    return res.status(500).json({ error: "Faltan variables de entorno." });
   }
 
-  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const expire = timestamp + 300; // 5 minutos de validez
+  const token = crypto.randomBytes(16).toString('hex');
   const signature = crypto
     .createHmac('sha1', privateKey)
-    .update(timestamp)
+    .update(token + expire)
     .digest('hex');
 
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ signature, timestamp }));
+  return res.status(200).json({
+    signature,
+    expire,
+    token,
+  });
 }

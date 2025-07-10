@@ -22,7 +22,7 @@ export default function HeroSection() {
         className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-transparent backdrop-blur-sm z-0"
         style={{
           backgroundImage:
-            "url('https://res.cloudinary.com/ddkyumyw3/image/upload/f_auto,q_auto,w_1920/v1746672107/5_hbqx9g.png')",
+            "url('https://ik.imagekit.io/devrodri/5_hbqx9g.png.jpeg')",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
           backgroundPosition: "center",

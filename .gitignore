@@ -37,3 +37,4 @@ src/**/*.js.map
 .idea/
 .vscode/
 !.vscode/extensions.json
+.vercel

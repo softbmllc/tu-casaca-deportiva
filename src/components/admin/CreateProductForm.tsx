@@ -26,6 +26,9 @@ import {
   fetchSubcategories,
   fetchLeagues,
 } from "../../firebaseUtils";
+import { uploadImageToImageKit } from "../../utils/imagekitUtils";
+
+
 
 // Definimos los tamaños disponibles como una constante
 const SIZES = ["S", "M", "L", "XL"] as const;
@@ -65,39 +68,6 @@ interface FormData {
 }
 
 
-// Nueva función para subir imágenes a ImageKit
-import axios from "axios";
-const uploadImageToImageKit = async (file: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("publicKey", import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY);
-  formData.append("fileName", file.name);
-  formData.append("folder", "tcd");
-  formData.append("useUniqueFileName", "true");
-
-  // Obtener firma de ImageKit
-  const response = await axios.get('/api/imagekit-signature');
-  console.log('[ImageKit Signature]', response.data);
-  const { signature, timestamp } = response.data;
-  if (!signature || !timestamp) {
-    throw new Error("La firma o el timestamp de ImageKit no están definidos");
-  }
-
-  formData.append("signature", signature);
-  formData.append("timestamp", timestamp); // El timestamp ya es string, no necesita toString()
-
-  const uploadResponse = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!uploadResponse.ok) {
-    throw new Error("Error al subir la imagen a ImageKit");
-  }
-
-  const data = await uploadResponse.json();
-  return data.url;
-};
 
 // Función para generar un slug limpio (sin timestamp ni random)
 const generateCleanSlug = (title: string): string => {
@@ -366,32 +336,32 @@ const watchedLeague = watch("league");
     }
   };
 
-  // Mejorado: Manejo de carga de múltiples imágenes
+  // Mejorado: Manejo de carga de múltiples imágenes con ImageKit
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) return;
-    
+
     setUploadingImages(true);
     setError("");
-    
+
     try {
       const files = Array.from(event.target.files);
-      console.log(`[CreateProductForm] Subiendo ${files.length} imágenes...`);
-      
-      // Subir todas las imágenes en paralelo
-      const uploadPromises = files.map(file => uploadImageToImageKit(file));
-      const uploadedUrls = await Promise.all(uploadPromises);
-      
-      // Agregar las URLs a las imágenes existentes
+      console.log(`[CreateProductForm] Subiendo ${files.length} imágenes a ImageKit...`);
+
+      const uploadPromises = files.map(async (file) => {
+        const url = await uploadImageToImageKit(file);
+        return url;
+      });
+
+      const uploadedUrls = (await Promise.all(uploadPromises)).filter((url): url is string => !!url);
       setImages(prevImages => [...prevImages, ...uploadedUrls]);
-      
-      console.log(`[CreateProductForm] ${uploadedUrls.length} imágenes subidas con éxito`);
-      
-      // Limpiar el input para permitir subir los mismos archivos nuevamente si es necesario
+
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      console.log(`[CreateProductForm] Imágenes subidas con éxito a ImageKit`);
     } catch (error) {
-      console.error("[CreateProductForm] Error al subir imágenes:", error);
+      console.error("[CreateProductForm] Error al subir imágenes a ImageKit:", error);
       setError("Error al subir imágenes. Intente nuevamente.");
     } finally {
       setUploadingImages(false);
@@ -441,6 +411,16 @@ const watchedLeague = watch("league");
       const categoryName = categories.find((cat) => cat.id === selectedCategory)?.name || "";
       const subcategoryName = subcategories.find((sub) => sub.id === selectedSubcategory)?.name || "";
       const teamName = teams.find((team) => team.id === selectedTeam)?.name || "";
+
+      // --- NUEVO: sube imágenes usando uploadImageToImageKit util ---
+      // Suponiendo que tienes los archivos seleccionados en selectedImages:
+      // const urls = await Promise.all(selectedImages.map((image) => uploadImageToImageKit(image, image.name, "/tcd")));
+      // Pero aquí en este form, las imágenes ya están subidas y sólo tienes las URLs en `images`.
+      // Si necesitas subir imágenes aquí, deberías tener los archivos. Si no, deja como está.
+      // Si quieres reemplazar la lógica de subida aquí, sería así:
+      // const urls = await Promise.all(selectedImages.map((image) => uploadImageToImageKit(image, image.name, "/tcd")));
+
+      // (El resto del código sigue igual; si necesitas usar los nuevos URLs, cambia images: urls)
       const newProduct: Partial<Product> = {
         title: title,
         slug: slug,

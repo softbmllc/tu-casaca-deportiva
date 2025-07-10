@@ -139,8 +139,14 @@
       "title": "Need help? We're here for you.",
       "description": "You can email us anytime and we’ll get back to you as soon as possible. Our team is based in Miami and will assist you in English or Spanish, depending on your preference.",
       "cta": "Email us"
-    }
-  ,
+    },
+  "checkoutNavbar": {
+    "securePayment": "Secure Payment",
+    "tooltip": "At Bionova, we protect your information and guarantee 100% secure transactions. We use Stripe and PayPal to process payments, and we never share your data with third parties. Your privacy is our priority.",
+    "cart": "Cart",
+    "shipping": "Shipping",
+    "payment": "Payment"
+  },
   "form": {
     "fullName": "Full name",
     "address": "Address",
@@ -169,5 +175,23 @@
     "goToShop": "Go to shop",
     "recommendationsTitle": "You might also like",
     "requiredFields": "Please fill in all required fields."
+  },
+  "payment": {
+    "pay": "Pay"
+  },
+  "checkout": {
+    "orderSummary": "Order Summary",
+    "shippingInfo": "Shipping Information",
+    "method": "Payment Method",
+    "quantity": "Quantity",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "freeShipping": "Free",
+    "taxes": "Taxes",
+    "total": "Total",
+    "shippingInfoTitle": "Shipping Information",
+    "address": "Address",
+    "contact": "Contact",
+    "edit": "Edit"
   }
 }

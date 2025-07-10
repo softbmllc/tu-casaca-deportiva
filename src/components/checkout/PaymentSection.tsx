@@ -1,6 +1,7 @@
 // src/components/checkout/PaymentSection.tsx
 
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Elements,
   PaymentElement,
@@ -20,6 +21,7 @@ if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
 }
 
 const CheckoutForm = () => {
+  const { t } = useTranslation();
   const stripe = useStripe();
   const elements = useElements();
   const { total, cartItems } = useCart();
@@ -123,11 +125,20 @@ const CheckoutForm = () => {
   return (
     <form onSubmit={handleSubmit} id="stripe-checkout-form" className="space-y-4">
       <PaymentElement className="p-4 border rounded" />
+      <div className="mt-4">
+        <button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded transition-all duration-300"
+        >
+          {t("payment.pay")}
+        </button>
+      </div>
     </form>
   );
 };
 
 const PaymentSection: React.FC = () => {
+  const { t } = useTranslation();
   const { total, cartItems } = useCart();
   const { user } = useAuth();
   const [clientSecret, setClientSecret] = useState("");
@@ -167,11 +178,10 @@ const PaymentSection: React.FC = () => {
   }
 
   return (
-    <div className="mt-6 bg-white shadow-lg rounded-lg border border-gray-200 px-8 py-6 w-full max-w-3xl mx-auto transition-all duration-300">
-      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 mb-1">
-        Pago Seguro
+    <div className="mt-6 bg-white shadow-lg rounded-lg border border-gray-200 px-8 py-6 w-full mx-auto transition-all duration-300">
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 mb-4">
+        {t("checkout.method", "Método de pago")}
       </h2>
-      <p className="text-sm text-gray-500 mb-4">Usá tu tarjeta con seguridad</p>
       <Elements stripe={stripePromise} options={options}>
         <CheckoutForm />
       </Elements>

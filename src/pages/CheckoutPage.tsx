@@ -10,10 +10,12 @@ import { useCart } from '../context/CartContext';
 import { createOrder } from '../utils/orderUtils';
 import { saveCartToFirebase } from '../utils/cartUtils';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function CheckoutPage() {
   const { cartItems, shippingInfo } = useCart();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const email = user?.email || '';
   console.log("📦 Datos recibidos en CheckoutPage:", shippingInfo);
 
@@ -22,17 +24,26 @@ export default function CheckoutPage() {
   return (
     <>
       <CheckoutNavbar />
-      <div className="w-full border-b border-gray-200 bg-white py-4 mt-24 z-10 relative">
-        <div className="max-w-4xl mx-auto px-4 text-sm text-gray-500 flex justify-between items-center">
-          <span className="font-semibold text-black">Carrito</span>
-          <span>→</span>
-          <span className="font-semibold text-black">Envío</span>
-          <span>→</span>
-          <span className="text-gray-400">Pago</span>
+      <div className="w-full border-b border-gray-200 bg-white py-6 mt-24 z-10 relative">
+        <div className="max-w-4xl mx-auto px-4 flex justify-between items-center text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600 font-semibold">1</span>
+          <span className="text-blue-600 font-semibold">{t('checkoutNavbar.cart')}</span>
+          </div>
+          <span className="text-gray-300">→</span>
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600 font-semibold">2</span>
+          <span className="text-blue-600 font-semibold">{t('checkoutNavbar.shipping')}</span>
+          </div>
+          <span className="text-gray-300">→</span>
+          <div className="flex items-center gap-2">
+          <span className="text-gray-400">3</span>
+          <span className="text-gray-400">{t('checkoutNavbar.payment')}</span>
+          </div>
         </div>
       </div>
       <main className="w-full px-4 pt-32 pb-16">
-        <div className="grid grid-cols-1 gap-8 items-start max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 gap-8 items-start max-w-4xl mx-auto">
           {/* Columna izquierda: Resumen del Pedido */}
           <div className="bg-white shadow-md p-6 rounded-md border border-gray-200">
             <OrderSummary />
@@ -44,16 +55,10 @@ export default function CheckoutPage() {
               <ShippingInfo />
             </div>
             <div>
-              <h2 className="text-lg font-semibold mb-2">Método de Pago</h2>
+              <p className="text-sm uppercase text-gray-500 mb-1">{t('checkout.method')}</p>
               <Elements stripe={stripePromise}>
                 <PaymentSection />
               </Elements>
-            </div>
-            <div className="hidden">
-              {/* Botón Finalizar Compra ocultado intencionalmente */}
-              <button className="w-full sm:w-auto bg-black text-white px-6 py-3 rounded shadow-md font-semibold text-sm">
-                Finalizar Compra
-              </button>
             </div>
           </div>
         </div>

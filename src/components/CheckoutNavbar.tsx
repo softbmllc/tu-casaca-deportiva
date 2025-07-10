@@ -45,11 +45,11 @@ export default function ShopNavbar() {
             onClick={() => setShowInfo(!showInfo)}
             className="text-sm text-[#004AAD] font-semibold"
           >
-            Pago Seguro<span className="ml-1 text-xs">{showInfo ? "▲" : "▼"}</span>
+            {t("checkoutNavbar.securePayment")}<span className="ml-1 text-xs">{showInfo ? "▲" : "▼"}</span>
           </button>
           {showInfo && (
             <div className="absolute top-full mt-1 w-64 sm:w-96 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded p-3 text-sm text-gray-700 shadow-lg z-50">
-              En Bionova protegemos tu información y garantizamos transacciones 100% seguras. Usamos Stripe y PayPal para procesar los pagos, y nunca compartimos tus datos con terceros. Tu privacidad es nuestra prioridad.
+              {t("checkoutNavbar.tooltip")}
             </div>
           )}
         </div>
@@ -84,11 +84,11 @@ export default function ShopNavbar() {
             onClick={() => setShowInfo(!showInfo)}
             className="text-base text-[#004AAD] font-semibold"
           >
-            Pago Seguro<span className="ml-1 text-xs">{showInfo ? "▲" : "▼"}</span>
+            {t("checkoutNavbar.securePayment")}<span className="ml-1 text-xs">{showInfo ? "▲" : "▼"}</span>
           </button>
           {showInfo && (
             <div className="absolute top-full mt-1 w-64 sm:w-96 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded p-3 text-sm text-gray-700 shadow-lg z-50">
-              En Bionova protegemos tu información y garantizamos transacciones 100% seguras. Usamos Stripe y PayPal para procesar los pagos, y nunca compartimos tus datos con terceros. Tu privacidad es nuestra prioridad.
+              {t("checkoutNavbar.tooltip")}
             </div>
           )}
         </div>

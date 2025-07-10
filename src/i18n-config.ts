@@ -16,6 +16,8 @@ i18n
     },
     lng: localStorage.getItem('i18nextLng') || 'en',
     fallbackLng: 'en',
+    ns: ['translation'],
+    defaultNS: 'translation',
     interpolation: {
       escapeValue: false,
     },

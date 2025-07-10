@@ -173,5 +173,30 @@
     "emptySubtitlePro": "Tu bienestar empieza con una buena elección.",
     "goToShop": "Ir a la tienda",
     "requiredFields": "Completá todos los campos obligatorios."
+  },
+  "payment": {
+    "pay": "Pagar"
+  },
+  "checkoutNavbar": {
+    "securePayment": "Pago Seguro",
+    "secureMessage": "En Bionova protegemos tu información y garantizamos transacciones 100% seguras. Usamos Stripe y PayPal para procesar los pagos, y nunca compartimos tus datos con terceros. Tu privacidad es nuestra prioridad.",
+    "tooltip": "En Bionova protegemos tu información y garantizamos transacciones 100% seguras. Usamos Stripe y PayPal para procesar los pagos, y nunca compartimos tus datos con terceros. Tu privacidad es nuestra prioridad.",
+    "cart": "Carrito",
+    "shipping": "Envío",
+    "method": "Método de Pago",
+    "payment": "Pago"
+  },
+  "checkout": {
+    "method": "Método de pago",
+    "quantity": "Cantidad",
+    "shipping": "Envío",
+    "freeShipping": "Gratis",
+    "taxes": "Impuestos",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "shippingInfoTitle": "Datos de Envío",
+    "address": "Dirección",
+    "contact": "Contacto",
+    "edit": "Editar"
   }
 }

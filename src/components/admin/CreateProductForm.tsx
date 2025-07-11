@@ -1,4 +1,5 @@
 // src/components/admin/CreateProductForm.tsx
+
 import React, { useState, useEffect, useRef } from "react";
 import ImageUploader from "./ImageUploader";
 import TiptapEditor from "./TiptapEditor";
@@ -55,7 +56,6 @@ interface FormData {
   title: string;
   league: string;
   team: string;
-  priceUSD: number;
   cjProductId: string;
   defaultDescriptionType: "none" | "camiseta";
   extraDescriptionTop: string;
@@ -281,7 +281,6 @@ useEffect(() => {
       title: "",
       league: "",
       team: "",
-      priceUSD: 80,
       cjProductId: "",
       defaultDescriptionType: "none", // 🔥 Nuevo
       extraDescriptionTop: "",        // 🔥 Nuevo
@@ -381,7 +380,6 @@ useEffect(() => {
               categoryId: selectedCategory,
             }
           : { id: "", name: "", categoryId: selectedCategory },
-        priceUSD: data.priceUSD,
         defaultDescriptionType: data.defaultDescriptionType || "none",
         extraDescriptionTop: data.extraDescriptionTop || "",
         extraDescriptionBottom: data.extraDescriptionBottom || "",
@@ -542,28 +540,6 @@ useEffect(() => {
 </div>
 
         {/* Precios */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="priceUSD" className="block font-medium">
-              Precio en USD <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="priceUSD"
-              type="number"
-              step="0.01"
-              min="0"
-              {...register("priceUSD", {
-                required: "El precio en USD es obligatorio",
-                valueAsNumber: true,
-                validate: (value) => value > 0 || "El precio debe ser mayor a 0",
-              })}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-            />
-            {errors.priceUSD && (
-              <span className="text-red-500 text-sm">{errors.priceUSD.message}</span>
-            )}
-          </div>
-        </div>
 
 
 

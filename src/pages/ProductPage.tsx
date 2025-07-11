@@ -11,6 +11,7 @@ import { defaultDescriptions } from "../data/defaultDescriptions";
 import "keen-slider/keen-slider.min.css";
 import { useKeenSlider } from "keen-slider/react";
 import RelatedProducts from "../components/RelatedProducts";
+import LegalNotice from "../components/LegalNotice";
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -318,6 +319,7 @@ export default function ProductPage() {
                 </Link>
               )}
             </div>
+            <LegalNotice />
           </div>
         </div>
 

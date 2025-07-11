@@ -51,7 +51,7 @@ export default function ProductPage() {
         if (fetched && fetched.title) {
           setProduct({
             ...fetched,
-            sizes: fetched.sizes || ["S", "M", "L", "XL"],
+            sizes: ["S", "M", "L", "XL", "XXL"],
             stock: fetched.stock || {},
             defaultDescriptionType: fetched.defaultDescriptionType || "none",
             customizable: fetched.allowCustomization ?? false,
@@ -197,8 +197,8 @@ export default function ProductPage() {
             {/* Talles */}
             <div className="mb-4">
               <label className="uppercase text-sm font-semibold text-gray-800 mb-2">Talle</label>
-              <div className="grid grid-cols-4 gap-2">
-                {["S", "M", "L", "XL"].map((size) => {
+              <div className="flex flex-row flex-wrap gap-2 justify-start">
+                {product.sizes.map((size: string) => {
                   const stockForSize = product.stock?.[size] ?? 0;
                   const active = selectedSize === size;
                   return (
@@ -211,7 +211,7 @@ export default function ProductPage() {
                           setSelectedSize(size);
                         }
                       }}
-                      className={`p-2 text-sm rounded-md border text-center hover:border-gray-400 ${active ? "bg-black text-white" : ""}`}
+                      className={`min-w-[56px] px-2 py-1.5 text-sm rounded-md border text-center hover:border-gray-400 flex-1 max-w-[72px] ${active ? "bg-black text-white" : ""}`}
                     >
                       <div className="font-semibold">{size}</div>
                       <div className="text-xs">{stockForSize > 0 ? `${stockForSize} disponibles` : <span className="text-xs text-gray-500">Encargue</span>}</div>

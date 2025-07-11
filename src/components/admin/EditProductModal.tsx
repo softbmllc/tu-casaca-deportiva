@@ -440,7 +440,7 @@ return (
                 id="defaultDescriptionType"
                 value={formData.defaultDescriptionType || "none"}
                 onChange={(e) => {
-                  const type = e.target.value as "none" | "camiseta" | "campera";
+                  const type = e.target.value as "none" | "camiseta" | "campera" | "nba";
                   const desc = type !== "none" ? defaultDescriptions[type] : "";
                   setFormData((prev) => ({
                     ...prev,
@@ -453,6 +453,7 @@ return (
                 <option value="none">Sin descripción automática</option>
                 <option value="camiseta">Camiseta</option>
                 <option value="campera">Campera</option>
+                <option value="nba">NBA</option>
               </select>
             </div>
 

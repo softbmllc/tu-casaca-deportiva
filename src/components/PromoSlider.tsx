@@ -35,13 +35,6 @@ export default function PromoSlider() {
       link: '/shop',
     },
     {
-      mediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-57_dziuig.png',
-      mobileMediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-63_ohq7zt.png',
-      title: () => t('promoSlider.slide4.title'),
-      subtitle: () => t('promoSlider.slide4.subtitle'),
-      link: '/shop',
-    },
-    {
       mediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-65_ftkc26.png',
       mobileMediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-66_lyqs50.png',
       title: () => t('promoSlider.slide5.title'),
@@ -56,22 +49,10 @@ export default function PromoSlider() {
       link: '/shop',
     },
     {
-      mediaUrl: 'https://ik.imagekit.io/devrodri/PURE1_xqyxp7.mp4',
-      title: () => t('promoSlider.slide7.title'),
-      subtitle: () => t('promoSlider.slide7.subtitle'),
-      link: '/shop',
-    },
-    {
       mediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-70_za6sv3.png',
       mobileMediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-68_tuhlur.png',
       title: () => t('promoSlider.slide8.title'),
       subtitle: () => t('promoSlider.slide8.subtitle'),
-      link: '/shop',
-    },
-    {
-      mediaUrl: 'https://ik.imagekit.io/devrodri/DW1_pggieo.mp4',
-      title: () => t('promoSlider.slide9.title'),
-      subtitle: () => t('promoSlider.slide9.subtitle'),
       link: '/shop',
     },
     {

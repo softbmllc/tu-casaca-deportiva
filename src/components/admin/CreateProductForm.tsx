@@ -58,7 +58,7 @@ interface FormData {
   team: string;
   priceUSD: number;
   priceUYU: number;
-  defaultDescriptionType: "none" | "camiseta" | "campera";
+  defaultDescriptionType: "none" | "camiseta" | "campera" | "nba";
   extraDescriptionTop: string;
   extraDescriptionBottom: string;
   descriptionPosition: "top" | "bottom";
@@ -640,6 +640,7 @@ const watchedLeague = watch("league");
     <option value="">Sin descripción automática</option>
     <option value="camiseta">Camiseta</option>
     <option value="campera">Campera</option>
+    <option value="nba">NBA</option>
   </select>
 </div>
 

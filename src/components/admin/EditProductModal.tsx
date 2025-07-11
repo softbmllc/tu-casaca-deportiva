@@ -1,5 +1,6 @@
 // src/components/admin/EditProductModal.tsx
 import { useState, useEffect } from "react";
+import { defaultDescriptions } from "../../data/defaultDescriptions";
 import { uploadImageToImageKit } from "../../utils/imagekitUtils";
 import { Product } from "../../data/types";
 import { updateProduct, fetchLeagues, fetchSubcategories } from "../../firebaseUtils";
@@ -428,6 +429,31 @@ return (
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Descripción automática */}
+            <div className="space-y-2">
+              <label htmlFor="defaultDescriptionType" className="block font-medium text-sm text-gray-700">
+                Descripción automática
+              </label>
+              <select
+                id="defaultDescriptionType"
+                value={formData.defaultDescriptionType || "none"}
+                onChange={(e) => {
+                  const type = e.target.value as "none" | "camiseta" | "campera";
+                  const desc = type !== "none" ? defaultDescriptions[type] : "";
+                  setFormData((prev) => ({
+                    ...prev,
+                    defaultDescriptionType: type,
+                    extraDescriptionBottom: desc,
+                  }));
+                }}
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+              >
+                <option value="none">Sin descripción automática</option>
+                <option value="camiseta">Camiseta</option>
+                <option value="campera">Campera</option>
+              </select>
             </div>
 
             {/* Personalización */}

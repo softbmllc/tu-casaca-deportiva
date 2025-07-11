@@ -251,33 +251,89 @@ export default function ProductPage() {
             </div>
 
             {/* Descripción visual a la derecha */}
-            {product?.defaultDescriptionType === "camiseta" && (
+            {(product?.defaultDescriptionType === "camiseta" || product?.defaultDescriptionType === "campera" || product?.defaultDescriptionType === "nba") && (
               <div className="space-y-4 pt-8 mt-2 mb-10 text-gray-800 text-[15px] border-t border-gray-200">
-                <div className="flex items-start gap-2">
-                  <Shirt size={18} className="mt-1 text-gray-600" />
-                  <p>Camiseta de alta calidad, confeccionada en tela liviana, suave y transpirable.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Sparkles size={18} className="mt-1 text-gray-600" />
-                  <p>Terminaciones premium que aseguran gran confort y durabilidad.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Calendar size={18} className="mt-1 text-gray-600" />
-                  <p>Ideal para el día a día, entrenar o sumar a tu colección futbolera.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check size={18} className="mt-1 text-gray-600" />
-                  <p>Disponible en talles <strong>S, M, L y XL</strong>.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <ScissorsLineDashed size={18} className="mt-1 text-gray-600" />
-                  <p>Opción de personalización con nombre y número.</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Package size={18} className="mt-1 text-gray-600" />
-                  <p>Consultar disponibilidad inmediata.</p>
-                </div>
-                <p className="italic font-semibold text-black text-sm">¡Viví el fútbol con estilo!</p>
+                {product?.defaultDescriptionType === "camiseta" && (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <Shirt size={18} className="mt-1 text-gray-600" />
+                      <p>Camiseta de alta calidad, confeccionada en tela liviana, suave y transpirable.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Sparkles size={18} className="mt-1 text-gray-600" />
+                      <p>Terminaciones premium que aseguran gran confort y durabilidad.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Calendar size={18} className="mt-1 text-gray-600" />
+                      <p>Ideal para el día a día, entrenar o sumar a tu colección futbolera.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check size={18} className="mt-1 text-gray-600" />
+                      <p>Disponible en talles <strong>S, M, L y XL</strong>.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <ScissorsLineDashed size={18} className="mt-1 text-gray-600" />
+                      <p>Opción de personalización con nombre y número.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Package size={18} className="mt-1 text-gray-600" />
+                      <p>Consultar disponibilidad inmediata.</p>
+                    </div>
+                    <p className="italic font-semibold text-black text-sm">¡Viví el fútbol con estilo!</p>
+                  </>
+                )}
+
+                {product?.defaultDescriptionType === "campera" && (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <Shirt size={18} className="mt-1 text-gray-600" />
+                      <p>Campera deportiva liviana, cómoda y con interior térmico.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Sparkles size={18} className="mt-1 text-gray-600" />
+                      <p>Terminaciones premium que aseguran confort y durabilidad.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Calendar size={18} className="mt-1 text-gray-600" />
+                      <p>Ideal para uso urbano, entrenar o sumar a tu look deportivo.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check size={18} className="mt-1 text-gray-600" />
+                      <p>Disponible en talles <strong>S, M, L y XL</strong>.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Package size={18} className="mt-1 text-gray-600" />
+                      <p>Consultar disponibilidad y tiempos de entrega.</p>
+                    </div>
+                    <p className="italic font-semibold text-black text-sm">Sumá estilo sin perder rendimiento.</p>
+                  </>
+                )}
+
+                {product?.defaultDescriptionType === "nba" && (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <Shirt size={18} className="mt-1 text-gray-600" />
+                      <p>Camiseta de básquet con diseño oficial y detalles auténticos de la NBA.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Sparkles size={18} className="mt-1 text-gray-600" />
+                      <p>Material respirable, liviano y cómodo para cada jugada.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Calendar size={18} className="mt-1 text-gray-600" />
+                      <p>Perfecta para uso urbano o entrenamientos exigentes.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check size={18} className="mt-1 text-gray-600" />
+                      <p>Disponible en talles <strong>S, M, L y XL</strong>.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Package size={18} className="mt-1 text-gray-600" />
+                      <p>Edición limitada. Consultar disponibilidad actual.</p>
+                    </div>
+                    <p className="italic font-semibold text-black text-sm">¡Sentí la pasión del juego en cada movimiento!</p>
+                  </>
+                )}
               </div>
             )}
 

@@ -35,6 +35,13 @@ export default function PromoSlider() {
       link: '/shop',
     },
     {
+      mediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-57_dziuig.png',
+      mobileMediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-63_ohq7zt.png',
+      title: () => t('promoSlider.slide4.title'),
+      subtitle: () => t('promoSlider.slide4.subtitle'),
+      link: '/shop',
+    },
+    {
       mediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-65_ftkc26.png',
       mobileMediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-66_lyqs50.png',
       title: () => t('promoSlider.slide5.title'),
@@ -60,12 +67,6 @@ export default function PromoSlider() {
       mobileMediaUrl: 'https://ik.imagekit.io/devrodri/Disen%CC%83o_sin_ti%CC%81tulo-64_dztsni.png',
       title: () => t('promoSlider.slide10.title'),
       subtitle: () => t('promoSlider.slide10.subtitle'),
-      link: '/shop',
-    },
-    {
-      mediaUrl: 'https://ik.imagekit.io/devrodri/DW5_flishp.mp4',
-      title: () => t('promoSlider.slide11.title'),
-      subtitle: () => t('promoSlider.slide11.subtitle'),
       link: '/shop',
     },
     {

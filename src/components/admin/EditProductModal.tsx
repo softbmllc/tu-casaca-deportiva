@@ -47,7 +47,7 @@ interface Props {
 }
 
 
-const sizes = ["S", "M", "L", "XL"];
+const sizes = ["S", "M", "L", "XL", "XXL"];
 
 // Componente para imagen arrastrable con flechas
 function SortableImageItem({
@@ -239,6 +239,7 @@ const handleSaveProduct = async () => {
         M: productData.stock?.M || 0,
         L: productData.stock?.L || 0,
         XL: productData.stock?.XL || 0,
+        XXL: productData.stock?.XXL || 0,
       },
       category: {
         id: selectedCategoryObj?.id ?? "",

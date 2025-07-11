@@ -31,7 +31,7 @@ import { uploadImageToImageKit } from "../../utils/imagekitUtils";
 
 
 // Definimos los tamaños disponibles como una constante
-const SIZES = ["S", "M", "L", "XL"] as const;
+const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 // Creamos un tipo a partir de los valores de SIZES
 type Size = typeof SIZES[number];
 
@@ -131,12 +131,13 @@ export default function CreateProductForm() {
     priceUSD: 0,
     priceUYU: 0,
     images: [],
-    sizes: ["S", "M", "L", "XL"],
+    sizes: ["S", "M", "L", "XL", "XXL"],
     stock: {
       S: 0,
       M: 0,
       L: 0,
       XL: 0,
+      XXL: 0,
     },
     active: true,
     customizable: true,
@@ -267,6 +268,7 @@ useEffect(() => {
         M: 0,
         L: 0,
         XL: 0,
+        XXL: 0,
       },
     },
   });

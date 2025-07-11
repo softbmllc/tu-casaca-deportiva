@@ -214,7 +214,7 @@ export default function ProductPage() {
                       className={`min-w-[56px] px-2 py-1.5 text-sm rounded-md border text-center hover:border-gray-400 flex-1 max-w-[72px] ${active ? "bg-black text-white" : ""}`}
                     >
                       <div className="font-semibold">{size}</div>
-                      <div className="text-xs">{stockForSize > 0 ? `${stockForSize} disponibles` : <span className="text-xs text-gray-500">Encargue</span>}</div>
+                      <div className="text-xs leading-tight">{stockForSize > 0 ? `${stockForSize} stock` : <span className="text-xs text-gray-500">Encargue</span>}</div>
                     </button>
                   );
                 })}
@@ -269,7 +269,7 @@ export default function ProductPage() {
                     </div>
                     <div className="flex items-start gap-2">
                       <Check size={18} className="mt-1 text-gray-600" />
-                      <p>Disponible en talles <strong>S, M, L y XL</strong>.</p>
+                      <p>Disponible en talles <strong>S, M, L, XL y XXL</strong>.</p>
                     </div>
                     <div className="flex items-start gap-2">
                       <ScissorsLineDashed size={18} className="mt-1 text-gray-600" />
@@ -299,7 +299,7 @@ export default function ProductPage() {
                     </div>
                     <div className="flex items-start gap-2">
                       <Check size={18} className="mt-1 text-gray-600" />
-                      <p>Disponible en talles <strong>S, M, L y XL</strong>.</p>
+                      <p>Disponible en talles <strong>S, M, L, XL y XXL</strong>.</p>
                     </div>
                     <div className="flex items-start gap-2">
                       <Package size={18} className="mt-1 text-gray-600" />
@@ -325,7 +325,7 @@ export default function ProductPage() {
                     </div>
                     <div className="flex items-start gap-2">
                       <Check size={18} className="mt-1 text-gray-600" />
-                      <p>Disponible en talles <strong>S, M, L y XL</strong>.</p>
+                      <p>Disponible en talles <strong>S, M, L, XL y XXL</strong>.</p>
                     </div>
                     <div className="flex items-start gap-2">
                       <Package size={18} className="mt-1 text-gray-600" />

@@ -51,12 +51,6 @@ export default {
   				DEFAULT: 'hsl(var(--accent))',
   				foreground: 'hsl(var(--accent-foreground))'
   			},
-  			looma: {
-  				blue: '#3B82F6',
-  				black: '#0F0F0F',
-  				white: '#ffffff',
-  				gray: '#f4f4f4'
-  			},
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',

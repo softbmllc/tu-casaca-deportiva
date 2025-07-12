@@ -361,7 +361,7 @@ useEffect(() => {
       // Guardar los campos title, titleEn, description, descriptionEn como strings separados
       const newProduct: Partial<Product> = {
         title: {
-          es: formData.title.trim() || titleEn.trim(),
+          es: data.title.trim(),
           en: titleEn.trim(),
         },
         description: {
@@ -445,52 +445,59 @@ useEffect(() => {
           <div className="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
         )}
 
+
         {/* Título */}
-        <div className="space-y-2">
-          <label htmlFor="title" className="block font-medium">
-            Título del producto <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="title"
-            type="text"
-            {...register("title", { required: "El título es obligatorio" })}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-            placeholder="Ej: Camiseta Uruguay 2023 Titular"
-          />
-          {errors.title && (
-            <span className="text-red-500 text-sm">{errors.title.message}</span>
-          )}
-          {/* Campo Título en Inglés */}
-          <label className="block text-sm font-medium text-gray-700 mt-4">Title (EN)</label>
-          <input
-            type="text"
-            value={titleEn}
-            onChange={(e) => setTitleEn(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-          />
-
-<label className="block text-sm font-medium text-gray-700 mt-4">SKU (opcional)</label>
-<input
-  type="text"
-  value={formData.sku || ""}
-  onChange={(e) =>
-    setFormData((prev) => ({ ...prev, sku: e.target.value }))
-  }
-  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-/>
-
-          {/* Campo Descripción en Inglés */}
-          <label className="block text-sm font-medium text-gray-700 mt-4">Description (EN)</label>
-          <TiptapEditor content={descriptionEn} onChange={setDescriptionEn} />
-          {/* Campo Descripción en Español */}
-          <label className="block text-sm font-medium text-gray-700 mt-4">Descripción (ES)</label>
-          <TiptapEditor
-            content={formData.descriptionEs}
-            onChange={(value) =>
-              setFormData((prev) => ({ ...prev, descriptionEs: value }))
-            }
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="titleEs" className="block font-medium">
+              Título en Español <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="titleEs"
+              type="text"
+              {...register("title", { required: "El título es obligatorio" })}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+              placeholder="Ej: Omega 3 Ultra"
+            />
+            {errors.title && (
+              <span className="text-red-500 text-sm">{errors.title.message}</span>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="titleEn" className="block font-medium">
+              Título en Inglés <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="titleEn"
+              type="text"
+              value={titleEn}
+              onChange={(e) => setTitleEn(e.target.value)}
+              required
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+              placeholder="e.g. Omega 3 Ultra"
+            />
+          </div>
         </div>
+        <label className="block text-sm font-medium text-gray-700 mt-4">SKU (opcional)</label>
+        <input
+          type="text"
+          value={formData.sku || ""}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, sku: e.target.value }))
+          }
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+        />
+        {/* Campo Descripción en Inglés */}
+        <label className="block text-sm font-medium text-gray-700 mt-4">Description (EN)</label>
+        <TiptapEditor content={descriptionEn} onChange={setDescriptionEn} />
+        {/* Campo Descripción en Español */}
+        <label className="block text-sm font-medium text-gray-700 mt-4">Descripción (ES)</label>
+        <TiptapEditor
+          content={formData.descriptionEs}
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, descriptionEs: value }))
+          }
+        />
 
       {/* CATEGORÍA */}
 <div className="mb-4">
@@ -685,6 +692,20 @@ useEffect(() => {
                       }}
                     />
                   </div>
+                  {/* Botón para eliminar esta opción */}
+                  <div className="col-span-3 flex justify-end">
+                    <button
+                      type="button"
+                      className="text-red-500 text-xs mt-1"
+                      onClick={() => {
+                        const updated = [...variants];
+                        updated[vIndex].options.splice(oIndex, 1);
+                        setVariants(updated);
+                      }}
+                    >
+                      Eliminar esta opción
+                    </button>
+                  </div>
                 </div>
               ))}
               <button
@@ -697,6 +718,17 @@ useEffect(() => {
                 }}
               >
                 + Agregar opción
+              </button>
+              <button
+                type="button"
+                className="text-red-600 text-sm mt-2"
+                onClick={() => {
+                  const updated = [...variants];
+                  updated.splice(vIndex, 1);
+                  setVariants(updated);
+                }}
+              >
+                 🗑️ Eliminar
               </button>
             </div>
           ))}

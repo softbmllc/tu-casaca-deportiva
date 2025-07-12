@@ -1,7 +1,6 @@
 // src/components/Hero.tsx
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay, Navigation, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
@@ -10,18 +9,37 @@ import 'swiper/css/autoplay';
 import { useRef, useState } from 'react';
 
 export default function HeroSection() {
-  const { t } = useTranslation();
   const swiperRef = useRef<any>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const backgrounds = [
-    // Removed URLs that were used as logos
-  ];
-
-  const logos = [
-    "https://ik.imagekit.io/devrodri/logo-fuxion_irts0s.png", // Fuxion
-    "https://ik.imagekit.io/devrodri/logo-pure_tr4git.png", // Pure
-    "https://ik.imagekit.io/devrodri/Double_Wood-logo_hkja36.png", // Double Wood
+  const slides = [
+    {
+      key: "consolas",
+      image: "/images/Slide1.jpg",
+      tagline: "Consolas, Juegos y Accesorios",
+      headline1: "Todo para tu consola",
+      headline2: "Desde PS1 hasta Nintendo Switch",
+      description: "Explorá nuestra colección de juegos, consolas y accesorios: PS5, Xbox, Nintendo, portátiles y más.",
+      button: "Ver tienda",
+    },
+    {
+      key: "coleccionables",
+      image: "/images/Slide2.jpg",
+      tagline: "Películas, música y nostalgia",
+      headline1: "Coleccionables originales",
+      headline2: "DVDs, vinilos, muñecos y más",
+      description: "DVDs, Blu-ray, cassettes, vinilos, muñecos de acción, libros y más. Solo lo auténtico.",
+      button: "Explorar colección",
+    },
+    {
+      key: "envios",
+      image: "/images/Slide3.jpg",
+      tagline: "Comprá desde donde estés",
+      headline1: "Envíos rápidos y seguros",
+      headline2: "A todo el país",
+      description: "Más de 10 años vendiendo en ferias y online. Ahora, tu tienda gamer confiable está online.",
+      button: "Comprar ahora",
+    },
   ];
 
   return (
@@ -59,76 +77,38 @@ export default function HeroSection() {
           }, 50);
         }}
       >
-        {[
-          {
-            key: "fuxion",
-            logo: logos[0],
-            tagline: t("hero.tagline"),
-            headline1: t("hero.headline1"),
-            headline2: t("hero.headline2"),
-            description: t("hero.description"),
-            button: t("hero.button"),
-            textColor: "text-[#0088D5]",
-            buttonColor: "bg-[#0088D5]",
-          },
-          {
-            key: "pure",
-            logo: logos[1],
-            tagline: t("pure.tagline"),
-            headline1: t("pure.headline1"),
-            headline2: t("pure.headline2"),
-            description: t("pure.description"),
-            button: t("pure.button"),
-            textColor: "text-[#1A3DA7]",
-            buttonColor: "bg-[#1A3DA7] hover:bg-blue-800",
-          },
-          {
-            key: "dw",
-            logo: logos[2],
-            tagline: t("dw.tagline"),
-            headline1: t("dw.headline1"),
-            headline2: t("dw.headline2"),
-            description: t("dw.description"),
-            button: t("dw.button"),
-            textColor: "text-[#4B3621]",
-            buttonColor: "bg-[#3C7A3F] hover:bg-green-700",
-          },
-        ].map((slide, index) => (
+        {slides.map((slide) => (
           <SwiperSlide key={slide.key}>
-            <motion.div
-              className="flex flex-col sm:flex-row items-center justify-start sm:justify-between gap-4 w-full px-4 pt-0 sm:pt-0 sm:items-center -mt-12 sm:mt-0"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1 }}
+            <div
+              className="relative w-full h-[100vh] bg-cover bg-center"
+              style={{ backgroundImage: `url(${slide.image})` }}
             >
-              <div className="w-full sm:w-[60%] flex justify-center items-center h-[300px] sm:h-[520px] md:h-[600px] pl-0">
-                <img
-                  src={slide.logo}
-                  alt={`Logo ${slide.key}`}
-                  className="max-h-full w-auto object-contain scale-[1.0]"
-                />
-              </div>
-              <div className={`flex flex-col justify-center items-center text-center sm:items-start sm:text-left ${slide.textColor} gap-4 sm:w-[40%] pt-0 md:pt-6 -mt-4`}>
-                <span className="uppercase text-base sm:text-lg tracking-widest font-semibold mt-2 mb-4">
+              <motion.div
+                className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 bg-black/40"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1 }}
+              >
+                <span className="uppercase text-base sm:text-lg tracking-widest font-semibold text-white mb-4">
                   {slide.tagline}
                 </span>
-                <h1 className={`text-4xl sm:text-5xl md:text-[2.5rem] lg:text-6xl font-extrabold tracking-tight mb-2 leading-tight ${slide.key === 'pure' ? 'md:text-[2rem] md:leading-snug' : ''}`}>
+                <h1 className="text-4xl sm:text-5xl md:text-[2.5rem] lg:text-6xl font-extrabold text-white mb-2 leading-tight">
                   <span>{slide.headline1}</span><br />
                   <span>{slide.headline2}</span>
                 </h1>
-                <p className="text-lg sm:text-xl md:text-2xl font-medium mb-6 max-w-full">
+                <p className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-6 max-w-2xl">
                   {slide.description}
                 </p>
-                <div className="w-full flex justify-center sm:justify-start mt-0 mb-2">
+                <div className="flex justify-center">
                   <div
                     onClick={() => window.location.href = "/shop"}
-                    className={`inline-block ${slide.buttonColor} text-white font-semibold px-6 py-3 rounded-full hover:shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none appearance-none cursor-pointer`}
+                    className="bg-[#FF2D55] hover:bg-[#cc2444] text-white font-semibold px-6 py-3 rounded-full hover:shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none appearance-none cursor-pointer"
                   >
                     {slide.button}
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </SwiperSlide>
         ))}
       </Swiper>

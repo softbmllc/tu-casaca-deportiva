@@ -1,7 +1,5 @@
 // src/pages/CheckoutPage.tsx
 
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
 import CheckoutNavbar from '../components/CheckoutNavbar';
 import OrderSummary from "../components/checkout/OrderSummary";
 import ShippingInfo from '../components/checkout/ShippingInfo';
@@ -19,8 +17,6 @@ export default function CheckoutPage() {
   const { t } = useTranslation();
   const email = user?.email || '';
   console.log("📦 Datos recibidos en CheckoutPage:", shippingInfo);
-
-  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY as string);
 
   return (
     <>
@@ -57,9 +53,7 @@ export default function CheckoutPage() {
             </div>
             <div>
               <p className="text-sm uppercase text-gray-500 mb-1">{t('checkout.method')}</p>
-              <Elements stripe={stripePromise}>
-                <PaymentSection />
-              </Elements>
+              <PaymentSection />
             </div>
           </div>
         </div>

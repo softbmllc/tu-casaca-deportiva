@@ -25,7 +25,6 @@ import { validateCartForm } from "../utils/formValidation";
 import { registerClient, saveOrderToFirebase, saveCartToFirebase, saveClientToFirebase } from "../firebaseUtils";
 import { extractStateFromAddress, extractAddressComponents } from "@/utils/locationUtils";
 import { prepareInitialOrderData } from '../utils/orderUtils';
-import { createPaymentIntent } from '../utils/stripeUtils';
 import { calculateTotal, calculateCartBreakdown } from '../utils/cartUtils';
 
 // Importá la función para buscar ciudad y estado por ZIP
@@ -478,65 +477,13 @@ const isValidEmail = (email: string): boolean => {
                       </div>
                     </div>
 
-                    {/* Botón para ir al checkout */}
+                    {/* Botón de checkout deshabilitado para Mercado Pago próximamente */}
                     <button
-                      className="bg-black text-white px-6 py-2 rounded hover:bg-gray-900 transition"
-                      onClick={async () => {
-                        // Validación de campos mínimos
-                        const nombre = shippingInfo.name;
-                        const email = shippingInfo.email;
-                        const phone = shippingInfo.phone;
-                        const address = shippingInfo.address;
-                        const address2 = shippingInfo.address2;
-                        const city = shippingInfo.city;
-                        const state = shippingInfo.state;
-                        const zip = shippingInfo.postalCode;
-                        const registrarse = !!shippingInfo.wantsToRegister;
-
-                        if (!nombre || !email || !phone || !address || !city || !state || !zip) {
-                          toast.error(t("cart.requiredFields"));
-                          return;
-                        }
-
-                        // Guardar datos del cliente en Firebase si corresponde
-                        const clientData = {
-                          name: nombre,
-                          email,
-                          phone,
-                          address,
-                          address2,
-                          city,
-                          state,
-                          zip,
-                          country: "Estados Unidos",
-                        };
-
-                        if (registrarse) {
-                          try {
-                            await saveClientToFirebase(clientData);
-                          } catch (error) {
-                            console.error("❌ Error al guardar el cliente en Firebase:", error);
-                            toast.error("No se pudo guardar el cliente.");
-                            return;
-                          }
-                        }
-
-                        // Guardá el carrito en Firebase antes de redirigir al backend o Stripe
-                        try {
-                          await saveCartToFirebase(clientData.email, items);
-                        } catch (error) {
-                          console.error("❌ Error al guardar el carrito en Firebase:", error);
-                          toast.error("No se pudo guardar el carrito.");
-                          return;
-                        }
-                        // Guardá en localStorage antes de redirigir
-                        localStorage.setItem("clientData", JSON.stringify(clientData));
-                        // Guardar el total en localStorage para el checkout
-                        localStorage.setItem("checkoutTotal", breakdown.total.toFixed(2));
-                        navigate('/checkout');
-                      }}
+                      disabled
+                      className="bg-gray-300 text-gray-600 px-6 py-2 rounded cursor-not-allowed"
+                      title="Próximamente disponible con Mercado Pago"
                     >
-                      {t("cart.checkout")}
+                      Próximamente con Mercado Pago
                     </button>
                   </div>
 

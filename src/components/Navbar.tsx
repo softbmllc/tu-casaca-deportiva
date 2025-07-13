@@ -83,7 +83,7 @@ export default function ShopNavbar() {
             <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
               Inicio
             </Link>
-            <Link to="/tienda" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
+            <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
               Tienda
             </Link>
             <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
@@ -104,7 +104,7 @@ export default function ShopNavbar() {
         </Link>
         <nav className="flex items-center gap-6 text-base">
           <Link to="/" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Inicio</Link>
-          <Link to="/tienda" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Tienda</Link>
+          <Link to="/shop" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Tienda</Link>
           <Link to="/about" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Nosotros</Link>
         </nav>
         <div className="flex items-center gap-4">

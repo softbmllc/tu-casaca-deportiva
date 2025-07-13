@@ -40,9 +40,14 @@ export default function ProductList() {
         // 🧠 Usamos las variables locales directamente (no el estado)
         console.log("🧪 Paso previo a normalizeProduct – subcategories disponibles:", fetchedSubcategories);
 
-        const normalizedProducts = productsData.map((p) =>
-          normalizeProduct(p, fetchedCategories, fetchedSubcategories)
-        );
+        const normalizedProducts = productsData.map((p) => {
+          try {
+            return normalizeProduct(p, fetchedCategories, fetchedSubcategories);
+          } catch (e) {
+            console.warn("Error normalizando producto:", p, e);
+            return null;
+          }
+        });
 
         setProducts(normalizedProducts.filter((p) => p !== null));
       } catch (error) {
@@ -91,9 +96,14 @@ export default function ProductList() {
         }
 
         const refreshedProducts = await fetchProducts();
-        const normalizedRefreshed = refreshedProducts.map((p) =>
-          normalizeProduct(p, categories, freshSubcategories)
-        );
+        const normalizedRefreshed = refreshedProducts.map((p) => {
+          try {
+            return normalizeProduct(p, categories, freshSubcategories);
+          } catch (e) {
+            console.warn("Error normalizando producto actualizado:", p, e);
+            return null;
+          }
+        });
         setProducts(normalizedRefreshed.filter((p) => p !== null));
         setIsModalOpen(false);
         setEditingProduct(null);

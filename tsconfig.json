@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
+    "target": "ES2022",
+    "useDefineForClassFields": false,
+    "module": "es2020",
     "moduleResolution": "node",
     "strict": true,
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
+    "outDir": "dist",
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "baseUrl": ".",
@@ -19,5 +19,5 @@
     "resolveJsonModule": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"]
   },
-  "include": ["src"]
+  "include": ["src", "scripts"]
 }

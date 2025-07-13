@@ -10,12 +10,16 @@ import OrderAdmin from "../components/admin/OrderAdmin";
 import { ClientDetailWrapper } from "../components/admin/ClientDetail";
 
 import { useEffect, useState } from "react";
+import { getAuth } from "firebase/auth";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeView, setActiveView] = useState("clients");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
+  const auth = getAuth();
+  const userEmail = auth.currentUser?.email;
 
   useEffect(() => {
     const path = location.pathname.split('/').pop() || "clients";
@@ -33,6 +37,9 @@ export default function AdminPanel() {
       <Sidebar activeView={activeView} onChangeView={handleViewChange} />
 
       <main className="flex-1 p-6 bg-gray-100 overflow-y-auto">
+        <div className="mb-4 text-sm text-gray-600">
+          <strong>Usuario logueado:</strong> {userEmail ?? 'No logueado'}
+        </div>
         <Routes>
           <Route index element={<Navigate to="/admin/clients" replace />} />
           <Route

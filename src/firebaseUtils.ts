@@ -690,35 +690,42 @@ async function updateStockAfterOrder(cartItems: CartItem[]) {
     });
   }
 }
-// 🔥 Función para obtener todas las subcategorías del sistema (colección independiente)
+// 🔥 Función para obtener todas las subcategorías embebidas en categorías
 export const fetchAllSubcategories = async (): Promise<
   { id: string; name: string; categoryId: string }[]
 > => {
   try {
-    const snapshot = await getDocs(collection(db, "subcategories"));
-    const subcategories = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      const rawName = data.name;
-      const name =
-        typeof rawName === "string"
-          ? rawName
-          : typeof rawName?.es === "string"
-          ? rawName.es
-          : typeof rawName?.en === "string"
-          ? rawName.en
-          : "";
+    const categoriesSnapshot = await getDocs(collection(db, "categories"));
+    const allSubcategories: { id: string; name: string; categoryId: string }[] = [];
 
-      return {
-        id: doc.id,
-        name,
-        categoryId: data.categoryId || "", // Aseguramos que siempre tenga categoryId
-      };
-    });
+    for (const catDoc of categoriesSnapshot.docs) {
+      const categoryId = catDoc.id;
+      const subRef = collection(db, "categories", categoryId, "subcategories");
+      const subSnap = await getDocs(subRef);
 
-    console.log("🧩 Subcategorías obtenidas:", subcategories);
-    return subcategories;
+      subSnap.forEach((subDoc) => {
+        const rawName = subDoc.data().name;
+        const name =
+          typeof rawName === "string"
+            ? rawName
+            : typeof rawName?.es === "string"
+            ? rawName.es
+            : typeof rawName?.en === "string"
+            ? rawName.en
+            : "";
+
+        allSubcategories.push({
+          id: subDoc.id,
+          name,
+          categoryId,
+        });
+      });
+    }
+
+    console.log("🧩 Subcategorías embebidas obtenidas:", allSubcategories);
+    return allSubcategories;
   } catch (error) {
-    console.error("❌ Error al obtener subcategorías:", error);
+    console.error("❌ Error al obtener subcategorías embebidas:", error);
     return [];
   }
 };

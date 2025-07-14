@@ -410,6 +410,29 @@ return (
                   required
                 />
               </div>
+              {/* Bloque de precios oferta */}
+              <div className="lg:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Precio oferta USD (opcional)</label>
+                <input
+                  type="number"
+                  value={formData.discountPriceUSD ?? ""}
+                  onChange={(e) => handleChange("discountPriceUSD", parseFloat(e.target.value))}
+                  className="remove-arrows shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div className="lg:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Precio oferta UYU (opcional)</label>
+                <input
+                  type="number"
+                  value={formData.discountPriceUYU ?? ""}
+                  onChange={(e) => handleChange("discountPriceUYU", parseFloat(e.target.value))}
+                  className="remove-arrows shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+                  min="0"
+                  step="1"
+                />
+              </div>
             </div>
 
             {/* Stock */}

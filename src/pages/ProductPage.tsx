@@ -189,9 +189,32 @@ export default function ProductPage() {
             </h1>
             {product.subtitle && <p className="text-gray-600 mb-4">{product.subtitle}</p>}
 
-            <div className="mb-6">
-              <div className="text-4xl font-extrabold text-black">${finalPriceUYU} <span className="text-xl font-semibold text-gray-700">UYU</span></div>
-              <div className="text-sm text-gray-400 italic mt-1">$ {finalPriceUSD} USD</div>
+            <div className="mb-6 space-y-1">
+              {product.discountPriceUYU ? (
+                <>
+                  <div className="text-lg text-gray-500 line-through">
+                    ${finalPriceUYU} <span className="text-sm text-gray-400">UYU</span>
+                  </div>
+                  <div className="text-4xl font-extrabold text-red-600">
+                    ${product.discountPriceUYU + (hasCustomization ? 400 : 0)} <span className="text-xl font-semibold text-gray-700">UYU</span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-4xl font-extrabold text-black">
+                  ${finalPriceUYU} <span className="text-xl font-semibold text-gray-700">UYU</span>
+                </div>
+              )}
+
+              {product.discountPriceUSD ? (
+                <>
+                  <div className="text-sm text-gray-500 italic line-through">${finalPriceUSD} USD</div>
+                  <div className="text-base font-semibold text-red-600 italic">
+                    ${product.discountPriceUSD + (hasCustomization ? 10 : 0)} USD
+                  </div>
+                </>
+              ) : (
+                <div className="text-sm text-gray-400 italic mt-1">${finalPriceUSD} USD</div>
+              )}
             </div>
 
             {/* Talles */}

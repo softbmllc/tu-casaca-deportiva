@@ -93,9 +93,25 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
               </div>
               <div className="p-2">
                 <h3 className="font-semibold mb-1 line-clamp-2">{product.title}</h3>
-                <p className="text-gray-500 mb-1">
-                  ${product.priceUYU} UYU / ${product.priceUSD} USD
-                </p>
+                <div className="mb-1 space-y-0.5 text-sm">
+                  {product.discountPriceUYU ? (
+                    <>
+                      <div className="line-through text-gray-400">${product.priceUYU} UYU</div>
+                      <div className="text-red-600 font-semibold">${product.discountPriceUYU} UYU</div>
+                    </>
+                  ) : (
+                    <div className="text-gray-700">${product.priceUYU} UYU</div>
+                  )}
+                  
+                  {product.discountPriceUSD ? (
+                    <>
+                      <div className="line-through text-gray-400">${product.priceUSD} USD</div>
+                      <div className="text-red-600 font-semibold">${product.discountPriceUSD} USD</div>
+                    </>
+                  ) : (
+                    <div className="text-gray-700">${product.priceUSD} USD</div>
+                  )}
+                </div>
                 <a
                   href={`/producto/${product.slug}`}
                   className="inline-block text-blue-500 hover:underline text-sm"

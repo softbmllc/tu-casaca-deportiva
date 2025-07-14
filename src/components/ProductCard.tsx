@@ -57,8 +57,24 @@ export default function ProductCard({ product }: ProductCardProps) {
           <h3 className="text-lg font-bold text-black leading-tight line-clamp-2 group-hover:text-black/80 transition">
             {productName}
           </h3>
-          <div className="mt-1.5 text-base font-semibold">
-            $ {productPriceUYU} UYU / $ {productPriceUSD} USD
+          <div className="mt-1.5 text-base font-semibold space-y-1">
+            {product.discountPriceUYU ? (
+              <div className="text-sm text-gray-500 line-through">
+                $ {productPriceUYU} UYU
+              </div>
+            ) : null}
+            <div className={product.discountPriceUYU ? "text-red-600 font-bold" : ""}>
+              $ {product.discountPriceUYU ?? productPriceUYU} UYU
+            </div>
+
+            {product.discountPriceUSD ? (
+              <div className="text-sm text-gray-500 line-through">
+                $ {productPriceUSD} USD
+              </div>
+            ) : null}
+            <div className={product.discountPriceUSD ? "text-red-600 font-bold" : ""}>
+              $ {product.discountPriceUSD ?? productPriceUSD} USD
+            </div>
           </div>
         </div>
       </Link>

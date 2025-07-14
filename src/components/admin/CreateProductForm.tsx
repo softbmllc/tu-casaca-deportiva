@@ -65,6 +65,8 @@ interface FormData {
   active: boolean;
   customizable: boolean;
   stock: StockRecord;
+  discountPriceUSD?: number;
+  discountPriceUYU?: number;
 }
 
 
@@ -270,6 +272,8 @@ useEffect(() => {
         XL: 0,
         XXL: 0,
       },
+      discountPriceUSD: undefined,
+      discountPriceUYU: undefined,
     },
   });
 
@@ -431,6 +435,8 @@ const watchedLeague = watch("league");
         team: { id: selectedTeam, name: teamName },
         priceUSD: data.priceUSD,
         priceUYU: data.priceUYU,
+        discountPriceUSD: data.discountPriceUSD,
+        discountPriceUYU: data.discountPriceUYU,
         defaultDescriptionType: data.defaultDescriptionType || "none",
         extraDescriptionTop: data.extraDescriptionTop || "",
         extraDescriptionBottom: data.extraDescriptionBottom || "",
@@ -597,6 +603,45 @@ const watchedLeague = watch("league");
             {errors.priceUYU && (
               <span className="text-red-500 text-sm">{errors.priceUYU.message}</span>
             )}
+          </div>
+        </div>
+
+        {/* Precios de oferta (opcional) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="discountPriceUSD" className="block font-medium">
+              Precio de oferta USD (opcional)
+            </label>
+            <input
+              id="discountPriceUSD"
+              type="number"
+              step="0.01"
+              min="0"
+              {...register("discountPriceUSD", {
+                valueAsNumber: true,
+                validate: (value) =>
+                  value === undefined || value >= 0 || "El precio debe ser mayor o igual a 0",
+              })}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="discountPriceUYU" className="block font-medium">
+              Precio de oferta UYU (opcional)
+            </label>
+            <input
+              id="discountPriceUYU"
+              type="number"
+              step="1"
+              min="0"
+              {...register("discountPriceUYU", {
+                valueAsNumber: true,
+                validate: (value) =>
+                  value === undefined || value >= 0 || "El precio debe ser mayor o igual a 0",
+              })}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            />
           </div>
         </div>
 

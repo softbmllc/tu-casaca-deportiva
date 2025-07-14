@@ -1,3 +1,5 @@
+// src/data/types.ts
+
 export type Product = {
   id: string;
   title: string;
@@ -23,6 +25,8 @@ export type Product = {
   allowCustomization?: boolean;
   customName?: string;
   customNumber?: string;
+  discountPriceUSD?: number;
+  discountPriceUYU?: number;
 };
 
 export interface League {

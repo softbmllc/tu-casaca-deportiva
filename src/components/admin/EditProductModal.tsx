@@ -125,7 +125,11 @@ function SortableImageItem({
 }
 
 export default function EditProductModal({ product, onSave, onClose }: Props) {
-const [formData, setFormData] = useState<Product>({ ...product });
+const [formData, setFormData] = useState<Product>({
+  ...product,
+  discountPriceUSD: product.discountPriceUSD ?? undefined,
+  discountPriceUYU: product.discountPriceUYU ?? undefined,
+});
 const [saving, setSaving] = useState(false);
 const [error, setError] = useState("");
 const [uploadingImages, setUploadingImages] = useState(false);

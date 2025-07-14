@@ -2,6 +2,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 import ProductCard from "../components/ProductCard";
+import { getFinalPrice } from "../utils/priceUtils";
 import { Product, LeagueData, Subcategory, Team } from "../data/types";
 import { FiFilter } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall } from "react-icons/fa";
@@ -712,9 +713,16 @@ export default function FootballPage() {
               ))}
             >
               {productsToDisplay.length > 0 ? (
-                productsToDisplay.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))
+                productsToDisplay.map((product) => {
+                  const priceUSD = getFinalPrice(product, "USD");
+                  const priceUYU = getFinalPrice(product, "UYU");
+                  return (
+                    <ProductCard
+                      key={product.id}
+                      product={{ ...product, priceUSD, priceUYU }}
+                    />
+                  );
+                })
               ) : (
                 <div className="col-span-full text-center py-16">
                   <p className="text-gray-500 font-medium">

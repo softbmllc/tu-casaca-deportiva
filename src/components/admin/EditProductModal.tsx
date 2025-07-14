@@ -260,6 +260,8 @@ const handleSaveProduct = async () => {
       allowCustomization: productData.allowCustomization || false,
       descriptionPosition: productData.descriptionPosition || "bottom",
       active: productData.active !== undefined ? productData.active : true,
+      discountPriceUSD: productData.discountPriceUSD ?? undefined,
+      discountPriceUYU: productData.discountPriceUYU ?? undefined,
     };
 
     await updateProduct(productId, updatedProduct);

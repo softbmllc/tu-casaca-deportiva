@@ -6,11 +6,15 @@ import { Pagination, Autoplay, Navigation, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/autoplay';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 export default function HeroSection() {
   const swiperRef = useRef<any>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [windowWidth, setWindowWidth] = useState<number | null>(null);
+  useEffect(() => {
+    setWindowWidth(window.innerWidth);
+  }, []);
 
   const slides = [
     {
@@ -34,10 +38,16 @@ export default function HeroSection() {
     {
       key: "envios",
       image: "/images/Slide3.jpg",
+      mobileImage: "/images/Slide3-mobile.jpg",
       tagline: "Comprá desde donde estés",
       headline1: "Envíos rápidos y seguros",
       headline2: "A todo el país",
-      description: "Más de 10 años vendiendo en ferias y online. Ahora, tu tienda gamer confiable está online.",
+      description: (
+        <>
+          Más de 20 años de experiencia en el mundo gamer. <br />
+          Ahora, tu tienda gamer confiable está online.
+        </>
+      ),
       button: "Comprar ahora",
     },
   ];
@@ -80,8 +90,14 @@ export default function HeroSection() {
         {slides.map((slide) => (
           <SwiperSlide key={slide.key}>
             <div
-              className="relative w-full h-[100vh] bg-cover bg-center"
-              style={{ backgroundImage: `url(${slide.image})` }}
+              className={
+                slide.key === "envios"
+                  ? "relative w-full h-[100vh] bg-cover bg-right-top"
+                  : "relative w-full h-[100vh] bg-cover bg-center"
+              }
+              style={{ backgroundImage: `url(${
+                windowWidth && windowWidth < 768 && slide.mobileImage ? slide.mobileImage : slide.image
+              })` }}
             >
               <motion.div
                 className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 bg-black/40"

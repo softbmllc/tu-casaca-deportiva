@@ -359,6 +359,7 @@ const handleUpload = async (file: File): Promise<string | null> => {
               : "",
           categoryId: selectedSubcategoryObject?.categoryId ?? "",
         },
+        tipo: productData.tipo || "",
         defaultDescriptionType: productData.defaultDescriptionType || "none",
         extraDescriptionTop: productData.extraDescriptionTop || "",
         extraDescriptionBottom: productData.extraDescriptionBottom || "",
@@ -592,6 +593,34 @@ return (
                     </div>
                   </div>
                 </div>
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Tipo de producto</label>
+                  <select
+                    value={formData?.tipo || ""}
+                    onChange={(e) => handleChange("tipo", e.target.value)}
+                    className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    <option value="Juego">Juego</option>
+                    <option value="Consola">Consola</option>
+                    <option value="Accesorio">Accesorio</option>
+                    <option value="Merch">Merch</option>
+                  </select>
+                </div>
+                <div className="lg:col-span-2">
+  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Tipo de producto</label>
+  <select
+    value={formData?.tipo || ""}
+    onChange={(e) => handleChange("tipo", e.target.value)}
+    className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
+  >
+    <option value="">Seleccionar tipo</option>
+    <option value="Juego">Juego</option>
+    <option value="Consola">Consola</option>
+    <option value="Accesorio">Accesorio</option>
+    <option value="Merch">Merch</option>
+  </select>
+</div>
                 <div className="lg:col-span-2">
                   <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Precio USD</label>
                   <input

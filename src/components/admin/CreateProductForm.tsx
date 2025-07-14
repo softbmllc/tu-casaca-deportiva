@@ -120,21 +120,22 @@ export default function CreateProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-const [formData, setFormData] = useState({
-  name: "",
-  title: "",
-  category: "",
-  subcategory: "",
-  team: "",
-  priceUSD: 0,
-  images: [],
-  active: true,
-  customizable: true,
-  descriptionEs: "",
-  sku: "",
-  stockTotal: 0,
-  description: "", // <--- Aseguramos que description esté presente
-});
+  const [formData, setFormData] = useState({
+    name: "",
+    title: "",
+    category: "",
+    subcategory: "",
+    tipo: "", // Nuevo campo para distinguir si es Juego, Consola, Accesorio o Merch
+    team: "",
+    priceUSD: 0,
+    images: [],
+    active: true,
+    customizable: true,
+    descriptionEs: "",
+    sku: "",
+    stockTotal: 0,
+    description: "", // <--- Aseguramos que description esté presente
+  });
 
   // Estados para campos en inglés
   const [titleEn, setTitleEn] = useState("");
@@ -380,6 +381,7 @@ useEffect(() => {
               categoryId: selectedCategory,
             }
           : { id: "", name: "", categoryId: selectedCategory },
+        tipo: formData.tipo || "",
         defaultDescriptionType: data.defaultDescriptionType || "none",
         extraDescriptionTop: data.extraDescriptionTop || "",
         extraDescriptionBottom: data.extraDescriptionBottom || "",
@@ -543,6 +545,24 @@ useEffect(() => {
           {typeof sub.name === "string" ? sub.name : (sub.name?.[language] || sub.name?.es || "")}
         </option>
       ))}
+  </select>
+</div>
+
+{/* TIPO */}
+<div className="mb-4">
+  <label className="block text-sm font-medium mb-1">Tipo de producto:</label>
+  <select
+    className="w-full border p-2 rounded"
+    value={formData.tipo}
+    onChange={(e) =>
+      setFormData((prev) => ({ ...prev, tipo: e.target.value }))
+    }
+  >
+    <option value="">Seleccionar tipo</option>
+    <option value="Juego">Juego</option>
+    <option value="Consola">Consola</option>
+    <option value="Accesorio">Accesorio</option>
+    <option value="Merch">Merch</option>
   </select>
 </div>
 

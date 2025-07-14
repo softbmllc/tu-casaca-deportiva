@@ -95,6 +95,8 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   // Estado para mostrar SidebarFilter en mobile (nuevo)
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+  // Estado para filtrar por tipo
+  const [selectedTipo, setSelectedTipo] = useState<string>("");
 
   // 🔥 Cargar productos de Firebase al montar
   useEffect(() => {
@@ -316,14 +318,15 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   // Nuevo filtrado de productos usando useMemo, con lógica de subcategoría (versión robusta) y ordenamiento
   const { i18n } = useTranslation();
   const filteredProducts = useMemo(() => {
-    // Nuevo bloque de filtrado corregido:
+    // Nuevo bloque de filtrado con lógica de tipo:
     const filtered = products.filter((product) => {
       const categoryMatch = selectedCategory ? product.category?.id === selectedCategory : true;
       const subcategoryMatch = selectedSubcategory ? product.subcategory?.id === selectedSubcategory : true;
+      const tipoMatch = selectedTipo ? product.tipo === selectedTipo : true;
       const searchMatch = searchTerm
         ? product.title?.[i18n.language as "en" | "es"]?.toLowerCase().includes(searchTerm.toLowerCase())
         : true;
-      return categoryMatch && subcategoryMatch && searchMatch;
+      return categoryMatch && subcategoryMatch && tipoMatch && searchMatch;
     });
 
     // --- DEBUG: Mostrar por consola los valores del filtro y productos resultantes ---
@@ -360,7 +363,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
       default:
         return filtered;
     }
-  }, [products, selectedCategory, selectedSubcategory, searchTerm, sortOption, i18n.language]);
+  }, [products, selectedCategory, selectedSubcategory, selectedTipo, searchTerm, sortOption, i18n.language]);
 
   const isStockExpress = selectedLeague === "STOCK_EXPRESS";
   const productsToDisplay = filteredProducts.filter((p) => {
@@ -474,6 +477,26 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
               <p className="font-bold">{category.name}</p>
             )}
           />
+
+          {/* Filtro por tipo */}
+          <div className="hidden md:block mt-6">
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">Filtrar por tipo</h3>
+            <div className="flex flex-wrap gap-2">
+              {["", "Juego", "Consola", "Accesorio", "Merch"].map((tipo) => (
+                <button
+                  key={tipo}
+                  onClick={() => setSelectedTipo(tipo)}
+                  className={`px-3 py-1 rounded-full text-sm border ${
+                    selectedTipo === tipo
+                      ? "bg-black text-white border-black"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {tipo === "" ? "Todos" : tipo}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Para móviles: sidebar en modal */}
           <AnimatePresence>

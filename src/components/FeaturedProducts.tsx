@@ -1,8 +1,10 @@
 // src/components/FeaturedProducts.tsx
+
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import products from "../data/products";
 import ProductCard from "./ProductCard";
+import { getFinalPrice } from "../utils/priceUtils";
 
 export default function FeaturedProducts() {
   return (
@@ -37,9 +39,16 @@ export default function FeaturedProducts() {
             },
           }}
         >
-          {products.slice(0, 8).map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+          {products.slice(0, 8).map((product) => {
+            const priceUYU = getFinalPrice(product, "UYU");
+            const priceUSD = getFinalPrice(product, "USD");
+            return (
+              <ProductCard
+                key={product.id}
+                product={{ ...product, priceUYU, priceUSD }}
+              />
+            );
+          })}
         </motion.div>
       </div>
     </section>

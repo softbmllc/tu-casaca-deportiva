@@ -1,7 +1,9 @@
 // src/components/ProductCard.tsx
+
 import { Link } from "react-router-dom";
 import { Product } from "../data/types";
 import { motion } from "framer-motion";
+import { getFinalPrice } from "../utils/priceUtils";
 
 type ProductCardProps = {
   product: Product;
@@ -23,6 +25,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   // Asegurar que tenemos precios
   const productPriceUSD = product.priceUSD || 0;
   const productPriceUYU = product.priceUYU || 0;
+
+  const finalPriceUSD = getFinalPrice(product, "USD");
+  const finalPriceUYU = getFinalPrice(product, "UYU");
 
   return (
     <motion.div
@@ -60,20 +65,20 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="mt-1.5 text-base font-semibold space-y-1">
             {product.discountPriceUYU ? (
               <div className="text-sm text-gray-500 line-through">
-                $ {productPriceUYU} UYU
+                $ {finalPriceUYU ?? productPriceUYU} UYU
               </div>
             ) : null}
             <div className={product.discountPriceUYU ? "text-red-600 font-bold" : ""}>
-              $ {product.discountPriceUYU ?? productPriceUYU} UYU
+              $ {product.discountPriceUYU ?? finalPriceUYU ?? productPriceUYU} UYU
             </div>
 
             {product.discountPriceUSD ? (
               <div className="text-sm text-gray-500 line-through">
-                $ {productPriceUSD} USD
+                $ {finalPriceUSD ?? productPriceUSD} USD
               </div>
             ) : null}
             <div className={product.discountPriceUSD ? "text-red-600 font-bold" : ""}>
-              $ {product.discountPriceUSD ?? productPriceUSD} USD
+              $ {product.discountPriceUSD ?? finalPriceUSD ?? productPriceUSD} USD
             </div>
           </div>
         </div>

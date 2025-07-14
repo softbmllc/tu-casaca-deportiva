@@ -1,5 +1,6 @@
 // src/pages/CartPage.tsx
 import { useCart } from "../context/CartContext";
+import { getFinalPrice } from "../utils/priceUtils";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import RelatedProducts from "../components/RelatedProducts";
@@ -53,14 +54,18 @@ const [resetConfirm, setResetConfirm] = useState("");
       items: items.map(item => ({
         id: item.id,
         nombre: item.name,
-        precio: currency === "USD" ? item.priceUSD : item.priceUYU,
+        precio: currency === "USD"
+          ? getFinalPrice(item, "USD")
+          : getFinalPrice(item, "UYU"),
         cantidad: item.quantity,
         talle: item.size,
         customName: item.customName,
         customNumber: item.customNumber,
       })),
       total: items.reduce((sum, item) => {
-        const price = currency === "USD" ? item.priceUSD : item.priceUYU;
+        const price = currency === "USD"
+          ? getFinalPrice(item, "USD")
+          : getFinalPrice(item, "UYU");
         return sum + price * item.quantity;
       }, 0),
       moneda: currency,
@@ -199,7 +204,7 @@ const [resetConfirm, setResetConfirm] = useState("");
           items: items.map((item) => ({
             title: item.name,
             quantity: item.quantity,
-            unit_price: currency === "USD" ? item.priceUSD : item.priceUYU,
+            unit_price: currency === "USD" ? getFinalPrice(item, "USD") : getFinalPrice(item, "UYU"),
             currency_id: currency,
           })),
           payer: {
@@ -233,7 +238,9 @@ const [resetConfirm, setResetConfirm] = useState("");
   };
 
   const total = items.reduce((sum, item) => {
-    const price = currency === "USD" ? item.priceUSD : item.priceUYU;
+    const price = currency === "USD"
+      ? getFinalPrice(item, "USD")
+      : getFinalPrice(item, "UYU");
     return sum + price * item.quantity;
   }, 0);
 
@@ -449,7 +456,9 @@ const [resetConfirm, setResetConfirm] = useState("");
 
           <ul className="divide-y divide-gray-200 mb-6">
             {items.map((item, index) => {
-              const price = currency === "USD" ? item.priceUSD : item.priceUYU;
+              const price = currency === "USD"
+                ? getFinalPrice(item, "USD")
+                : getFinalPrice(item, "UYU");
               const totalItem = price * item.quantity;
               return (
                 <li key={index} className="py-4 flex gap-4 items-center">

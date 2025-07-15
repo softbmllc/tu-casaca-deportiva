@@ -5,6 +5,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  safelist: ['text-red-600', 'line-through'],
   theme: {
   	extend: {
   		fontFamily: {

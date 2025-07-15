@@ -29,6 +29,10 @@ export default function ProductCard({ product }: ProductCardProps) {
   const finalPriceUYU = getFinalPrice(product, "UYU");
 
   console.log("🧪 Renderizando ProductCard:", product);
+  console.log("💸 Precio vs Descuento", {
+    precio: product.priceUYU,
+    descuento: product.discountPriceUYU,
+  });
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -56,7 +60,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
         </div>
         <div className="p-3">
-          {(product.discountPriceUSD || product.discountPriceUYU) && (
+          {typeof product.discountPriceUYU === "number" &&
+           product.discountPriceUYU < productPriceUYU && (
             <PriceBadge variant="oferta" />
           )}
           {product.subtitle && (
@@ -67,7 +72,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           </h3>
           <div className="mt-2 space-y-1 min-h-[48px]">
             {typeof productPriceUYU === "number" ? (
-              typeof product.discountPriceUYU === "number" && !isNaN(product.discountPriceUYU) ? (
+              typeof product.discountPriceUYU === "number" &&
+              !isNaN(product.discountPriceUYU) &&
+              product.discountPriceUYU < productPriceUYU ? (
                 <div className="flex flex-col leading-tight">
                   <span className="text-sm text-gray-500 line-through">
                     $ {productPriceUYU.toLocaleString("es-UY", {

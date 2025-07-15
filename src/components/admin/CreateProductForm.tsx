@@ -395,6 +395,23 @@ const watchedLeague = watch("league");
   };
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
+    // Validación: el precio de oferta no puede ser igual o mayor al precio original (UYU)
+    if (
+      typeof data.discountPriceUYU === "number" &&
+      data.discountPriceUYU >= data.priceUYU
+    ) {
+      alert("⚠️ El precio de oferta debe ser menor al precio original (UYU).");
+      return;
+    }
+    // Validación: el precio de oferta no puede ser igual o mayor al precio original (USD)
+    if (
+      typeof data.discountPriceUSD === "number" &&
+      data.discountPriceUSD >= data.priceUSD
+    ) {
+      alert("⚠️ El precio de oferta debe ser menor al precio original (USD).");
+      return;
+    }
+
     if (images.length === 0) {
       setError("Debes subir al menos una imagen");
       return;

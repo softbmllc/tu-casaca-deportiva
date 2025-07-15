@@ -292,6 +292,24 @@ const handleSaveProduct = async () => {
       setSaving(false);
       return;
     }
+    // Validación: el precio de oferta UYU debe ser menor al precio original UYU
+    if (
+      typeof formData.discountPriceUYU === "number" &&
+      formData.discountPriceUYU >= formData.priceUYU
+    ) {
+      alert("⚠️ El precio de oferta debe ser menor al precio original (UYU).");
+      setSaving(false);
+      return;
+    }
+    // (Opcional) Validar USD también:
+    if (
+      typeof formData.discountPriceUSD === "number" &&
+      formData.discountPriceUSD >= formData.priceUSD
+    ) {
+      alert("⚠️ El precio de oferta debe ser menor al precio original (USD).");
+      setSaving(false);
+      return;
+    }
     const productId = String(formData.id);
     const { id, ...productData } = formData;
 

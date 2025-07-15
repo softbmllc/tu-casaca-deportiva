@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Product } from "../data/types";
 import { motion } from "framer-motion";
 import { getFinalPrice } from "../utils/priceUtils";
+import PriceBadge from "./PriceBadge";
 
 type ProductCardProps = {
   product: Product;
@@ -23,12 +24,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   const productName = product.name || product.title || "Producto";
 
   // Asegurar que tenemos precios
-  const productPriceUSD = product.priceUSD || 0;
-  const productPriceUYU = product.priceUYU || 0;
+  const productPriceUYU = product.priceUYU ?? undefined;
 
-  const finalPriceUSD = getFinalPrice(product, "USD");
   const finalPriceUYU = getFinalPrice(product, "UYU");
 
+  console.log("🧪 Renderizando ProductCard:", product);
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -55,31 +55,41 @@ export default function ProductCard({ product }: ProductCardProps) {
             }}
           />
         </div>
-        <div className="p-4">
+        <div className="p-3">
+          {(product.discountPriceUSD || product.discountPriceUYU) && (
+            <PriceBadge variant="oferta" />
+          )}
           {product.subtitle && (
             <div className="text-sm text-gray-600 mb-1">{product.subtitle}</div>
           )}
           <h3 className="text-lg font-bold text-black leading-tight line-clamp-2 group-hover:text-black/80 transition">
             {productName}
           </h3>
-          <div className="mt-1.5 text-base font-semibold space-y-1">
-            {product.discountPriceUYU ? (
-              <div className="text-sm text-gray-500 line-through">
-                $ {finalPriceUYU ?? productPriceUYU} UYU
-              </div>
-            ) : null}
-            <div className={product.discountPriceUYU ? "text-red-600 font-bold" : ""}>
-              $ {product.discountPriceUYU ?? finalPriceUYU ?? productPriceUYU} UYU
-            </div>
-
-            {product.discountPriceUSD ? (
-              <div className="text-sm text-gray-500 line-through">
-                $ {finalPriceUSD ?? productPriceUSD} USD
-              </div>
-            ) : null}
-            <div className={product.discountPriceUSD ? "text-red-600 font-bold" : ""}>
-              $ {product.discountPriceUSD ?? finalPriceUSD ?? productPriceUSD} USD
-            </div>
+          <div className="mt-2 space-y-1 min-h-[48px]">
+            {typeof productPriceUYU === "number" ? (
+              typeof product.discountPriceUYU === "number" && !isNaN(product.discountPriceUYU) ? (
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm text-gray-500 line-through">
+                    $ {productPriceUYU.toLocaleString("es-UY", {
+                      minimumFractionDigits: 0,
+                    })} UYU
+                  </span>
+                  <span className="text-red-600 font-bold text-lg">
+                    $ {product.discountPriceUYU.toLocaleString("es-UY", {
+                      minimumFractionDigits: 0,
+                    })} UYU
+                  </span>
+                </div>
+              ) : (
+                <span className="text-black font-semibold text-base">
+                  $ {productPriceUYU.toLocaleString("es-UY", {
+                    minimumFractionDigits: 0,
+                  })} UYU
+                </span>
+              )
+            ) : (
+              <span className="text-gray-400 text-sm">Precio no disponible</span>
+            )}
           </div>
         </div>
       </Link>

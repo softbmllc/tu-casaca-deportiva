@@ -1,4 +1,5 @@
 // src/firebaseUtils.ts
+
 import { db } from "./firebase";
 import {
   collection,
@@ -8,6 +9,7 @@ import {
   updateDoc,
   deleteDoc,
   getDoc,
+  deleteField,
 } from "firebase/firestore";
 import { Product, League, Team, Client } from "./data/types";
 
@@ -46,6 +48,8 @@ export async function fetchProducts(): Promise<Product[]> {
       customName: data.customName || "",
       customNumber: data.customNumber || "",
       allowCustomization: data.allowCustomization ?? false,
+      discountPriceUSD: typeof data.discountPriceUSD === "number" ? data.discountPriceUSD : null,
+      discountPriceUYU: typeof data.discountPriceUYU === "number" ? data.discountPriceUYU : null,
     };
   }) as Product[];
 
@@ -112,6 +116,8 @@ function mapProductData(id: string, data: any): Product {
     customName: data.customName || "",
     customNumber: data.customNumber || "",
     allowCustomization: data.allowCustomization ?? false,
+    discountPriceUSD: typeof data.discountPriceUSD === "number" ? data.discountPriceUSD : null,
+    discountPriceUYU: typeof data.discountPriceUYU === "number" ? data.discountPriceUYU : null,
   };
 }
 
@@ -132,7 +138,18 @@ export async function createProduct(product: Partial<Product>) {
 export async function updateProduct(productId: string, updatedData: Partial<Product>) {
   try {
     const productRef = doc(db, "products", productId);
-    await updateDoc(productRef, updatedData);
+
+    const finalData: any = { ...updatedData };
+
+    if (!updatedData.discountPriceUSD && updatedData.discountPriceUSD !== 0) {
+      finalData.discountPriceUSD = deleteField();
+    }
+
+    if (!updatedData.discountPriceUYU && updatedData.discountPriceUYU !== 0) {
+      finalData.discountPriceUYU = deleteField();
+    }
+
+    await updateDoc(productRef, finalData);
     console.log("Producto actualizado:", productId);
   } catch (error) {
     console.error("Error actualizando producto:", error);

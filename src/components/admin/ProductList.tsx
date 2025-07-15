@@ -1,4 +1,5 @@
 // src/components/admin/ProductList.tsx
+
 import { useEffect, useState } from "react";
 import { Product } from "../../data/types";
 import { fetchProducts, deleteProduct, fetchProductById, updateProduct } from "../../firebaseUtils";
@@ -49,8 +50,28 @@ export default function ProductList() {
 
   const handleSaveProduct = async (updatedProduct: Product) => {
     try {
+      const cleanedProduct: Partial<Product> = {
+        ...updatedProduct,
+        priceUSD: Number(updatedProduct.priceUSD) || 0,
+        priceUYU: Number(updatedProduct.priceUYU) || 0,
+      };
+
+      if (updatedProduct.discountPriceUSD !== undefined && updatedProduct.discountPriceUSD !== null) {
+        const parsed = Number(updatedProduct.discountPriceUSD);
+        if (!isNaN(parsed)) {
+          cleanedProduct.discountPriceUSD = parsed;
+        }
+      }
+
+      if (updatedProduct.discountPriceUYU !== undefined && updatedProduct.discountPriceUYU !== null) {
+        const parsed = Number(updatedProduct.discountPriceUYU);
+        if (!isNaN(parsed)) {
+          cleanedProduct.discountPriceUYU = parsed;
+        }
+      }
+
       if (updatedProduct.id) {
-        await updateProduct(updatedProduct.id, updatedProduct);
+        await updateProduct(updatedProduct.id, cleanedProduct);
         const refreshedProducts = await fetchProducts();
         setProducts(refreshedProducts);
         setIsModalOpen(false);

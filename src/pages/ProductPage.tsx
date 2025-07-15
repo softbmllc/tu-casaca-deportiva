@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import CartIcon from "../components/CartIcon";
+import PriceBadge from "../components/PriceBadge";
 import { fetchProductById, fetchProducts } from "../firebaseUtils";
 import { useCart } from "../context/CartContext";
 import { Check, ChevronLeft, ArrowUp, Shirt, Sparkles, Calendar, ScissorsLineDashed, Package } from "lucide-react";
@@ -189,26 +190,32 @@ export default function ProductPage() {
             </h1>
             {product.subtitle && <p className="text-gray-600 mb-4">{product.subtitle}</p>}
 
+            {(product.discountPriceUYU || product.discountPriceUSD) && (
+              <PriceBadge variant="exclusivo" />
+            )}
             <div className="mb-6 space-y-1">
               {product.discountPriceUYU ? (
                 <>
-                  <div className="text-lg text-gray-500 line-through">
-                    ${finalPriceUYU} <span className="text-sm text-gray-400">UYU</span>
+                  <div className="text-lg text-gray-500 line-through flex gap-1">
+                    <span>${finalPriceUYU}</span>
+                    <span>UYU</span>
                   </div>
-                  <div className="text-4xl font-extrabold text-red-600">
-                    ${product.discountPriceUYU + (hasCustomization ? 400 : 0)} <span className="text-xl font-semibold text-gray-700">UYU</span>
+                  <div className="text-4xl font-extrabold text-red-600 flex gap-1 items-baseline">
+                    <span>${product.discountPriceUYU + (hasCustomization ? 400 : 0)}</span>
+                    <span className="text-xl font-semibold text-red-600">UYU</span>
                   </div>
                 </>
               ) : (
-                <div className="text-4xl font-extrabold text-black">
-                  ${finalPriceUYU} <span className="text-xl font-semibold text-gray-700">UYU</span>
+                <div className="text-4xl font-extrabold text-black flex gap-1 items-baseline">
+                  <span>${finalPriceUYU}</span>
+                  <span className="text-xl font-semibold text-gray-600">UYU</span>
                 </div>
               )}
 
               {product.discountPriceUSD ? (
                 <>
                   <div className="text-sm text-gray-500 italic line-through">${finalPriceUSD} USD</div>
-                  <div className="text-base font-semibold text-red-600 italic">
+                  <div className="text-lg font-bold text-red-600 italic">
                     ${product.discountPriceUSD + (hasCustomization ? 10 : 0)} USD
                   </div>
                 </>

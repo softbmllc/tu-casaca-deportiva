@@ -1,4 +1,5 @@
 // src/components/admin/EditProductModal.tsx
+
 import { useState, useEffect } from "react";
 import { defaultDescriptions } from "../../data/defaultDescriptions";
 import { uploadImageToImageKit } from "../../utils/imagekitUtils";
@@ -124,7 +125,73 @@ function SortableImageItem({
   );
 }
 
+// Ejemplo de integración de useForm (no estaba en el original, pero aquí va el bloque pedido)
+import { useForm } from "react-hook-form";
+
 export default function EditProductModal({ product, onSave, onClose }: Props) {
+  // useForm para manejo de formulario (si se usa en algún lado)
+  const { register, handleSubmit, reset, formState } = useForm<Product>({
+    defaultValues: {
+      title: product.title,
+      slug: product.slug,
+      name: product.name,
+      priceUSD: product.priceUSD,
+      priceUYU: product.priceUYU,
+      discountPriceUSD: product.discountPriceUSD ?? undefined,
+      discountPriceUYU: product.discountPriceUYU ?? undefined,
+      description: product.description || "",
+      extraDescriptionTop: product.extraDescriptionTop || "",
+      extraDescriptionBottom: product.extraDescriptionBottom || "",
+      defaultDescriptionType: product.defaultDescriptionType || "camiseta",
+      descriptionPosition: product.descriptionPosition || "bottom",
+      allowCustomization: product.allowCustomization ?? true,
+    }
+  });
+
+useEffect(() => {
+  if (!product || !product.id) return;
+
+  // Limpiar los campos vacíos o no numéricos a undefined antes de reset
+  if (typeof product.discountPriceUSD !== "number") product.discountPriceUSD = undefined;
+  if (typeof product.discountPriceUYU !== "number") product.discountPriceUYU = undefined;
+
+  reset({
+    title: product.title || "",
+    slug: product.slug || "",
+    name: product.name || "",
+    description: product.description || "",
+    priceUSD: product.priceUSD || 0,
+    priceUYU: product.priceUYU || 0,
+    discountPriceUSD: isNaN(Number(product.discountPriceUSD)) ? undefined : product.discountPriceUSD,
+    discountPriceUYU: isNaN(Number(product.discountPriceUYU)) ? undefined : product.discountPriceUYU,
+    extraDescriptionTop: product.extraDescriptionTop || "",
+    extraDescriptionBottom: product.extraDescriptionBottom || "",
+    defaultDescriptionType: product.defaultDescriptionType || "camiseta",
+    descriptionPosition: product.descriptionPosition || "bottom",
+    allowCustomization: product.allowCustomization ?? true,
+  });
+
+  // 🧪 Debug en producción: mostrar los valores que se cargan en el reset
+  console.log("🧪 reset data:", {
+    title: product.title || "",
+    slug: product.slug || "",
+    name: product.name || "",
+    description: product.description || "",
+    priceUSD: product.priceUSD || 0,
+    priceUYU: product.priceUYU || 0,
+    discountPriceUSD: isNaN(Number(product.discountPriceUSD)) ? undefined : product.discountPriceUSD,
+    discountPriceUYU: isNaN(Number(product.discountPriceUYU)) ? undefined : product.discountPriceUYU,
+    extraDescriptionTop: product.extraDescriptionTop || "",
+    extraDescriptionBottom: product.extraDescriptionBottom || "",
+    defaultDescriptionType: product.defaultDescriptionType || "camiseta",
+    descriptionPosition: product.descriptionPosition || "bottom",
+    allowCustomization: product.allowCustomization ?? true,
+  });
+
+  setSelectedCategory(typeof product.category === "string" ? product.category : product.category?.id || "");
+  setSelectedSubcategory(typeof product.subCategory === "string" ? product.subCategory : product.subCategory?.id || "");
+  setSelectedTeam(typeof product.team === "string" ? product.team : product.team?.id || "");
+}, [product, reset]);
 const [formData, setFormData] = useState<Product>({
   ...product,
   discountPriceUSD: product.discountPriceUSD ?? undefined,
@@ -237,8 +304,8 @@ const handleSaveProduct = async () => {
       title: (productData.title ?? "") as string,
       slug: (productData.slug ?? generateSlug(productData.title ?? "")) as string,
       images: productData.images || [],
-      priceUSD: productData.priceUSD || 0,
-      priceUYU: productData.priceUYU || 0,
+      priceUSD: productData.priceUSD !== undefined ? Number(productData.priceUSD) : 0,
+      priceUYU: productData.priceUYU !== undefined ? Number(productData.priceUYU) : 0,
       stock: {
         S: productData.stock?.S || 0,
         M: productData.stock?.M || 0,
@@ -260,9 +327,29 @@ const handleSaveProduct = async () => {
       allowCustomization: productData.allowCustomization || false,
       descriptionPosition: productData.descriptionPosition || "bottom",
       active: productData.active !== undefined ? productData.active : true,
-      discountPriceUSD: productData.discountPriceUSD ?? undefined,
-      discountPriceUYU: productData.discountPriceUYU ?? undefined,
+      // discountPriceUSD and discountPriceUYU will be cleaned below
+      discountPriceUSD: productData.discountPriceUSD,
+      discountPriceUYU: productData.discountPriceUYU,
     };
+
+    // --- LIMPIEZA DE PRECIOS DE OFERTA: eliminar si no son números válidos ---
+    if (
+      typeof updatedProduct.discountPriceUSD !== "number" ||
+      isNaN(updatedProduct.discountPriceUSD)
+    ) {
+      delete updatedProduct.discountPriceUSD;
+    }
+    if (
+      typeof updatedProduct.discountPriceUYU !== "number" ||
+      isNaN(updatedProduct.discountPriceUYU)
+    ) {
+      delete updatedProduct.discountPriceUYU;
+    }
+
+    // 🧪 Debug: Mostrar el producto a guardar antes de actualizar
+    console.log("🧪 Producto a guardar:", updatedProduct);
+    // 🧪 Debug extra: Confirmar el estado exacto del producto actualizado
+    console.log("🧪 Producto actualizado:", updatedProduct);
 
     await updateProduct(productId, updatedProduct);
     onSave(updatedProduct);
@@ -421,8 +508,17 @@ return (
                 <label className="block text-sm font-medium text-gray-700 mb-1">Precio oferta USD (opcional)</label>
                 <input
                   type="number"
-                  value={formData.discountPriceUSD ?? ""}
-                  onChange={(e) => handleChange("discountPriceUSD", parseFloat(e.target.value))}
+                  value={
+                    typeof formData.discountPriceUSD === "number" && !isNaN(formData.discountPriceUSD)
+                      ? formData.discountPriceUSD
+                      : ""
+                  }
+                  onChange={(e) =>
+                    handleChange(
+                      "discountPriceUSD",
+                      e.target.value === "" ? undefined : parseFloat(e.target.value)
+                    )
+                  }
                   className="remove-arrows shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
                   min="0"
                   step="0.01"
@@ -432,8 +528,17 @@ return (
                 <label className="block text-sm font-medium text-gray-700 mb-1">Precio oferta UYU (opcional)</label>
                 <input
                   type="number"
-                  value={formData.discountPriceUYU ?? ""}
-                  onChange={(e) => handleChange("discountPriceUYU", parseFloat(e.target.value))}
+                  value={
+                    typeof formData.discountPriceUYU === "number" && !isNaN(formData.discountPriceUYU)
+                      ? formData.discountPriceUYU
+                      : ""
+                  }
+                  onChange={(e) =>
+                    handleChange(
+                      "discountPriceUYU",
+                      e.target.value === "" ? undefined : parseFloat(e.target.value)
+                    )
+                  }
                   className="remove-arrows shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
                   min="0"
                   step="1"

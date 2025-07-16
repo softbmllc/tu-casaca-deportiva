@@ -20,8 +20,8 @@ export default function CategorySection() {
 
   return (  
     <section
-  id="catalogo"
-  className="py-10 sm:py-24 text-center scroll-mt-16 bg-[#0F0F0F]"
+      id="catalogo"
+      className="pt-10 pb-16 sm:pt-12 sm:pb-20 text-center scroll-mt-16 bg-[#0F0F0F]"
 >
       <Helmet>
         <title>Categorías | Mutter Games</title>

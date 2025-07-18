@@ -9,6 +9,7 @@ import { Product } from "../../data/types";
 import { updateProduct, fetchCategories, fetchSubcategories } from "../../firebaseUtils";
 import { generateSlug } from "../../utils/generateSlug";
 import { uploadImageToImageKit } from "../../utils/imagekitUtils";
+import { TIPOS } from "@/constants/tipos";
 
 import { normalizeProduct } from "../../utils/normalizeProduct";
 
@@ -60,6 +61,7 @@ interface Props {
     name: string | { es?: string; en?: string };
     categoryId: string;
   }[];
+  open: boolean; // <-- aseguramos que open esté como prop
 }
 
 
@@ -137,7 +139,17 @@ function SortableImageItem({
   );
 }
 
-export default function EditProductModal({ product, onSave, onClose, subcategories }: Props) {
+export default function EditProductModal({ product, onSave, onClose, subcategories, open }: Props) {
+  // Reinicializa formData cada vez que el modal se abre y cambia el producto
+  useEffect(() => {
+    if (open && product) {
+      console.log("🧪 product recibido al abrir modal: ", product);
+      setFormData({
+        ...product,
+        tipo: product.tipo || "",
+      });
+    }
+  }, [open, product]);
   const [formData, setFormData] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -145,8 +157,6 @@ export default function EditProductModal({ product, onSave, onClose, subcategori
 
   const [categories, setCategories] = useState<{ id: string; name: string | { es?: string; en?: string }; categoryId: string }[]>([]);
 
-  // Estado de control para inicialización
-  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Cargar categorías desde Firebase al montar
   useEffect(() => {
@@ -187,24 +197,26 @@ export default function EditProductModal({ product, onSave, onClose, subcategori
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  useEffect(() => {
-    if (
-      hasInitialized ||
-      !product ||
-      subcategories.length === 0 ||
-      categories.length === 0
-    ) {
-      return;
-    }
+useEffect(() => {
+  if (!product || subcategories.length === 0 || categories.length === 0) return;
 
-    const initialCategory = categories.find((cat) => cat.id === product.category?.id);
-    const initialSubcategory = subcategories.find((s) => s.id === product.subcategory?.id);
+  const initialCategory = categories.find((cat) => cat.id === product.category?.id);
+  const initialSubcategory = subcategories.find((s) => s.id === product.subcategory?.id);
 
-    setSelectedCategory(initialCategory?.id || product.category?.id || "");
-    setSelectedSubcategory(initialSubcategory?.id || product.subcategory?.id || "");
+  setSelectedCategory(initialCategory?.id || product.category?.id || "");
+  setSelectedSubcategory(initialSubcategory?.id || product.subcategory?.id || "");
 
-    setFormData({
+  // Log del producto recibido al abrir modal
+  console.log("🧪 product recibido al abrir modal:", product);
+
+  // Nuevo bloque para tipo
+  const tipoFinal = product.tipo ?? "";
+  console.log("✅ Tipo recibido desde Firebase:", tipoFinal);
+  setFormData((prev) => {
+    if (prev?.id === product.id) return prev;
+    return {
       ...product,
+      tipo: tipoFinal,
       category: {
         id: initialCategory?.id || product.category?.id || "",
         name:
@@ -223,11 +235,10 @@ export default function EditProductModal({ product, onSave, onClose, subcategori
             ? initialSubcategory.name?.es || initialSubcategory.name?.en || ""
             : "",
         categoryId: initialSubcategory?.categoryId || product.subcategory?.categoryId || "",
-      },
-    });
-
-    setHasInitialized(true);
-  }, [product, categories, subcategories, hasInitialized]);
+      }
+    };
+  });
+}, [product, categories, subcategories]);
 
 
 
@@ -359,7 +370,7 @@ const handleUpload = async (file: File): Promise<string | null> => {
               : "",
           categoryId: selectedSubcategoryObject?.categoryId ?? "",
         },
-        tipo: productData.tipo || "",
+        tipo: productData.tipo?.trim() || "",
         defaultDescriptionType: productData.defaultDescriptionType || "none",
         extraDescriptionTop: productData.extraDescriptionTop || "",
         extraDescriptionBottom: productData.extraDescriptionBottom || "",
@@ -431,7 +442,6 @@ const removeImage = (index: number) => {
   });
 };
 
-
 // Loader visual si formData aún no está listo
 if (!formData) {
   return (
@@ -440,6 +450,9 @@ if (!formData) {
     </div>
   );
 }
+
+// Log justo antes del return para ver el valor de formData.tipo al renderizar
+console.log("🧠 formData.tipo al renderizar:", JSON.stringify(formData?.tipo));
 
 return (
   <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -594,46 +607,24 @@ return (
                   </div>
                 </div>
                 <div className="lg:col-span-2">
-                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Tipo de producto</label>
-                  <select
-                    value={formData?.tipo || ""}
-                    onChange={(e) => handleChange("tipo", e.target.value)}
-                    className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
-                  >
-                    <option value="">Seleccionar tipo</option>
-                    <option value="Juego">Juego</option>
-                    <option value="Consola">Consola</option>
-                    <option value="Accesorio">Accesorio</option>
-                    <option value="Merch">Merch</option>
-                  </select>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Tipo</label>
+                    <select
+                      name="tipo"
+                      value={formData.tipo || ""}
+                      onChange={(e) => handleChange("tipo", e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black sm:text-sm"
+                    >
+                      <option value="">Seleccionar tipo</option>
+                      {TIPOS.map((tipo) => (
+                        <option key={tipo} value={tipo}>
+                          {tipo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="lg:col-span-2">
-  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Tipo de producto</label>
-  <select
-    value={formData?.tipo || ""}
-    onChange={(e) => handleChange("tipo", e.target.value)}
-    className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
-  >
-    <option value="">Seleccionar tipo</option>
-    <option value="Juego">Juego</option>
-    <option value="Consola">Consola</option>
-    <option value="Accesorio">Accesorio</option>
-    <option value="Merch">Merch</option>
-  </select>
-</div>
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Precio USD</label>
-                  <input
-                    type="number"
-                    value={formData.priceUSD || 0}
-                    disabled
-                    onChange={(e) => handleChange("priceUSD", parseFloat(e.target.value))}
-                    className="remove-arrows shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
+                {/* Precio USD eliminado */}
                 {/* Precio UYU eliminado */}
               </div>
             </div>
@@ -698,7 +689,7 @@ return (
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold tracking-wide text-gray-800 mb-1">Precio USD</label>
+                        <label className="block text-xs font-semibold tracking-wide text-gray-800 mb-1">Precio</label>
                         <input
                           type="number"
                           step="0.01"

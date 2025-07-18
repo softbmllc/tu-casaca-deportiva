@@ -62,7 +62,7 @@ html {
 }
 
 @layer base {
-  html, body, #root {
+  body.dark-theme, body.dark-theme #root {
     @apply bg-[#0F0F0F] text-white min-h-screen;
   }
 
@@ -79,9 +79,4 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 input[type="number"] {
   -moz-appearance: textfield;
-}
-
-/* Forzar fondo negro en todos los niveles del DOM, incluso ante conflictos externos */
-html, body, #root {
-  background-color: #0F0F0F !important;
 }

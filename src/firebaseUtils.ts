@@ -79,6 +79,7 @@ export async function fetchProducts(): Promise<Product[]> {
       category: data.category || { id: "", name: "" },
       subcategory: data.subcategory || { id: "", name: "" },
       team: data.team || { id: "", name: "" },
+      tipo: data.tipo || "",
       subtitle: data.subtitle || "",
       description: data.description || "",
       defaultDescriptionType: data.defaultDescriptionType || "none",
@@ -433,6 +434,7 @@ export async function fetchCategories(): Promise<Category[]> {
           id: subDoc.id,
           name: subName,
           categoryId: doc.id,
+          orden: subDoc.data().orden ?? 0,
         };
       });
 
@@ -441,11 +443,13 @@ export async function fetchCategories(): Promise<Category[]> {
         name,
         categoryId: doc.id,
         subcategories,
+        orden: doc.data().orden ?? 0,
       };
     })
   );
 
-  return categories;
+  // Ordenar por 'orden' ascendente
+  return categories.sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
 }
 
 // 🔥 Función para guardar un pedido completo en Firebase

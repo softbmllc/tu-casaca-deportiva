@@ -1,4 +1,5 @@
 // src/pages/Shop.tsx
+
 import React, { useState, useEffect, Suspense } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { useMemo } from "react";
@@ -10,6 +11,9 @@ import type { Category } from "../data/types";
 
 import { FiFilter } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall } from "react-icons/fa";
+import { IoGameControllerOutline } from "react-icons/io5";
+import { Gamepad } from "lucide-react";
+import { TIPOS } from '@/constants/tipos';
 import { motion } from "framer-motion";
 import CartIcon from "../components/CartIcon";
 import { ArrowUp, Bolt } from "lucide-react";
@@ -36,6 +40,7 @@ type LocalProduct = Product & {
     id: string;
     name: string;
   };
+  tipo?: string;
 };
 
 export default function Shop() {
@@ -96,18 +101,38 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   // Estado para mostrar SidebarFilter en mobile (nuevo)
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   // Estado para filtrar por tipo
-  const [selectedTipo, setSelectedTipo] = useState<string>("");
+  // NUEVO: Estado para filtro por tipo de producto (botones custom)
+  const [selectedType, setSelectedType] = useState("Todos");
+
+  // NUEVO: Handler para filtro por tipo
+  const handleFilterByType = (tipo: string) => {
+    setSelectedType(tipo);
+    // Lógica de filtrado por tipo
+    // Si tu lógica previa usaba selectedTipo, podés mapear los valores:
+    // "Todos" -> "", "Juegos" -> "Juego", "Consolas" -> "Consola", "Accesorios" -> "Accesorio", "Merchandising" -> "Merch"
+    const tipoMap: Record<string, string> = {
+      Todos: "",
+      Juegos: "Juego",
+      Consolas: "Consola",
+      Accesorios: "Accesorio",
+      Merchandising: "Merch",
+    };
+    setSelectedType(tipo); // Mantener el estado de tipo seleccionado (UI)
+    // Si necesitas mapear a otro valor para filtrado, podrías guardar ese valor aparte, pero aquí solo se usa selectedType
+  };
 
   // 🔥 Cargar productos de Firebase al montar
   useEffect(() => {
     const loadProducts = async () => {
       try {
         const fetchedProducts = await fetchProducts();
-        
-        // Filtrar solo productos activos
-        const footballProducts = fetchedProducts.filter((product: Product) => {
-          return product.active !== false;
-        });
+        // Filtrar solo productos activos y asegurar que todos tengan el campo tipo
+        const footballProducts = fetchedProducts
+          .filter((product: Product) => product.active !== false)
+          .map((product: Product) => ({
+            ...product,
+            tipo: product.tipo || "",
+          }));
 
         setProducts(footballProducts);
         setLoading(false);
@@ -119,7 +144,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
         setLoading(false);
       }
     };
-  
+
     loadProducts();
   }, []);
 
@@ -319,10 +344,21 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   const { i18n } = useTranslation();
   const filteredProducts = useMemo(() => {
     // Nuevo bloque de filtrado con lógica de tipo:
+    // Mapeo para selectedType a valor real de tipo en productos
+    const tipoMap: Record<string, string> = {
+      Todos: "",
+      Juegos: "Juego",
+      Consolas: "Consola",
+      Accesorios: "Accesorio",
+      Merchandising: "Merch",
+    };
+    const selectedTipo = tipoMap[selectedType] ?? "";
     const filtered = products.filter((product) => {
       const categoryMatch = selectedCategory ? product.category?.id === selectedCategory : true;
       const subcategoryMatch = selectedSubcategory ? product.subcategory?.id === selectedSubcategory : true;
-      const tipoMatch = selectedTipo ? product.tipo === selectedTipo : true;
+      const tipoMatch = selectedTipo
+        ? product.tipo?.toLowerCase() === selectedTipo.toLowerCase()
+        : true;
       const searchMatch = searchTerm
         ? product.title?.[i18n.language as "en" | "es"]?.toLowerCase().includes(searchTerm.toLowerCase())
         : true;
@@ -332,15 +368,19 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
     // --- DEBUG: Mostrar por consola los valores del filtro y productos resultantes ---
     console.log("Selected category:", selectedCategory);
     console.log("Selected subcategory:", selectedSubcategory);
+    // Debug detallado del filtro por tipo
     filtered.forEach(p => {
       console.log(
         "🧪",
         p.title?.[i18n.language as "en" | "es"],
-        "| category.id:", p.category?.id,
-        "| subcategory.id:", p.subcategory?.id
+        "| tipo:", p.tipo,
+        "| tipoLower:", p.tipo?.toLowerCase(),
+        "| selectedType:", selectedType,
+        "| selectedTipo:", selectedTipo,
+        "| tipoMatch:", p.tipo?.toLowerCase() === selectedTipo.toLowerCase()
       );
     });
-    // ---------------------------------------------------------
+    // -----------------------------------------
 
     // Ordenamiento (si se desea conservar)
     switch (sortOption) {
@@ -363,14 +403,10 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
       default:
         return filtered;
     }
-  }, [products, selectedCategory, selectedSubcategory, selectedTipo, searchTerm, sortOption, i18n.language]);
+  }, [products, selectedCategory, selectedSubcategory, selectedType, searchTerm, sortOption, i18n.language]);
 
   const isStockExpress = selectedLeague === "STOCK_EXPRESS";
-  const productsToDisplay = filteredProducts.filter((p) => {
-    if (filterParam === "NBA") return p.category?.name === "NBA";
-    if (filterParam === "FUTBOL") return p.category?.name !== "NBA";
-    return true; // sin filtro, mostrar todo
-  });
+  const productsToDisplay = filteredProducts;
   
   // Adaptamos esto para usar dynamicLeagues en lugar de leagues
   const currentLeague = dynamicLeagues.find((l) => l.name === selectedLeague);
@@ -452,7 +488,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
         >
           <div>
             <label className="block font-semibold text-sm mb-2" htmlFor="search">
-              {t("shop.searchLabel", "Buscar por nombre")}
+              Buscar por nombre
             </label>
             <input
               id="search"
@@ -478,21 +514,30 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             )}
           />
 
-          {/* Filtro por tipo */}
-          <div className="hidden md:block mt-6">
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">Filtrar por tipo</h3>
-            <div className="flex flex-wrap gap-2">
-              {["", "Juego", "Consola", "Accesorio", "Merch"].map((tipo) => (
+          {/* Filtro por tipo (diseño estilizado) */}
+          <div className="mt-6">
+            <h3 className="text-sm font-bold uppercase text-black mb-2 flex items-center gap-2">
+              <Gamepad className="w-4 h-4" />
+              Tipo de producto
+            </h3>
+            <div className="flex flex-col gap-2">
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium border ${
+                  selectedType === '' ? 'bg-black text-white' : 'bg-white text-black'
+                }`}
+                onClick={() => setSelectedType('')}
+              >
+                Todos
+              </button>
+              {TIPOS.map((type) => (
                 <button
-                  key={tipo}
-                  onClick={() => setSelectedTipo(tipo)}
-                  className={`px-3 py-1 rounded-full text-sm border ${
-                    selectedTipo === tipo
-                      ? "bg-black text-white border-black"
-                      : "text-gray-700 hover:bg-gray-100"
+                  key={type}
+                  className={`px-4 py-2 rounded-full text-sm font-medium border ${
+                    selectedType === type ? 'bg-black text-white' : 'bg-white text-black'
                   }`}
+                  onClick={() => setSelectedType(type)}
                 >
-                  {tipo === "" ? "Todos" : tipo}
+                  {type}
                 </button>
               ))}
             </div>
@@ -517,7 +562,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">{t("shop.filters", "Filtros")}</h2>
+                    <h2 className="text-xl font-bold">Filtros</h2>
                     <button
                       onClick={() => setIsFilterOpen(false)}
                       className="p-1 rounded-full hover:bg-gray-100 transition"
@@ -529,7 +574,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                   <div className="space-y-6">
                     <div>
                       <label className="block font-semibold text-sm mb-2">
-                        {t("shop.searchLabel", "Buscar por nombre")}
+                        Buscar por nombre
                       </label>
                     <input
                       type="text"
@@ -624,10 +669,10 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                 ? t("shop.nba", "NBA")
                 : filterParam === "FUTBOL"
                 ? t("shop.soccer", "Fútbol")
-                : t("shop.allProducts", "Productos disponibles")}
+                : "Productos disponibles"}
             </h1>
             <p className="text-gray-600 mt-1 text-sm">
-              {t("shop.productsFound", { count: productsToDisplay.length, defaultValue: "{{count}} productos encontrados" })}
+              {productsToDisplay.length} productos encontrados
             </p>
             {(searchTerm || selectedLeague || selectedTeam) && (
               <button
@@ -641,7 +686,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                 }}
                 className="mt-2 text-sm font-semibold text-gray-700 hover:text-black underline"
               >
-                {t('shop.clearFilters')}
+                Quitar filtros
               </button>
             )}
           </div>
@@ -677,15 +722,15 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
               onClick={() => setShowMobileFilter(!showMobileFilter)}
               className="w-1/2 min-w-[150px] border rounded-md bg-white text-black text-sm font-medium py-2 px-4 shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
             >
-              <span>{t("shop.openFilters", "Filtros")}</span>
+              <span>Filtros</span>
               <ChevronDownIcon className="h-4 w-4 text-gray-500 ml-2" />
             </button>
 
             <Listbox value={selectedSort} onChange={handleSortChange}>
               <div className="relative w-1/2">
-                <Listbox.Label className="sr-only">{t("shop.sortBy", "Ordenar por")}</Listbox.Label>
-                <Listbox.Button className="w-full min-w-[150px] border rounded-md bg-white text-black text-sm font-medium py-2 px-4 shadow-sm hover:bg-gray-50 transition flex justify-between items-center">
-                  <span className="mr-2">{t("shop.sortBy", "Ordenar por")}:</span>
+                <Listbox.Label className="sr-only">Ordenar por</Listbox.Label>
+                <Listbox.Button className="w-full min-w-[150px] border rounded-md bg-white text-black text-sm font-medium py-2 px-4 shadow-sm hover:bg-gray-50 transition flex justify-between items-center border-[#0F0F0F] text-[#0F0F0F] focus:ring-[#FF2D55] focus:border-[#FF2D55]">
+                  <span className="mr-2">Ordenar por:</span>
                   <span>
                     {selectedSort.label}
                   </span>
@@ -702,16 +747,17 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                       <Listbox.Option
                         key={option.value}
                         value={option}
-                        className={({ active }) =>
-                          `cursor-pointer select-none relative py-2 pl-10 pr-4 ${
-                            active ? "bg-blue-100 text-blue-900" : "text-gray-900"
-                          }`
+                        className={({ active, selected }) =>
+                          `cursor-pointer select-none relative py-2 pl-10 pr-4
+                          ${selected ? 'bg-[#FF2D55] text-white font-bold' : ''}
+                          ${active && !selected ? 'hover:bg-[#FF2D55]/90 hover:text-white' : ''}
+                          ${!selected && !active ? 'text-[#0F0F0F]' : ''}`
                         }
                       >
                         {({ selected }) => (
                           <>
                             {selected && (
-                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
                                 ✓
                               </span>
                             )}
@@ -749,15 +795,15 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             <Listbox value={sortOption} onChange={setSortOption}>
               {({ open }) => (
                 <div className="relative w-52">
-                  <Listbox.Button className="w-full cursor-pointer rounded-md border border-gray-300 bg-white py-2 pl-4 pr-10 text-left shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm flex justify-between items-center">
+                  <Listbox.Button className="w-full cursor-pointer rounded-md border border-[#0F0F0F] bg-white py-2 pl-4 pr-10 text-left shadow-sm focus:outline-none focus:ring-1 text-sm flex justify-between items-center text-[#0F0F0F] focus:ring-[#FF2D55] focus:border-[#FF2D55]">
                     <span>
                       {{
-                        "": t("shop.sortBy", "Ordenar por"),
-                        priceAsc: t("shop.sortPriceAsc", "Precio: menor a mayor"),
-                        priceDesc: t("shop.sortPriceDesc", "Precio: mayor a menor"),
+                        "": "Ordenar por",
+                        priceAsc: "Precio: menor a mayor",
+                        priceDesc: "Precio: mayor a menor",
                         az: t("shop.sortNameAZ", "Nombre: A a Z"),
                         za: t("shop.sortNameZA", "Nombre: Z a A"),
-                      }[sortOption] || t("shop.sortBy", "Ordenar por")}
+                      }[sortOption] || "Ordenar por"}
                     </span>
                     <ChevronDownIcon
                       className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
@@ -767,28 +813,29 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                   </Listbox.Button>
                   <Listbox.Options className="absolute mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 text-sm">
                     {[
-                      { value: "", label: t("shop.sortBy", "Ordenar por") },
-                      { value: "priceAsc", label: t("shop.sortPriceAsc", "Precio: menor a mayor") },
-                      { value: "priceDesc", label: t("shop.sortPriceDesc", "Precio: mayor a menor") },
+                      { value: "", label: "Ordenar por" },
+                      { value: "priceAsc", label: "Precio: menor a mayor" },
+                      { value: "priceDesc", label: "Precio: mayor a menor" },
                       { value: "az", label: t("shop.sortNameAZ", "Nombre: A a Z") },
                       { value: "za", label: t("shop.sortNameZA", "Nombre: Z a A") },
                     ].map((option) => (
                       <Listbox.Option
                         key={option.value}
-                        className={({ active }) =>
-                          `cursor-pointer select-none relative py-2 pl-10 pr-4 ${
-                            active ? "bg-blue-50 text-blue-900" : "text-gray-900"
-                          }`
+                        className={({ active, selected }) =>
+                          `cursor-pointer select-none relative py-2 pl-10 pr-4
+                          ${selected ? 'bg-[#FF2D55] text-white font-bold' : ''}
+                          ${active && !selected ? 'hover:bg-[#FF2D55]/90 hover:text-white' : ''}
+                          ${!selected && !active ? 'text-[#0F0F0F]' : ''}`
                         }
                         value={option.value}
                       >
                         {({ selected }) => (
                           <>
-                            <span className={`block truncate ${selected ? "font-semibold" : "font-normal"}`}>
+                            <span className={`block truncate`}>
                               {option.label}
                             </span>
                             {selected && (
-                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
                                 <CheckIcon className="h-4 w-4" />
                               </span>
                             )}
@@ -802,47 +849,44 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             </Listbox>
           </div>
           {/* Grid de productos */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-6">
-            <Suspense
-              fallback={Array.from({ length: 8 }).map((_, index) => (
-                <ProductSkeleton key={index} />
-              ))}
-            >
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="hover:shadow-md transition-shadow duration-300"
-                  >
-                    <ProductCard product={product} />
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full py-16 min-h-[300px] text-center space-y-4">
-                  <p className="text-gray-500 font-medium max-w-xl mx-auto text-center">
-                    <Trans
-                      i18nKey="shop.noResultsClickable"
-                      components={{
-                        showAll: (
-                          <button
-                            onClick={() => {
-                              setSearchTerm('');
-                              setSelectedLeague('');
-                              setSelectedTeam('');
-                              setSelectedCategory('');
-                              setSelectedSubcategory('');
-                              navigate('.', { replace: true });
-                            }}
-                            className="text-blue-600 hover:underline font-semibold"
-                          />
-                        ),
-                      }}
-                    />
-                  </p>
-                </div>
-              )}
-            </Suspense>
-          </div>
+<div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-6">
+  <Suspense
+    fallback={Array.from({ length: 8 }).map((_, index) => (
+      <ProductSkeleton key={index} />
+    ))}
+  >
+    {filteredProducts.length > 0 ? (
+      filteredProducts.map((product) => (
+        <div
+          key={product.id}
+          className="hover:shadow-md transition-shadow duration-300"
+        >
+          <ProductCard product={product} />
+        </div>
+      ))
+    ) : (
+      <div className="col-span-full py-16 min-h-[300px] text-center space-y-4">
+        <p className="text-gray-500 font-medium max-w-xl mx-auto text-center">
+          No se encontraron productos con los filtros seleccionados.
+          <br />
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedLeague('');
+              setSelectedTeam('');
+              setSelectedCategory('');
+              setSelectedSubcategory('');
+              navigate('.', { replace: true });
+            }}
+            className="text-red-600 hover:underline font-semibold mt-2 inline-block"
+          >
+            Mostrar todos los productos
+          </button>
+        </p>
+      </div>
+    )}
+  </Suspense>
+</div>
         </main>
       </div>
 
@@ -867,7 +911,8 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
         setSelectedSubcategory={setSelectedSubcategory}
       />
 
-      {/* Footer removed: now included via LayoutRoutes */}
+      {/* Footer */}
+      <Footer />
     </section>
   );
 }

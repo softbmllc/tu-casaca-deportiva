@@ -1,6 +1,7 @@
 // src/components/admin/CreateProductForm.tsx
 
 import React, { useState, useEffect, useRef } from "react";
+import { TIPOS } from "../../constants/tipos";
 import ImageUploader from "./ImageUploader";
 import TiptapEditor from "./TiptapEditor";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
@@ -550,19 +551,19 @@ useEffect(() => {
 
 {/* TIPO */}
 <div className="mb-4">
-  <label className="block text-sm font-medium mb-1">Tipo de producto:</label>
+  <label className="block text-sm font-medium text-gray-700">Tipo</label>
   <select
-    className="w-full border p-2 rounded"
-    value={formData.tipo}
-    onChange={(e) =>
-      setFormData((prev) => ({ ...prev, tipo: e.target.value }))
-    }
+    name="tipo"
+    value={formData.tipo || ""}
+    onChange={e => setFormData(prev => ({ ...prev, tipo: e.target.value }))}
+    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
   >
     <option value="">Seleccionar tipo</option>
-    <option value="Juego">Juego</option>
-    <option value="Consola">Consola</option>
-    <option value="Accesorio">Accesorio</option>
-    <option value="Merch">Merch</option>
+    {TIPOS.map((tipo) => (
+      <option key={tipo} value={tipo}>
+        {tipo}
+      </option>
+    ))}
   </select>
 </div>
 
@@ -647,7 +648,7 @@ useEffect(() => {
                 <input
                   type="text"
                   className="w-1/2 border p-2"
-                  placeholder="Nombre en español (Ej: Tamaño)"
+                  placeholder="Nombre en español (Ej: Color)"
                   value={variant.label.es}
                   onChange={(e) => {
                     const updated = [...variants];
@@ -674,7 +675,7 @@ useEffect(() => {
                     <input
                       type="text"
                       className="w-full border p-2"
-                      placeholder="Ej: 60 cápsulas"
+                      placeholder="Ej: Joystick Original"
                       value={option.value}
                       onChange={(e) => {
                         const updated = [...variants];
@@ -684,7 +685,7 @@ useEffect(() => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio (USD)</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio</label>
                     <input
                       type="number"
                       step="0.01"

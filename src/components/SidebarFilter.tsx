@@ -1,12 +1,21 @@
 // src/components/SidebarFilter.tsx
+
 import { useEffect, useState } from "react";
 import { JSX } from "react/jsx-runtime";
 import { useTranslation } from "react-i18next";
 import { fetchCategories } from "../firebaseUtils";
-import { Category, Subcategory } from "../data/types";
+import { Category, Subcategory as BaseSubcategory } from "../data/types";
+
+interface ExtendedCategory extends Category {
+  orden?: number;
+}
+
+interface Subcategory extends BaseSubcategory {
+  orden?: number;
+}
 
 interface SidebarFilterProps {
-  categories: Category[];
+  categories: ExtendedCategory[];
   selectedCategory: string;
   setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
   selectedSubcategory: string;
@@ -27,11 +36,13 @@ export default function SidebarFilter({
   const { i18n } = useTranslation();
   const language = i18n.language || "es";
 
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
+
   if (!categories || categories.length === 0) {
     return (
       <aside className="mb-10 md:mb-0 md:mr-8">
         <div className="sticky top-24">
-          <h3 className="text-lg font-bold mb-4">{t("shop.filterBy")}</h3>
+          <h3 className="text-lg font-bold mb-4">Filtrar por</h3>
           <p className="text-sm text-gray-500">No hay categorías disponibles.</p>
         </div>
       </aside>
@@ -41,19 +52,22 @@ export default function SidebarFilter({
   return (
     <aside className="mb-10 md:mb-0 md:mr-8">
       <div className="sticky top-24">
-        <h3 className="text-lg font-bold mb-4">{t("shop.filterBy")}</h3>
+        <h3 className="text-lg font-bold mb-4">Filtrar por</h3>
         <ul className="space-y-2 text-sm">
-          {categories.map((category) => (
+          {[...categories]
+            .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+            .map((category) => (
             <li key={category.id}>
               <button
                 onClick={() => {
+                  setExpandedCategoryId(expandedCategoryId === category.id ? null : category.id);
                   setSelectedCategory(category.id);
                   setSelectedSubcategory('');
                 }}
                 className={`block w-full text-left px-2 py-1 rounded transition ${
                   selectedCategory === category.id
-                    ? 'bg-white text-gray-900 font-medium border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:outline-none transition-all relative before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-blue-500'
-                    : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-white text-gray-900 font-medium border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:outline-none transition-all relative before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-[#FF2D55]'
+                    : 'text-gray-800 hover:bg-[#fce8ec] hover:text-gray-900'
                 }`}
               >
                 {renderCategoryName ? (
@@ -64,10 +78,13 @@ export default function SidebarFilter({
                   </span>
                 )}
               </button>
-              {Array.isArray(category.subcategories) &&
+              {expandedCategoryId === category.id &&
+                Array.isArray(category.subcategories) &&
                 category.subcategories.length > 0 && (
                   <ul className="ml-4 mt-1 space-y-1 text-sm text-gray-600">
-                    {category.subcategories.map((sub) => (
+                    {([...(category.subcategories as Subcategory[])])
+                      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+                      .map((sub) => (
                       <li key={sub.id}>
                         <button
                           onClick={() => {
@@ -76,8 +93,8 @@ export default function SidebarFilter({
                           }}
                           className={`block w-full text-left px-2 py-0.5 rounded text-sm transition ${
                             selectedSubcategory === sub.id
-                              ? 'bg-white text-gray-900 font-medium border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:outline-none transition-all relative before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-blue-500'
-                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                              ? 'bg-white text-gray-900 font-medium border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:outline-none transition-all relative before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-[#FF2D55]'
+                              : 'text-gray-600 hover:bg-[#fce8ec] hover:text-gray-900'
                           }`}
                         >
                           {sub.name && typeof sub.name === "object"
@@ -99,18 +116,18 @@ export default function SidebarFilter({
               setSelectedCategory('');
               setSelectedSubcategory('');
             }}
-            className="w-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded transition"
+            className="w-full text-sm bg-[#0F0F0F] text-white hover:bg-[#1a1a1a] py-2 px-4 rounded transition"
           >
-            {t("shop.clearFilters")}
+            Limpiar filtros
           </button>
           <button
             onClick={() => {
               setSelectedCategory('');
               setSelectedSubcategory('');
             }}
-            className="w-full text-sm bg-blue-600 text-white hover:bg-blue-700 py-2 px-4 rounded transition"
+            className="w-full text-sm bg-[#FF2D55] text-white hover:bg-[#e0264b] py-2 px-4 rounded transition"
           >
-            {t("shop.showAll")}
+            Mostrar todo
           </button>
         </div>
       </div>

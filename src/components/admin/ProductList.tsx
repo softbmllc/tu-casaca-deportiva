@@ -249,7 +249,7 @@ export default function ProductList() {
                       : "Sin subcategoría"}
                   </td>
                   <td className="py-2">
-                    US$ {product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD}
+                    $ {product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD}
                   </td>
                   <td className="py-2">{product.stockTotal ?? 0}</td>
                   <td className="py-2">
@@ -297,6 +297,7 @@ export default function ProductList() {
             setEditingProduct(null);
           }}
           subcategories={subcategories} // 🔁 Pasamos las subcategorías como prop
+          open={isModalOpen}
         />
       )}
     </div>

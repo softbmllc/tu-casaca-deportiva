@@ -382,7 +382,7 @@ useEffect(() => {
               categoryId: selectedCategory,
             }
           : { id: "", name: "", categoryId: selectedCategory },
-        tipo: formData.tipo || "",
+        tipo: formData.tipo,
         defaultDescriptionType: data.defaultDescriptionType || "none",
         extraDescriptionTop: data.extraDescriptionTop || "",
         extraDescriptionBottom: data.extraDescriptionBottom || "",
@@ -551,18 +551,17 @@ useEffect(() => {
 
 {/* TIPO */}
 <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700">Tipo</label>
+  <label htmlFor="tipo" className="block text-sm font-medium text-gray-700">Tipo</label>
   <select
+    id="tipo"
     name="tipo"
-    value={formData.tipo || ""}
-    onChange={e => setFormData(prev => ({ ...prev, tipo: e.target.value }))}
-    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+    value={formData.tipo}
+    onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
   >
     <option value="">Seleccionar tipo</option>
     {TIPOS.map((tipo) => (
-      <option key={tipo} value={tipo}>
-        {tipo}
-      </option>
+      <option key={tipo} value={tipo}>{tipo}</option>
     ))}
   </select>
 </div>

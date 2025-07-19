@@ -146,11 +146,21 @@ export default function EditProductModal({ product, onSave, onClose, subcategori
       console.log("🧪 product recibido al abrir modal: ", product);
       setFormData({
         ...product,
-        tipo: product.tipo || "",
+        tipo: product.tipo ?? "",
       });
     }
   }, [open, product]);
   const [formData, setFormData] = useState<Product | null>(null);
+
+  // Sync formData.tipo from product when product changes
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        ...product,
+        tipo: product.tipo || "",
+      });
+    }
+  }, [product]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -611,8 +621,8 @@ return (
                     <label className="block text-sm font-medium text-gray-700">Tipo</label>
                     <select
                       name="tipo"
-                      value={formData.tipo || ""}
-                      onChange={(e) => handleChange("tipo", e.target.value)}
+                      value={formData.tipo}
+                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black sm:text-sm"
                     >
                       <option value="">Seleccionar tipo</option>

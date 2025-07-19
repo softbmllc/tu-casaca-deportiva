@@ -342,8 +342,8 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
 
   // Nuevo filtrado de productos usando useMemo, con lógica de subcategoría (versión robusta) y ordenamiento
   const { i18n } = useTranslation();
+  // Nueva lógica de filtrado que incluye product.tipo de forma estricta
   const filteredProducts = useMemo(() => {
-    // Nuevo bloque de filtrado con lógica de tipo:
     // Mapeo para selectedType a valor real de tipo en productos
     const tipoMap: Record<string, string> = {
       Todos: "",
@@ -353,34 +353,32 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
       Merchandising: "Merch",
     };
     const selectedTipo = tipoMap[selectedType] ?? "";
-    const filtered = products.filter((product) => {
-      const categoryMatch = selectedCategory ? product.category?.id === selectedCategory : true;
-      const subcategoryMatch = selectedSubcategory ? product.subcategory?.id === selectedSubcategory : true;
-      const tipoMatch = selectedTipo
-        ? product.tipo?.toLowerCase() === selectedTipo.toLowerCase()
-        : true;
-      const searchMatch = searchTerm
-        ? product.title?.[i18n.language as "en" | "es"]?.toLowerCase().includes(searchTerm.toLowerCase())
-        : true;
-      return categoryMatch && subcategoryMatch && tipoMatch && searchMatch;
-    });
 
-    // --- DEBUG: Mostrar por consola los valores del filtro y productos resultantes ---
-    console.log("Selected category:", selectedCategory);
-    console.log("Selected subcategory:", selectedSubcategory);
-    // Debug detallado del filtro por tipo
-    filtered.forEach(p => {
-      console.log(
-        "🧪",
-        p.title?.[i18n.language as "en" | "es"],
-        "| tipo:", p.tipo,
-        "| tipoLower:", p.tipo?.toLowerCase(),
-        "| selectedType:", selectedType,
-        "| selectedTipo:", selectedTipo,
-        "| tipoMatch:", p.tipo?.toLowerCase() === selectedTipo.toLowerCase()
-      );
-    });
-    // -----------------------------------------
+    const filtered = products
+      .filter((product) => {
+        const matchesCategory =
+          !selectedCategory || product.category?.name === selectedCategory;
+        const matchesSubcategory =
+          !selectedSubcategory ||
+          product.subcategory?.name === selectedSubcategory;
+        const matchesTeam =
+          !selectedTeam || product.team?.name === selectedTeam;
+        const matchesSearch =
+          !searchTerm ||
+          product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.title?.es?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesTipo =
+          !selectedTipo || product.tipo === selectedTipo;
+
+        return (
+          matchesCategory &&
+          matchesSubcategory &&
+          matchesTeam &&
+          matchesSearch &&
+          matchesTipo
+        );
+      });
 
     // Ordenamiento (si se desea conservar)
     switch (sortOption) {
@@ -403,7 +401,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
       default:
         return filtered;
     }
-  }, [products, selectedCategory, selectedSubcategory, selectedType, searchTerm, sortOption, i18n.language]);
+  }, [products, selectedCategory, selectedSubcategory, selectedType, selectedTeam, searchTerm, sortOption, i18n.language]);
 
   const isStockExpress = selectedLeague === "STOCK_EXPRESS";
   const productsToDisplay = filteredProducts;

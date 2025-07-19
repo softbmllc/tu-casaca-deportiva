@@ -152,15 +152,14 @@ export default function EditProductModal({ product, onSave, onClose, subcategori
   }, [open, product]);
   const [formData, setFormData] = useState<Product | null>(null);
 
-  // Sync formData.tipo from product when product changes
-  useEffect(() => {
-    if (product) {
-      setFormData({
-        ...product,
-        tipo: product.tipo || "",
-      });
-    }
-  }, [product]);
+useEffect(() => {
+  if (product) {
+    setFormData({
+      ...product,
+      tipo: product.tipo ?? "",
+    });
+  }
+}, [product]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);

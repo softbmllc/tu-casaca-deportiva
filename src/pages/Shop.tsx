@@ -342,7 +342,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
 
   // Nuevo filtrado de productos usando useMemo, con lógica de subcategoría (versión robusta) y ordenamiento
   const { i18n } = useTranslation();
-  // Nueva lógica de filtrado que incluye product.tipo de forma estricta
+  // Nueva lógica de filtrado que incluye product.tipo de forma robusta (case-insensitive, nulos, etc)
   const filteredProducts = useMemo(() => {
     // Mapeo para selectedType a valor real de tipo en productos
     const tipoMap: Record<string, string> = {
@@ -354,52 +354,59 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
     };
     const selectedTipo = tipoMap[selectedType] ?? "";
 
-    const filtered = products
-      .filter((product) => {
-        const matchesCategory =
-          !selectedCategory || product.category?.name === selectedCategory;
-        const matchesSubcategory =
-          !selectedSubcategory ||
-          product.subcategory?.name === selectedSubcategory;
-        const matchesTeam =
-          !selectedTeam || product.team?.name === selectedTeam;
-        const matchesSearch =
-          !searchTerm ||
-          product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.title?.es?.toLowerCase().includes(searchTerm.toLowerCase());
+    // Filtrado por categoría
+    const filteredByCategory = !selectedCategory
+      ? products
+      : products.filter((product) => product.category?.name === selectedCategory);
 
-        const matchesTipo =
-          !selectedTipo || product.tipo === selectedTipo;
+    // Filtrado por subcategoría
+    const filteredBySubcategoria = !selectedSubcategory
+      ? filteredByCategory
+      : filteredByCategory.filter((product) => product.subcategory?.name === selectedSubcategory);
 
-        return (
-          matchesCategory &&
-          matchesSubcategory &&
-          matchesTeam &&
-          matchesSearch &&
-          matchesTipo
+    // Filtrado por tipo (robusto)
+    const tipoFilter = selectedTipo;
+    const filteredByTipo = tipoFilter
+      ? filteredBySubcategoria.filter(
+          (product) =>
+            product.tipo?.toLowerCase() === tipoFilter.toLowerCase()
+        )
+      : filteredBySubcategoria;
+
+    // Filtrado por equipo
+    const filteredByTeam = !selectedTeam
+      ? filteredByTipo
+      : filteredByTipo.filter((product) => product.team?.name === selectedTeam);
+
+    // Filtrado por búsqueda
+    const filteredBySearch = !searchTerm
+      ? filteredByTeam
+      : filteredByTeam.filter(
+          (product) =>
+            product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.title?.es?.toLowerCase().includes(searchTerm.toLowerCase())
         );
-      });
 
     // Ordenamiento (si se desea conservar)
     switch (sortOption) {
       case "priceAsc":
-        return filtered.sort((a, b) => (a.priceUSD || 0) - (b.priceUSD || 0));
+        return filteredBySearch.sort((a, b) => (a.priceUSD || 0) - (b.priceUSD || 0));
       case "priceDesc":
-        return filtered.sort((a, b) => (b.priceUSD || 0) - (a.priceUSD || 0));
+        return filteredBySearch.sort((a, b) => (b.priceUSD || 0) - (a.priceUSD || 0));
       case "az":
-        return filtered.sort((a, b) =>
+        return filteredBySearch.sort((a, b) =>
           (a.title?.[i18n.language as "en" | "es"] || "").localeCompare(
             b.title?.[i18n.language as "en" | "es"] || ""
           )
         );
       case "za":
-        return filtered.sort((a, b) =>
+        return filteredBySearch.sort((a, b) =>
           (b.title?.[i18n.language as "en" | "es"] || "").localeCompare(
             a.title?.[i18n.language as "en" | "es"] || ""
           )
         );
       default:
-        return filtered;
+        return filteredBySearch;
     }
   }, [products, selectedCategory, selectedSubcategory, selectedType, selectedTeam, searchTerm, sortOption, i18n.language]);
 

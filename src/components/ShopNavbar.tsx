@@ -2,7 +2,7 @@
 
 import { Link } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
-import { FaGlobe, FaSearch } from "react-icons/fa";
+import { FaSearch, FaWhatsapp } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import i18n from "..";
 import { useTranslation } from "react-i18next";
@@ -34,11 +34,14 @@ export default function ShopNavbar() {
           </Link>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <FaGlobe className="text-[#FF2D55] w-4 h-4" />
-            <button onClick={() => i18n.changeLanguage('es')} className={`text-xs px-1 py-0.5 ${i18n.language === 'es' ? 'font-semibold text-[#FF2D55]' : 'text-[#FF2D55]'}`}>ES</button>
-            <button onClick={() => i18n.changeLanguage('en')} className={`text-xs px-1 py-0.5 ${i18n.language === 'en' ? 'font-semibold text-[#FF2D55]' : 'text-[#FF2D55]'}`}>EN</button>
-          </div>
+          <a
+            href="https://wa.me/59899389140"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#FF2D55]"
+          >
+            <FaWhatsapp className="w-5 h-5" />
+          </a>
           <Link to="/carrito" className="relative text-[#FF2D55]">
             <ShoppingCart className="w-5 h-5" />
             {totalItems > 0 && (
@@ -63,8 +66,8 @@ export default function ShopNavbar() {
         <div className="sm:hidden px-4 pb-1">
           <input
             type="text"
-            placeholder={t("search.placeholder", "Buscar productos...")}
-            className="w-full border border-[#FF2D55] rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55]"
+            placeholder="Buscar productos..."
+            className="w-full border border-[#FF2D55] rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55] text-black placeholder-gray-400"
             autoFocus
             value={searchTerm}
             onChange={(e) => {
@@ -108,11 +111,6 @@ export default function ShopNavbar() {
           <Link to="/contact" className="text-[#FF2D55] hover:text-[#CC1E44] font-semibold">{t("nav.contact", "Contacto")}</Link>
         </nav>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1">
-            <FaGlobe className="text-[#FF2D55] w-4 h-4" />
-            <button onClick={() => i18n.changeLanguage('es')} className={`text-sm px-2 py-0.5 ${i18n.language === 'es' ? 'font-semibold text-[#FF2D55]' : 'text-[#FF2D55]'}`}>ES</button>
-            <button onClick={() => i18n.changeLanguage('en')} className={`text-sm px-2 py-0.5 ${i18n.language === 'en' ? 'font-semibold text-[#FF2D55]' : 'text-[#FF2D55]'}`}>EN</button>
-          </div>
           <Link to="/carrito" className="relative text-[#FF2D55]">
             <ShoppingCart className="w-5 h-5" />
             {totalItems > 0 && (

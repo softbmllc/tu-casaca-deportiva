@@ -1,4 +1,5 @@
 // src/components/ProductCard.tsx
+
 import { Link } from "react-router-dom";
 import { Product } from "../data/types";
 
@@ -36,9 +37,19 @@ export default function ProductCard({ product, className, imgClassName }: Produc
       ? product.subtitle[language] || ""
       : "";
 
-  // Asegurar que tenemos precios: primero variante, luego priceUSD, luego 0
-  const productPriceUSD =
-    product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD ?? 0;
+  // Obtener el precio más bajo entre las variantes si existen, si no usar priceUSD
+  const getMinPrice = () => {
+    if (product.variants && product.variants.length > 0) {
+      const prices = product.variants
+        .flatMap((variant) =>
+          variant.options?.map((opt) => Number(opt.priceUSD)).filter((p) => !isNaN(p))
+        );
+      return prices.length > 0 ? Math.min(...prices) : product.priceUSD ?? 0;
+    }
+    return product.priceUSD ?? 0;
+  };
+
+  const productPriceUSD = getMinPrice();
 
   console.log("🧩 DEBUG CARD —", product.slug, product.title);
 
@@ -82,8 +93,17 @@ export default function ProductCard({ product, className, imgClassName }: Produc
               {productName}
             </h3>
           </div>
-          <div className="mt-1.5 text-base font-semibold">
-            US$ {productPriceUSD.toFixed(2)}
+          <div className="mt-2.5 flex items-baseline text-[1.15rem] md:text-lg font-semibold tracking-tight">
+            <span className="text-base font-medium">$</span>
+            <span className="ml-0.5 font-mono tabular-nums">
+              {productPriceUSD.toLocaleString("en-US", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+            </span>
+            <span className="text-[0.7rem] relative -top-1.5 ml-0.5">
+              {String(productPriceUSD.toFixed(2)).split(".")[1]}
+            </span>
           </div>
         </div>
       </Link>

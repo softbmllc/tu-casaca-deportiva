@@ -41,10 +41,12 @@ type LocalProduct = Product & {
     name: string;
   };
   tipo?: string;
+  price?: number;
 };
 
 export default function Shop() {
-  const { t } = useTranslation();
+  // --- i18n arriba de cualquier useMemo/useEffect que dependa de i18n.language ---
+  const { t, i18n } = useTranslation();
   const [products, setProducts] = useState<LocalProduct[]>([]); // Estado para almacenar productos
   const [loading, setLoading] = useState(true);
   const location = useLocation();
@@ -56,12 +58,27 @@ export default function Shop() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   // Estado de ordenamiento
   const [sortOption, setSortOption] = useState("");
+  // Estado de ordenamiento exclusivo para mobile
+  const [selectedOrderMobile, setSelectedOrderMobile] = useState("");
+  const [showOrderMenuMobile, setShowOrderMenuMobile] = useState(false);
+  const handleOrderChangeMobile = (order: string) => {
+    setSelectedOrderMobile(order);
+    setShowOrderMenuMobile(false);
+  };
+  // Determinar si es Mobile View (simple heurística)
+  const [isMobileView, setIsMobileView] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobileView(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
   // Para el nuevo Listbox de mobile
   const sortOptions = [
-    { value: "az", label: t("shop.sort.az") },
-    { value: "za", label: t("shop.sort.za") },
-    { value: "priceAsc", label: t("shop.sort.priceAsc") },
-    { value: "priceDesc", label: t("shop.sort.priceDesc") },
+    { value: "az", label: "Nombre: A-Z" },
+    { value: "za", label: "Nombre: Z-A" },
+    { value: "priceAsc", label: "Precio: Menor a Mayor" },
+    { value: "priceDesc", label: "Precio: Mayor a Menor" },
   ];
   const selectedSort = sortOptions.find(o => o.value === sortOption) || sortOptions[0];
   const handleSortChange = (option: { value: string; label: string }) => {
@@ -104,6 +121,9 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   // NUEVO: Estado para filtro por tipo de producto (botones custom)
   const [selectedType, setSelectedType] = useState("Todos");
 
+  // 🔧 1. Definir availableTypes arriba del return principal (fuera de JSX), justo donde definís los filtros:
+  const availableTypes = Array.from(new Set(products.map(p => p.tipo).filter(Boolean)));
+
   // NUEVO: Handler para filtro por tipo
   const handleFilterByType = (tipo: string) => {
     setSelectedType(tipo);
@@ -132,6 +152,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
           .map((product: Product) => ({
             ...product,
             tipo: product.tipo || "",
+            priceUSD: Number(product.priceUSD) || 0,
           }));
 
         setProducts(footballProducts);
@@ -341,77 +362,122 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   };
 
   // Nuevo filtrado de productos usando useMemo, con lógica de subcategoría (versión robusta) y ordenamiento
-  const { i18n } = useTranslation();
-  // Nueva lógica de filtrado que incluye product.tipo de forma robusta (case-insensitive, nulos, etc)
+  // --- filteredProducts debe estar antes de cualquier useMemo que lo use ---
   const filteredProducts = useMemo(() => {
-    // Mapeo para selectedType a valor real de tipo en productos
-    const tipoMap: Record<string, string> = {
-      Todos: "",
-      Juegos: "Juego",
-      Consolas: "Consola",
-      Accesorios: "Accesorio",
-      Merchandising: "Merch",
-    };
-    const selectedTipo = tipoMap[selectedType] ?? "";
+    // Usar directamente selectedType como valor de filtro (sin tipoMap)
+    const selectedTipo = selectedType;
+    // Normalizador para tildes/mayúsculas
+    const normalizeTexto = (text: string) =>
+      text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const filtered = products.filter((product) => {
+      const categoryMatch = selectedCategory ? product.category?.id === selectedCategory : true;
+      const subcategoryMatch = selectedSubcategory ? product.subcategory?.id === selectedSubcategory : true;
+      // Cambiar la lógica de tipoMatch para que "Todos" muestre todos los productos
+      const tipoMatch =
+        selectedTipo === "Todos"
+          ? true
+          : (selectedTipo
+              ? (Array.isArray(product.tipo)
+                  ? product.tipo.some(t => normalizeTexto(t) === normalizeTexto(selectedTipo))
+                  : normalizeTexto(product.tipo || "") === normalizeTexto(selectedTipo))
+              : true);
+      const searchMatch = searchTerm
+        ? product.title?.[i18n.language as "en" | "es"]?.toLowerCase().includes(searchTerm.toLowerCase())
+        : true;
+      return categoryMatch && subcategoryMatch && tipoMatch && searchMatch;
+    });
 
-    // Filtrado por categoría
-    const filteredByCategory = !selectedCategory
-      ? products
-      : products.filter((product) => product.category?.name === selectedCategory);
+    // --- DEBUG: Mostrar por consola los valores del filtro y productos resultantes ---
+    console.log("Selected category:", selectedCategory);
+    console.log("Selected subcategory:", selectedSubcategory);
+    // Debug detallado del filtro por tipo (usando el normalizador de filteredProducts)
+    filtered.forEach(p => {
+      const tipoMatchDebug =
+        selectedTipo === "Todos" ||
+        (Array.isArray(p.tipo)
+          ? p.tipo.some(t => normalizeTexto(t) === normalizeTexto(selectedTipo))
+          : normalizeTexto(p.tipo || "") === normalizeTexto(selectedTipo));
 
-    // Filtrado por subcategoría
-    const filteredBySubcategoria = !selectedSubcategory
-      ? filteredByCategory
-      : filteredByCategory.filter((product) => product.subcategory?.name === selectedSubcategory);
+      console.log(
+        "🧪",
+        p.title?.[i18n.language as "en" | "es"],
+        "| tipo:", p.tipo,
+        "| selectedType:", selectedType,
+        "| selectedTipo:", selectedTipo,
+        "| tipoMatch:", tipoMatchDebug
+      );
+    });
+    // -----------------------------------------
 
-    // Filtrado por tipo (robusto)
-    const tipoFilter = selectedTipo;
-    const filteredByTipo = tipoFilter
-      ? filteredBySubcategoria.filter(
-          (product) =>
-            product.tipo?.toLowerCase() === tipoFilter.toLowerCase()
-        )
-      : filteredBySubcategoria;
+    // No ordenamiento aquí, solo filtrado; sorting se hace aparte
+    return filtered;
+  }, [products, selectedCategory, selectedSubcategory, selectedType, searchTerm, sortOption, i18n.language]);
 
-    // Filtrado por equipo
-    const filteredByTeam = !selectedTeam
-      ? filteredByTipo
-      : filteredByTipo.filter((product) => product.team?.name === selectedTeam);
-
-    // Filtrado por búsqueda
-    const filteredBySearch = !searchTerm
-      ? filteredByTeam
-      : filteredByTeam.filter(
-          (product) =>
-            product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            product.title?.es?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-    // Ordenamiento (si se desea conservar)
-    switch (sortOption) {
-      case "priceAsc":
-        return filteredBySearch.sort((a, b) => (a.priceUSD || 0) - (b.priceUSD || 0));
-      case "priceDesc":
-        return filteredBySearch.sort((a, b) => (b.priceUSD || 0) - (a.priceUSD || 0));
-      case "az":
-        return filteredBySearch.sort((a, b) =>
-          (a.title?.[i18n.language as "en" | "es"] || "").localeCompare(
-            b.title?.[i18n.language as "en" | "es"] || ""
-          )
-        );
-      case "za":
-        return filteredBySearch.sort((a, b) =>
-          (b.title?.[i18n.language as "en" | "es"] || "").localeCompare(
-            a.title?.[i18n.language as "en" | "es"] || ""
-          )
-        );
-      default:
-        return filteredBySearch;
+  // --- Ordenamiento de productos (usando precio de variantes si priceUSD principal es 0) ---
+  // --- PATCH: Agregar tipo Language y lang para ordenar por idioma ---
+  type Language = 'en' | 'es';
+  const lang = i18n.language as Language;
+  // Auxiliar para obtener el precio consistente
+  const getPrice = (p: LocalProduct) => {
+    if (Array.isArray(p.variants) && p.variants.length > 0) {
+      const firstVariant = p.variants[0];
+      if (Array.isArray(firstVariant.options) && firstVariant.options.length > 0) {
+        return firstVariant.options[0].priceUSD ?? 0;
+      }
     }
-  }, [products, selectedCategory, selectedSubcategory, selectedType, selectedTeam, searchTerm, sortOption, i18n.language]);
+    return p.price ?? 0;
+  };
+  const sortedProducts = useMemo(() => {
+    const sorted = [...filteredProducts].sort((a, b) => {
+      if (sortOption === "price-asc" || sortOption === "priceAsc") return getPrice(a) - getPrice(b);
+      if (sortOption === "price-desc" || sortOption === "priceDesc") return getPrice(b) - getPrice(a);
+      if (sortOption === "az") {
+        return (a.title?.[lang] || "").localeCompare(
+          b.title?.[lang] || ""
+        );
+      }
+      if (sortOption === "za") {
+        return (b.title?.[lang] || "").localeCompare(
+          a.title?.[lang] || ""
+        );
+      }
+      return 0;
+    });
+    console.log("🔍 Orden actual y precios:");
+    sorted.forEach((p) => {
+      console.log(
+        `→ ${p.title?.es} | price: ${getPrice(p)}`
+      );
+    });
+    return sorted;
+  }, [filteredProducts, sortOption, i18n.language]);
+
+  // --- Ordenamiento MOBILE por selectedOrderMobile, después de filteredProducts ---
+  // --- PATCH: Usar lang en vez de i18n.language en sort ---
+  // Ordenamiento MOBILE custom menu: sortedProductsMobile depende de selectedOrderMobile
+  const sortedProductsMobile = useMemo(() => {
+    let sorted = [...filteredProducts];
+    switch (selectedOrderMobile) {
+      case "az":
+        sorted.sort((a, b) => a.title?.[lang]?.localeCompare(b.title?.[lang] ?? "") ?? 0);
+        break;
+      case "za":
+        sorted.sort((a, b) => b.title?.[lang]?.localeCompare(a.title?.[lang] ?? "") ?? 0);
+        break;
+      case "asc":
+        sorted.sort((a, b) => getPrice(a) - getPrice(b));
+        break;
+      case "desc":
+        sorted.sort((a, b) => getPrice(b) - getPrice(a));
+        break;
+      default:
+        break;
+    }
+    return sorted;
+  }, [filteredProducts, selectedOrderMobile, i18n.language]);
 
   const isStockExpress = selectedLeague === "STOCK_EXPRESS";
-  const productsToDisplay = filteredProducts;
+  const productsToDisplay = sortedProducts;
   
   // Adaptamos esto para usar dynamicLeagues en lugar de leagues
   const currentLeague = dynamicLeagues.find((l) => l.name === selectedLeague);
@@ -483,7 +549,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
   
       {/* NAV MOBILE SOLO VISIBLE EN MOBILE */}
       {/* Botón "Volver al inicio", botón "Filtros" (desktop) y CartIcon eliminados según requerimiento */}
-      <div className="md:grid md:grid-cols-[250px_1fr] max-w-7xl mx-auto px-4 md:px-6 gap-8">
+      <div className="md:grid md:grid-cols-[250px_1fr] max-w-7xl mx-auto px-4 md:px-6 gap-8 overflow-x-hidden">
         {/* Sidebar */}
         <motion.aside
           className="hidden md:block space-y-6 pr-6 border-r border-gray-200"
@@ -499,7 +565,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
               id="search"
               type="text"
               placeholder={t("shop.searchPlaceholder", "Ej: magnesio")}
-              className="w-full border px-3 py-2 rounded-lg text-sm"
+              className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -584,7 +650,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                     <input
                       type="text"
                       placeholder={t("shop.searchPlaceholder", "Ej: magnesio")}
-                      className="w-full border px-3 py-2 rounded-lg text-sm"
+                      className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -722,61 +788,51 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
           )}
 
           {/* MOBILE: Filtros y ordenar por botones (solo visible en mobile) */}
-          <div className="flex gap-2 w-full mb-4 md:hidden">
+          <div className="flex justify-between items-center px-4 py-2 sm:hidden">
             <button
               onClick={() => setShowMobileFilter(!showMobileFilter)}
-              className="w-1/2 min-w-[150px] border rounded-md bg-white text-black text-sm font-medium py-2 px-4 shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
+              className="border rounded px-2 py-1 text-sm"
             >
-              <span>Filtros</span>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500 ml-2" />
+              Filtros
             </button>
-
-            <Listbox value={selectedSort} onChange={handleSortChange}>
-              <div className="relative w-1/2">
-                <Listbox.Label className="sr-only">Ordenar por</Listbox.Label>
-                <Listbox.Button className="w-full min-w-[150px] border rounded-md bg-white text-black text-sm font-medium py-2 px-4 shadow-sm hover:bg-gray-50 transition flex justify-between items-center border-[#0F0F0F] text-[#0F0F0F] focus:ring-[#FF2D55] focus:border-[#FF2D55]">
-                  <span className="mr-2">Ordenar por:</span>
-                  <span>
-                    {selectedSort.label}
-                  </span>
-                  <ChevronDownIcon className="h-4 w-4 text-gray-500 ml-2" />
-                </Listbox.Button>
-                <Transition
-                  as={Fragment}
-                  leave="transition ease-in duration-100"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
+            {isMobileView && (
+              <div className="relative z-40 mt-0">
+                <button
+                  onClick={() => setShowOrderMenuMobile(!showOrderMenuMobile)}
+                  className="w-full px-4 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm"
                 >
-                  <Listbox.Options className="absolute z-20 mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none text-sm">
-                    {sortOptions.map((option) => (
-                      <Listbox.Option
-                        key={option.value}
-                        value={option}
-                        className={({ active, selected }) =>
-                          `cursor-pointer select-none relative py-2 pl-10 pr-4
-                          ${selected ? 'bg-[#FF2D55] text-white font-bold' : ''}
-                          ${active && !selected ? 'hover:bg-[#FF2D55]/90 hover:text-white' : ''}
-                          ${!selected && !active ? 'text-[#0F0F0F]' : ''}`
-                        }
-                      >
-                        {({ selected }) => (
-                          <>
-                            {selected && (
-                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
-                                ✓
-                              </span>
-                            )}
-                            <span>
-                              {option.label}
-                            </span>
-                          </>
-                        )}
-                      </Listbox.Option>
-                    ))}
-                  </Listbox.Options>
-                </Transition>
+                  Ordenar por: {selectedOrderMobile === "asc" ? "Precio ↑" : selectedOrderMobile === "desc" ? "Precio ↓" : selectedOrderMobile === "az" ? "A-Z" : selectedOrderMobile === "za" ? "Z-A" : "Ninguno"}
+                </button>
+                {showOrderMenuMobile && (
+                  <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
+                    <button
+                      onClick={() => handleOrderChangeMobile("asc")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Precio: menor a mayor
+                    </button>
+                    <button
+                      onClick={() => handleOrderChangeMobile("desc")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Precio: mayor a menor
+                    </button>
+                    <button
+                      onClick={() => handleOrderChangeMobile("az")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      A-Z
+                    </button>
+                    <button
+                      onClick={() => handleOrderChangeMobile("za")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Z-A
+                    </button>
+                  </div>
+                )}
               </div>
-            </Listbox>
+            )}
           </div>
 
           {/* MOBILE: SidebarFilter collapsible panel */}
@@ -792,6 +848,42 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                   <p className="font-bold">{category.name}</p>
                 )}
               />
+              {/* Bloque de "Tipo de Producto" para mobile, al final del SidebarFilter */}
+              {/* 🔧 2. Bloque corregido: solo usa selectedType y setSelectedType */}
+              {availableTypes.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-bold mb-2">Tipo de Producto</h3>
+                  <div className="space-y-1">
+                    {availableTypes.map((type) => {
+                      if (!type) return null;
+                      return (
+                        <label key={type} className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name="product-type"
+                            value={type}
+                            checked={selectedType === type}
+                            onChange={() => setSelectedType(type)}
+                            className="form-radio"
+                          />
+                          <span className="text-sm">{type}</span>
+                        </label>
+                      );
+                    })}
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="product-type"
+                        value="Todos"
+                        checked={selectedType === "Todos"}
+                        onChange={() => setSelectedType("Todos")}
+                        className="form-radio"
+                      />
+                      <span className="text-sm">Todos</span>
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -804,10 +896,10 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                     <span>
                       {{
                         "": "Ordenar por",
-                        priceAsc: "Precio: menor a mayor",
-                        priceDesc: "Precio: mayor a menor",
-                        az: t("shop.sortNameAZ", "Nombre: A a Z"),
-                        za: t("shop.sortNameZA", "Nombre: Z a A"),
+                        priceAsc: "Precio: Menor a Mayor",
+                        priceDesc: "Precio: Mayor a Menor",
+                        az: "Nombre: A-Z",
+                        za: "Nombre: Z-A",
                       }[sortOption] || "Ordenar por"}
                     </span>
                     <ChevronDownIcon
@@ -816,13 +908,13 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                       }`}
                     />
                   </Listbox.Button>
-                  <Listbox.Options className="absolute mt-1 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 text-sm">
+                  <Listbox.Options className="absolute right-0 mt-1 max-w-[240px] w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 text-sm overflow-hidden whitespace-nowrap">
                     {[
                       { value: "", label: "Ordenar por" },
-                      { value: "priceAsc", label: "Precio: menor a mayor" },
-                      { value: "priceDesc", label: "Precio: mayor a menor" },
-                      { value: "az", label: t("shop.sortNameAZ", "Nombre: A a Z") },
-                      { value: "za", label: t("shop.sortNameZA", "Nombre: Z a A") },
+                      { value: "priceAsc", label: "Precio: Menor a Mayor" },
+                      { value: "priceDesc", label: "Precio: Mayor a Menor" },
+                      { value: "az", label: "Nombre: A-Z" },
+                      { value: "za", label: "Nombre: Z-A" },
                     ].map((option) => (
                       <Listbox.Option
                         key={option.value}
@@ -860,14 +952,9 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
       <ProductSkeleton key={index} />
     ))}
   >
-    {filteredProducts.length > 0 ? (
-      filteredProducts.map((product) => (
-        <div
-          key={product.id}
-          className="hover:shadow-md transition-shadow duration-300"
-        >
-          <ProductCard product={product} />
-        </div>
+    {(isMobileView ? sortedProductsMobile : sortedProducts).length > 0 ? (
+      (isMobileView ? sortedProductsMobile : sortedProducts).map((product: LocalProduct) => (
+        <ProductCard key={product.slug ?? product.id} product={product} />
       ))
     ) : (
       <div className="col-span-full py-16 min-h-[300px] text-center space-y-4">
@@ -881,6 +968,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
               setSelectedTeam('');
               setSelectedCategory('');
               setSelectedSubcategory('');
+              setSelectedType('');
               navigate('.', { replace: true });
             }}
             className="text-red-600 hover:underline font-semibold mt-2 inline-block"

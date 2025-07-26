@@ -1,3 +1,6 @@
+// src/utils.carUtils.ts
+
+import { fetchProductBySlug } from "../firebaseUtils";
 //src/utils/cartUtils.ts
 
 import { db } from "../firebase"; // Asegurate de que este import exista en el archivo final
@@ -109,17 +112,36 @@ export interface CartBreakdown {
 
 export function calculateCartBreakdown(
   cartItems: CartItem[],
-  taxRate: number = 0.075
 ): CartBreakdown {
   const subtotal = cartItems.reduce((sum, item) => sum + item.priceUSD * item.quantity, 0);
-  const taxes = parseFloat((subtotal * taxRate).toFixed(2));
   const shipping = 0;
-  const total = parseFloat((subtotal + taxes + shipping).toFixed(2));
+  const total = parseFloat(subtotal.toFixed(2));
 
   return {
-    subtotal: parseFloat(subtotal.toFixed(2)),
-    taxes,
+    subtotal: total,
+    taxes: 0,
     shipping,
     total,
   };
+}
+
+export async function enrichCartItems(items: CartItem[]): Promise<CartItem[]> {
+  const enriched = await Promise.all(items.map(async (item) => {
+    if (!item.slug) return item;
+
+    const product = await fetchProductBySlug(item.slug);
+    if (!product) return item;
+
+    return {
+      ...item,
+      priceUSD:
+        item.priceUSD && item.priceUSD > 0
+          ? item.priceUSD
+          : product.priceUSD ?? 0,
+      title: product.title ?? item.title,
+      image: product.images?.[0] ?? item.image,
+    };
+  }));
+
+  return enriched;
 }

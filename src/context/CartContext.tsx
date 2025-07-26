@@ -1,8 +1,20 @@
 // src/context/CartContext.tsx
 
+// Utilidad para obtener un UID anónimo persistente en localStorage
+function getAnonymousUID(): string {
+  const localUID = localStorage.getItem("anonymousUID");
+  if (localUID) return localUID;
+
+  const newUID = crypto.randomUUID();
+  localStorage.setItem("anonymousUID", newUID);
+  return newUID;
+}
+// src/context/CartContext.tsx
+
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
-import { loadCartFromFirebase, saveCartToFirebase } from "../utils/cartFirebase";
+import { loadCartFromFirebase as loadCartFromFirebaseUtils, saveCartToFirebase, loadCartFromFirebaseAndSync } from "../utils/cartFirebase";
+import { enrichCartItems } from "../utils/cartUtils";
 import { CartItem } from "../data/types";
 import { isSameItem, mergeCartItems } from "../utils/cartUtils";
 
@@ -46,18 +58,13 @@ export const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const hasInitialized = useRef(false);
-  const [items, setItems] = useState<CartItem[]>(() => {
-    const stored = localStorage.getItem("cartItems");
-    if (!stored) return [];
-    try {
-      const parsed: CartItem[] = JSON.parse(stored);
-      console.log("🛒 Cargando carrito desde localStorage (inicio):", parsed);
-      return parsed.filter(item => item && item.id && typeof item.id === "string");
-    } catch (error) {
-      console.error("Error al parsear carrito localStorage:", error);
-      return [];
-    }
+
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    const savedCart = localStorage.getItem("cart");
+    return savedCart ? JSON.parse(savedCart) : [];
   });
+
+  const [loading, setLoading] = useState(true);
   const [cartLoaded, setCartLoaded] = useState(false);
 
   const [shippingInfo, setShippingInfo] = useState<ShippingData>({
@@ -126,48 +133,59 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    console.log("🟨 useEffect: guardando shippingData en localStorage");
     localStorage.setItem("shippingData", JSON.stringify(shippingData));
   }, [shippingData]);
 
   useEffect(() => {
+    const uid = getAnonymousUID();
     const local = localStorage.getItem("cartItems");
     const localItems: CartItem[] = local ? JSON.parse(local) : [];
 
-    if (user?.uid) {
-      loadCartFromFirebase(user.uid).then((firebaseItems) => {
-        if (firebaseItems.length > 0) {
-          console.log("🛒 Cargando carrito desde Firebase:", firebaseItems);
-          setItems(firebaseItems);
-        } else if (localItems.length > 0) {
-          console.log("🛒 Firebase vacío, usando localStorage:", localItems);
-          setItems(localItems);
-          saveCartToFirebase(user.uid!, localItems);
-        } else {
-          setItems([]);
-        }
-        setCartLoaded(true);
-      });
-    } else {
-      // Usuario no logueado → solo localStorage
-      if (localItems.length > 0) {
-        console.log("🛒 Usuario anónimo, carrito desde localStorage:", localItems);
-        setItems(localItems);
+    (async () => {
+      const firebaseItems: CartItem[] = await loadCartFromFirebase(uid);
+      if (firebaseItems && firebaseItems.length > 0) {
+        console.log("🛒 Cargando carrito desde Firebase:", firebaseItems);
+        setCartItems(firebaseItems);
+      } else if (localItems.length > 0) {
+        console.log("🛒 Firebase vacío, usando localStorage:", localItems);
+        setCartItems(localItems);
+        saveCartToFirebase(uid, localItems);
       } else {
-        setItems([]);
+        console.warn("⚠️ setCartItems([]) ejecutado, posible limpieza del carrito");
+        setCartItems([]);
       }
       setCartLoaded(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    console.log("🟨 useEffect: leyendo carrito desde localStorage al montar");
+    const storedItems = localStorage.getItem("cartItems");
+    if (storedItems) {
+      try {
+        setCartItems(JSON.parse(storedItems));
+      } catch (error) {
+        console.error("Error parsing cartItems from localStorage", error);
+      }
     }
-  }, [user?.uid]);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (!cartLoaded) return;
+    console.log("🟨 useEffect: guardando carrito en Firebase y localStorage");
+    const uid = getAnonymousUID();
+    saveCartToFirebase(uid, cartItems);
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  }, [cartItems, cartLoaded]);
 
+  // Persistencia de carrito: guardar en Firebase cuando hay usuario logueado
+  useEffect(() => {
     if (user?.uid) {
-      saveCartToFirebase(user.uid, items);
-    } else {
-      localStorage.setItem("cartItems", JSON.stringify(items));
+      saveCartToFirebase(user.uid, cartItems);
     }
-  }, [items, user?.uid, cartLoaded]);
+  }, [cartItems, user]);
 
   const addToCart = (newItem: CartItem) => {
     if (!newItem || !newItem.id) {
@@ -216,7 +234,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     console.log("✅ Agregando al carrito:", itemToAdd);
 
-    setItems((prevItems) => {
+    setCartItems((prevItems) => {
       const existingIndex = prevItems.findIndex(
         (item) =>
           item.id === itemToAdd.id &&
@@ -238,7 +256,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateItem = (id: string | number, size: string, updates: Partial<CartItem>) => {
-    setItems((prevItems) =>
+    setCartItems((prevItems) =>
       prevItems
         .map((item) =>
           item.id?.toString() === id.toString() && item.size === size
@@ -250,7 +268,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeItem = (id: string | number, size: string) => {
-    setItems((prevItems) =>
+    setCartItems((prevItems) =>
       prevItems.filter(
         (item) => !(item.id?.toString() === id.toString() && item.size === size)
       )
@@ -258,7 +276,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const clearCart = () => {
-    setItems([]);
+    console.warn("⚠️ setCartItems([]) ejecutado, posible limpieza del carrito");
+    setCartItems([]);
     localStorage.removeItem("cartItems");
   };
 
@@ -268,11 +287,90 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setShippingData(data); // Sync both states
   };
 
+  // Nueva función calculateTotals según instrucciones (elimina el cálculo de impuestos)
+  const calculateTotals = (items: CartItem[]) => {
+    const subtotal = items.reduce((acc, item) => {
+      const itemPrice = item.priceUSD ?? item.price ?? 0;
+      return acc + itemPrice * item.quantity;
+    }, 0);
+
+    const total = subtotal; // ✅ ya no se suman impuestos
+
+    return {
+      subtotal,
+      tax: 0,
+      total,
+    };
+  };
+
+  // Si existieran funciones con impuestos, las comentamos:
+  // const totalWithTax = items.reduce((acc, item) => acc + (item.priceUSD * item.quantity), 0) * 1.075;
+  // const finalTotal = items.reduce((acc, item) => acc + (item.priceUSD * item.quantity), 0) * 1.1;
+
+  // Sincronización optimizada y escalable con localStorage para cartItems
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  // Nueva lógica de carga de carrito combinando localStorage y Firebase
+  // Carga y enriquece los items del carrito desde localStorage
+  const load = async () => {
+    const rawItems = localStorage.getItem("cartItems");
+    const parsedItems: CartItem[] = rawItems ? JSON.parse(rawItems) : [];
+    const enrichedItems = await enrichCartItems(parsedItems);
+    setCartItems(enrichedItems);
+  };
+
+  useEffect(() => {
+    load();
+  }, [user]);
+
+  // Persistencia de carrito: carga desde Firebase según usuario
+  useEffect(() => {
+    console.log("🟨 useEffect: carga carrito desde Firebase según usuario");
+    if (user?.uid) {
+      loadCartFromFirebaseAndSync(user.uid, (itemsFromRealtime) => {
+        setCartItems(itemsFromRealtime);
+      }).then(async (items: CartItem[]) => {
+        const enrichedItems = enrichCartItems(items);
+        const resolvedItems = await enrichedItems;
+        setCartItems(resolvedItems);
+      });
+      loadCartFromFirebase(user.uid).then(async (items) => {
+        const enrichedItems = await enrichCartItems(items);
+        setCartItems(enrichedItems);
+      });
+    }
+  }, [user]);
+
+  // Nueva función loadCartFromFirebase con validación y retorno
+  const loadCartFromFirebase = async (uid: string): Promise<CartItem[]> => {
+    if (!uid) return [];
+    try {
+      const { doc, getDoc } = await import("firebase/firestore");
+      const { db } = await import("../firebaseUtils");
+      const docRef = doc(db, 'carts', uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const items: CartItem[] = docSnap.data().items || [];
+        setCartItems(items);
+        localStorage.setItem('cartItems', JSON.stringify(items));
+        return items;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading cart from Firebase:', error);
+      return [];
+    }
+  };
+
+  if (loading) return null;
+
   return (
     <CartContext.Provider
       value={{
-        items,
-        cartItems: items,
+        items: cartItems,
+        cartItems,
         addToCart,
         updateItem,
         clearCart,
@@ -282,7 +380,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         shippingData,
         setShippingData,
         validateShippingData,
-        total: items.reduce((acc, item) => acc + item.priceUSD * item.quantity, 0),
+        total: calculateTotals(cartItems).subtotal, // Total limpio sin impuestos
       }}
     >
       {children}
@@ -297,4 +395,3 @@ export function useCart() {
   }
   return context;
 }
-  

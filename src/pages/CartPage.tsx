@@ -5,6 +5,14 @@ import EmptyCart from "@/components/cart/EmptyCart";
 import { useCart } from "../context/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, Fragment, useRef, useEffect } from "react";
+import { Listbox, Transition } from '@headlessui/react';
+import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
+
+const departamentos = [
+  "Artigas", "Canelones", "Cerro Largo", "Colonia", "Durazno", "Flores", "Florida",
+  "Lavalleja", "Maldonado", "Montevideo", "Paysandú", "Río Negro", "Rivera",
+  "Rocha", "Salto", "San José", "Soriano", "Tacuarembó", "Treinta y Tres",
+];
 import { loadGoogleMapsScript } from '../utils/loadGoogleMapsScript';
 import { useLoadScript } from "@react-google-maps/api";
 import RelatedProducts from "../components/RelatedProducts";
@@ -15,7 +23,6 @@ import AuthChoice from "../components/AuthChoice";
 import Footer from "../components/Footer";
 import { db } from "../firebase";
 import { collection, doc, setDoc, Timestamp } from "firebase/firestore";
-import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../hooks/useLanguage';
 import CartNavbar from "../components/CartNavbar";
 import { toast } from "react-hot-toast";
@@ -44,7 +51,6 @@ export default function CartPage() {
     libraries: ["places"],
   });
   const { items, updateItem, clearCart, removeItem, setShippingData, shippingData, validateShippingData } = useCart();
-  const { t, i18n } = useTranslation();
   const { language } = useLanguage() as { language: 'en' | 'es' };
   const [loading, setLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -186,7 +192,7 @@ const isValidEmail = (email: string): boolean => {
         <section className="bg-white text-black min-h-screen flex flex-col">
           <main className="flex-grow">
             <div className="max-w-5xl mx-auto px-6 py-10">
-              <h1 className="text-3xl font-bold mb-6">{t("cart.title")}</h1>
+              <h1 className="text-3xl font-bold mb-6">Tu carrito</h1>
 
               {items.length === 0 ? <EmptyCart /> : (
                 <>
@@ -196,12 +202,12 @@ const isValidEmail = (email: string): boolean => {
                     {/* Fila 1: Nombre (50%) + Dirección (50%) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1 w-full">
-                      <label className="text-sm font-medium">{t("form.fullName")}</label>
+                      <label className="text-sm font-medium">Nombre completo</label>
                         <input
                           id="name"
                           ref={nameRef}
                           type="text"
-                          placeholder={t("form.fullName")}
+                          placeholder="Nombre completo"
                           value={shippingInfo.name}
                           onChange={(e) => {
                             setShippingInfo({ ...shippingInfo, name: e.target.value });
@@ -212,13 +218,13 @@ const isValidEmail = (email: string): boolean => {
                         />
                       </div>
                       <div className="flex flex-col gap-1 w-full">
-                      <label className="text-sm font-medium">{t("form.address")}</label>
+                      <label className="text-sm font-medium">Dirección</label>
                         <div className="relative">
                           <Autocomplete onLoad={setAutocomplete} onPlaceChanged={handlePlaceChanged}>
                             <input
                               type="text"
                               name="address"
-                              placeholder={t("form.address")}
+                              placeholder="Dirección"
                               value={shippingInfo.address}
                               onChange={(e) =>
                                 setShippingInfo((prev) => ({ ...prev, address: e.target.value }))
@@ -234,7 +240,7 @@ const isValidEmail = (email: string): boolean => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <input
                         type="text"
-                        placeholder={t("form.address2")}
+                        placeholder="Apartamento, piso, etc."
                         value={shippingInfo.address2}
                         onChange={(e) => setShippingInfo({ ...shippingInfo, address2: e.target.value })}
                         className={`w-full border border-gray-300 px-4 py-2 rounded-md col-span-2 ${formErrors.address2 ? 'border-red-600' : ''}`}
@@ -244,7 +250,7 @@ const isValidEmail = (email: string): boolean => {
   id="email"
   ref={emailRef}
   type="email"
-  placeholder={t("form.email")}
+  placeholder="Correo electrónico"
   value={shippingInfo.email}
   onChange={(e) => {
     setShippingInfo({ ...shippingInfo, email: e.target.value });
@@ -262,7 +268,7 @@ const isValidEmail = (email: string): boolean => {
   type="tel"
   inputMode="numeric"
   pattern="[0-9]*"
-  placeholder={t("form.phone")}
+  placeholder="Teléfono"
   value={shippingInfo.phone}
   onChange={(e) => {
     const value = e.target.value.replace(/[^0-9]/g, ""); // solo números
@@ -282,7 +288,7 @@ const isValidEmail = (email: string): boolean => {
                         id="city"
                         ref={cityRef}
                         type="text"
-                        placeholder={t("form.city")}
+                        placeholder="Ciudad o Barrio"
                         value={shippingInfo.city}
                         onChange={(e) => {
                           setShippingInfo({ ...shippingInfo, city: e.target.value });
@@ -290,18 +296,57 @@ const isValidEmail = (email: string): boolean => {
                         }}
                         className={`w-full border px-4 py-2 rounded-md border-gray-300 ${formErrors.city ? 'border-red-500' : ''}`}
                       />
-                      <input
-                        type="text"
-                        value={shippingInfo.state}
-                        placeholder={t("form.state")}
-                        disabled
-                        className="w-full border border-gray-300 px-4 py-2 rounded-md bg-gray-100 text-gray-500"
-                      />
+                      {/* Departamento (Listbox) */}
+                      <div className="relative">
+                        <Listbox value={shippingInfo.state} onChange={(value) => setShippingInfo({ ...shippingInfo, state: value })}>
+                          <div className="relative">
+                            <Listbox.Button className="w-full border border-gray-300 px-4 py-2 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#FF2D55] focus:border-[#FF2D55]">
+                              <span className="block truncate">{shippingInfo.state || "Seleccioná un departamento"}</span>
+                              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                              </span>
+                            </Listbox.Button>
+                            <Transition
+                              as={Fragment}
+                              leave="transition ease-in duration-100"
+                              leaveFrom="opacity-100"
+                              leaveTo="opacity-0"
+                            >
+                              <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                {departamentos.map((dep) => (
+                                  <Listbox.Option
+                                    key={dep}
+                                    className={({ active }) =>
+                                      `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                        active ? 'bg-[#FF2D55]/10 text-[#FF2D55]' : 'text-gray-900'
+                                      }`
+                                    }
+                                    value={dep}
+                                  >
+                                    {({ selected }) => (
+                                      <>
+                                        <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                          {dep}
+                                        </span>
+                                        {selected ? (
+                                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#FF2D55]">
+                                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                                          </span>
+                                        ) : null}
+                                      </>
+                                    )}
+                                  </Listbox.Option>
+                                ))}
+                              </Listbox.Options>
+                            </Transition>
+                          </div>
+                        </Listbox>
+                      </div>
                       <input
                         id="postalCode"
                         ref={postalCodeRef}
                         type="text"
-                        placeholder={t("form.zip")}
+                        placeholder="Código postal"
                         value={shippingInfo.postalCode}
                         onChange={(e) => {
                           setShippingInfo({ ...shippingInfo, postalCode: e.target.value });
@@ -313,13 +358,12 @@ const isValidEmail = (email: string): boolean => {
                       {shippingInfo.postalCode.length > 0 && shippingInfo.postalCode.length < 5 && (
                         <p className="text-red-600 text-sm mt-1">El código ZIP debe tener 5 dígitos.</p>
                       )}
-                      <select
-                        value="USA"
+                      <input
+                        type="text"
+                        value="Uruguay"
                         disabled
                         className="w-full border border-gray-300 px-4 py-2 rounded-md bg-gray-100 text-gray-500"
-                      >
-                        <option value="USA">USA</option>
-                      </select>
+                      />
                     </div>
 
                     {/* Checkbox Registrarme */}
@@ -333,7 +377,7 @@ const isValidEmail = (email: string): boolean => {
                         }
                       />
                       <label htmlFor="wantsToRegister" className="text-sm text-gray-700">
-                        {t("form.registerMe")}
+                        Registrarme
                       </label>
                     </div>
 
@@ -342,7 +386,7 @@ const isValidEmail = (email: string): boolean => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input
                           type="password"
-                          placeholder={t("form.password")}
+                          placeholder="Contraseña"
                           value={shippingInfo.password}
                           onChange={(e) =>
                             setShippingInfo({ ...shippingInfo, password: e.target.value })
@@ -352,7 +396,7 @@ const isValidEmail = (email: string): boolean => {
                         />
                         <input
                           type="password"
-                          placeholder={t("form.confirmPassword")}
+                          placeholder="Confirmar contraseña"
                           value={shippingInfo.confirmPassword}
                           onChange={(e) =>
                             setShippingInfo({ ...shippingInfo, confirmPassword: e.target.value })
@@ -365,115 +409,103 @@ const isValidEmail = (email: string): boolean => {
                   </div>
 
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">{t("cart.summary")}</h2>
+                    <h2 className="text-xl font-semibold">Resumen de tu pedido</h2>
                   </div>
 
-                  {/* Determinar el idioma actual para títulos tipados */}
-                  {/*
-                    currentLang se determina aquí para usarse en el mapeo de items.
-                  */}
-                  {(() => {
-                    const currentLang: 'en' | 'es' = i18n.language.startsWith('en') ? 'en' : 'es';
-                    return (
-                      <ul className="divide-y divide-gray-200 mb-6">
-                        {items.map((item, index) => {
-                          // Estandarizar title como objeto multilenguaje
-                          if (typeof item.title === "string") {
-                            item.title = { es: item.title, en: item.title };
-                          } else if (!item.title) {
-                            item.title = { es: "Sin título", en: "Untitled" };
-                          }
-                          // Estandarizar variantTitle como objeto multilenguaje
-                          if (typeof item.variantTitle === "string") {
-                            item.variantTitle = { es: item.variantTitle, en: item.variantTitle };
-                          }
-                          // --- Nueva lógica para título y variante (prioriza currentLang, luego language, luego fallback) ---
-                          const localizedTitle =
-                            typeof item.title === "object"
-                              ? item.title[currentLang] || item.title[language] || Object.values(item.title)[0]
-                              : item.title || "Sin título";
+                  {/* Render listado de items del carrito */}
+                  <ul className="divide-y divide-gray-200 mb-6">
+                    {items.map((item, index) => {
+                      // Estandarizar title como objeto multilenguaje
+                      if (typeof item.title === "string") {
+                        item.title = { es: item.title, en: item.title };
+                      } else if (!item.title) {
+                        item.title = { es: "Sin título", en: "Untitled" };
+                      }
+                      // Estandarizar variantTitle como objeto multilenguaje
+                      if (typeof item.variantTitle === "string") {
+                        item.variantTitle = { es: item.variantTitle, en: item.variantTitle };
+                      }
+                      // --- Nueva lógica para título y variante (prioriza language, luego fallback) ---
+                      const localizedTitle =
+                        typeof item.title === "object"
+                          ? item.title[language] || Object.values(item.title)[0]
+                          : item.title || "Sin título";
 
-                          const finalVariantLabel =
-                            item.variantTitle && typeof item.variantTitle === "object"
-                              ? item.variantTitle[currentLang] || item.variantTitle[language] || Object.values(item.variantTitle)[0]
-                              : typeof item.variantTitle === "string"
-                                ? item.variantTitle
-                                : "Variante";
-                          const price = item.priceUSD;
-                          const totalItem = price * item.quantity;
-                          return (
-                            <li key={`${item.id}-${item.size}`} className="py-4 flex gap-4 items-start sm:items-center">
-                              <Link to={`/producto/${item.slug}`}>
-                                <img
-                                  src={item.image}
-                                  alt={localizedTitle}
-                                  className="w-20 h-20 object-cover rounded-md border"
-                                />
-                              </Link>
-                              <div className="flex-1">
-                                <Link to={`/producto/${item.slug}`}>
-                                  <p className="font-semibold text-sm mb-1 hover:underline">
-                                    {localizedTitle}
-                                  </p>
-                                </Link>
-                                <p className="text-sm text-gray-500 mb-1">
-                                  {`US$${item.priceUSD.toFixed(2)} c/u`}
-                                </p>
-                                <div className="text-sm text-gray-500 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-1 sm:gap-3">
-                                  {finalVariantLabel && item.size && (
-                                    <span className="text-gray-600">
-                                      {finalVariantLabel}: <span>{item.size}</span>
-                                    </span>
-                                  )}
-                                  <span>
-                                    {t("cart.quantity")}:{" "}
-                                    <span className="inline-block border border-gray-300 px-2 py-0.5 rounded-md bg-gray-50 text-gray-800">
-                                      {item.quantity}
-                                    </span>
-                                  </span>
-                                </div>
-                                {item.customName && item.customNumber && (
-                                  <p className="text-sm text-gray-500">
-                                    Personalizado: {typeof item.customName === "object"
-                                      ? ((item.customName as Record<'en' | 'es', string>)?.[language] || "Sin nombre")
-                                      : item.customName} #{item.customNumber}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="text-right flex flex-col justify-between items-end">
-                                <span className="text-sm font-semibold">{`US$${totalItem.toFixed(2)}`}</span>
-                                <button
-                                  onClick={() => handleRemoveItem(item)}
-                                  className="mt-2 text-red-500 hover:text-red-700 transition"
-                                  title={t("cart.remove")}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    );
-                  })()}
+                      const finalVariantLabel =
+                        item.variantTitle && typeof item.variantTitle === "object"
+                          ? item.variantTitle[language] || Object.values(item.variantTitle)[0]
+                          : typeof item.variantTitle === "string"
+                            ? item.variantTitle
+                            : "Variante";
+                      const price = item.priceUSD;
+                      const totalItem = price * item.quantity;
+                      return (
+                        <li key={`${item.id}-${item.size}`} className="py-4 flex gap-4 items-start sm:items-center">
+                          <Link to={`/producto/${item.slug}`}>
+                            <img
+                              src={item.image}
+                              alt={localizedTitle}
+                              className="w-20 h-20 object-cover rounded-md border"
+                            />
+                          </Link>
+                          <div className="flex-1">
+                            <Link to={`/producto/${item.slug}`}>
+                              <p className="font-semibold text-sm mb-1 hover:underline">
+                                {localizedTitle}
+                              </p>
+                            </Link>
+                            <p className="text-sm text-gray-500 mb-1">
+                              {`$${item.priceUSD.toFixed(2)} c/u`}
+                            </p>
+                            <div className="text-sm text-gray-500 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-1 sm:gap-3">
+                              {finalVariantLabel && item.size && (
+                                <span className="text-gray-600">
+                                  {finalVariantLabel}: <span>{item.size}</span>
+                                </span>
+                              )}
+                              <span>
+                                Cantidad:{" "}
+                                <span className="inline-block border border-gray-300 px-2 py-0.5 rounded-md bg-gray-50 text-gray-800">
+                                  {item.quantity}
+                                </span>
+                              </span>
+                            </div>
+                            {item.customName && item.customNumber && (
+                              <p className="text-sm text-gray-500">
+                                Personalizado: {typeof item.customName === "object"
+                                  ? ((item.customName as Record<'en' | 'es', string>)?.[language] || "Sin nombre")
+                                  : item.customName} #{item.customNumber}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right flex flex-col justify-between items-end">
+                            <span className="text-sm font-semibold">{`$${totalItem.toFixed(2)}`}</span>
+                            <button
+                              onClick={() => handleRemoveItem(item)}
+                              className="mt-2 text-red-500 hover:text-red-700 transition"
+                              title="Quitar"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
 
                   <div className="bg-gray-100 p-6 rounded-2xl shadow-inner mt-10">
                     <div className="space-y-2 text-gray-700 text-sm">
                       <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span>{`US$${breakdown.subtotal.toFixed(2)}`}</span>
+                        <span>{`$${breakdown.subtotal.toFixed(2)}`}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>{t("cart.taxes")}</span>
-                        <span>{`US$${breakdown.taxes.toFixed(2)}`}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t("cart.shipping")}</span>
-                        <span>{t("checkout.freeShipping", "Gratis")}</span>
+                        <span>Envío</span>
+                        <span>Gratis</span>
                       </div>
                       <div className="flex justify-between text-lg font-semibold border-t pt-2">
                         <span>Total</span>
-                        <span>{`US$${breakdown.total.toFixed(2)}`}</span>
+                        <span>{`$${breakdown.total.toFixed(2)}`}</span>
                       </div>
                     </div>
 
@@ -491,7 +523,7 @@ const isValidEmail = (email: string): boolean => {
                     <div className="mt-10 bg-white">
                       <div className="pb-20">
                         <h3 className="text-xl font-semibold">
-                          {t("cart.recommendationsTitle")}
+                          También te podría interesar
                         </h3>
                         <RelatedProducts
                           excludeSlugs={items.map((i) => i.slug)}
@@ -644,7 +676,7 @@ const isValidEmail = (email: string): boolean => {
       >
         ×
       </button>
-              <h2 className="text-xl font-bold mb-4">{t("form.createAccount")}</h2>
+              <h2 className="text-xl font-bold mb-4">Crear cuenta</h2>
       {/* REGISTRO: Formulario controlado para evitar warning de React */}
       {/* --- FORMULARIO DE REGISTRO CONTROLADO --- */}
       {/*
@@ -710,7 +742,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="text"
                 name="fullName"
-                placeholder={t("form.fullName")}
+                placeholder="Nombre completo"
                 required
                 value={formData.fullName}
                 onChange={handleInputChange}
@@ -719,7 +751,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="text"
                 name="address"
-                placeholder={t("form.address")}
+                placeholder="Dirección"
                 required
                 value={formData.address}
                 onChange={handleInputChange}
@@ -733,7 +765,7 @@ const isValidEmail = (email: string): boolean => {
                 name="address2"
                 value={formData.address2}
                 onChange={handleInputChange}
-                placeholder={t("form.address2")}
+                placeholder="Apartamento, piso, etc."
                 className="w-full border border-gray-300 px-4 py-2 rounded-md"
               />
             </div>
@@ -742,7 +774,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="tel"
                 name="phone"
-                placeholder={t("form.phone")}
+                placeholder="Teléfono"
                 required
                 value={formData.phone}
                 onChange={handleInputChange}
@@ -751,7 +783,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="text"
                 name="city"
-                placeholder={t("form.city")}
+                placeholder="Ciudad o Barrio"
                 value={formData.city}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 px-4 py-2 rounded-md"
@@ -759,7 +791,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="text"
                 name="state"
-                placeholder={t("form.state")}
+                placeholder="Departamento"
                 disabled
                 value={formData.state}
                 className="w-full border border-gray-300 px-4 py-2 rounded-md bg-gray-100 text-gray-500"
@@ -767,7 +799,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="text"
                 name="zipCode"
-                placeholder={t("form.zip")}
+                placeholder="Código postal"
                 value={formData.zipCode}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 px-4 py-2 rounded-md"
@@ -778,7 +810,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="email"
                 name="email"
-                placeholder={t("form.email")}
+                placeholder="Email"
                 required
                 value={formData.email}
                 onChange={handleInputChange}
@@ -787,7 +819,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="password"
                 name="password"
-                placeholder={t("form.password")}
+                placeholder="Contraseña"
                 required
                 value={formData.password}
                 onChange={handleInputChange}
@@ -796,7 +828,7 @@ const isValidEmail = (email: string): boolean => {
               <input
                 type="password"
                 name="confirmPassword"
-                placeholder={t("form.confirmPassword")}
+                placeholder="Confirmar contraseña"
                 required
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
@@ -810,7 +842,7 @@ const isValidEmail = (email: string): boolean => {
               type="submit"
               className="w-full bg-black text-white py-2 rounded-md font-semibold hover:bg-gray-900"
             >
-              {t("form.registerMe")}
+              Registrarme
             </button>
           </form>
         );

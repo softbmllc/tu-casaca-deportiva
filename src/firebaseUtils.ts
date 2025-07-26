@@ -1,18 +1,9 @@
 // src/firebaseUtils.ts
 
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { getFirestore, doc as firestoreDoc, setDoc, getDoc as firestoreGetDoc } from "firebase/firestore";
-
-import { db } from "./firebase";
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  getDoc,
-} from "firebase/firestore";
+import { getFirestore, doc as firestoreDoc, setDoc, getDoc as firestoreGetDoc, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
+import app from "./firebase";
+export const db = getFirestore(app);
 
 import { Product, League, Team, Category, ClientWithId } from "./data/types";
 import type { CartItem } from "./data/types";

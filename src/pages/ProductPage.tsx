@@ -14,6 +14,11 @@ import { useKeenSlider } from "keen-slider/react";
 import RelatedProducts from "../components/RelatedProducts";
 import Footer from "../components/Footer";
 import { useTranslation } from "react-i18next";
+import { HiExclamation, HiExclamationCircle } from "react-icons/hi";
+import { Toaster } from "react-hot-toast";
+
+
+// Improved mobile toast for stock limit error
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -27,6 +32,9 @@ export default function ProductPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const { addToCart, items } = useCart();
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [stock, setStock] = useState<number>(0);
 
   // keen-slider logic
   const [sliderRef, slider] = useKeenSlider<HTMLDivElement>({
@@ -114,7 +122,7 @@ export default function ProductPage() {
   const isOutOfStock = totalStock <= 0;
 
   return (
-    <div className="bg-[#f7f7f7] min-h-[100dvh] flex flex-col">
+    <div className="bg-gradient-to-b from-[#f7f7f7] to-white min-h-[100dvh] flex flex-col">
       <div className="w-full overflow-x-hidden text-black relative z-10 flex-grow">
         <Helmet>
           <title>{`${product.title?.[lang] || product.title} | Bionova`}</title>
@@ -167,13 +175,13 @@ export default function ProductPage() {
                         onClick={() => slider.current?.prev()}
                         className="absolute top-1/2 left-2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white rounded-full p-2 shadow-md md:block hidden"
                       >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft size={24} className="text-black hover:text-[#FF2D55] transition" />
                       </button>
                       <button
                         onClick={() => slider.current?.next()}
                         className="absolute top-1/2 right-2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white rounded-full p-2 shadow-md md:block hidden"
                       >
-                        <ChevronLeft size={20} className="rotate-180" />
+                        <ChevronLeft size={24} className="text-black hover:text-[#FF2D55] transition rotate-180" />
                       </button>
                     </>
                   )}
@@ -217,14 +225,27 @@ export default function ProductPage() {
 
           {/* Detalles producto */}
           <div className="flex flex-col">
-            <span className="uppercase text-xs tracking-widest text-gray-500 mb-2">{t('productPage.featuredProduct')}</span>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight mb-6">
               {product.title?.[lang]}
             </h1>
             <div className="mt-2 sm:mt-4 mb-6">
-              <div className="text-4xl font-extrabold text-black">
-                US$ {(selectedOption?.priceUSD ?? product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD).toFixed(2)}
-              </div>
+              {(() => {
+                const precio = selectedOption?.priceUSD ?? product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD;
+                // Formatear el precio en formato '3.700,00' (o similar)
+                const entero = Math.floor(precio).toLocaleString("es-AR");
+                const decimal = precio.toFixed(2).split(".")[1];
+                const formattedPrice = `${entero},${decimal}`;
+                return (
+                  <div className="flex items-start">
+                    <span className="text-4xl font-extrabold leading-none">
+                      ${formattedPrice.split(',')[0]}
+                    </span>
+                    <sup className="text-sm font-semibold mt-1 ml-0.5">
+                      {formattedPrice.split(',')[1]}
+                    </sup>
+                  </div>
+                );
+              })()}
             </div>
             {product.subtitle && <p className="text-gray-600 mb-4">{product.subtitle}</p>}
 
@@ -267,7 +288,7 @@ export default function ProductPage() {
 
             {/* Cantidad */}
             <div className="flex flex-col space-y-2 mt-6">
-              <label className="uppercase text-sm font-semibold text-gray-800">{t('productPage.quantity')}</label>
+              <label className="uppercase text-sm font-semibold text-gray-800">Cantidad</label>
               <div className="flex w-fit border rounded-md overflow-hidden">
                 <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="px-3 bg-gray-100 hover:bg-gray-200">
                   <FiMinus />
@@ -279,6 +300,15 @@ export default function ProductPage() {
               </div>
             </div>
 
+            {selectedOption && typeof selectedOption.stock === 'number' && (
+  <div className="mt-2 text-sm text-gray-600">
+    {selectedOption.stock > 0 ? (
+      <>🟢 En stock: {selectedOption.stock} unidad{selectedOption.stock > 1 ? 'es' : ''}</>
+    ) : (
+      <>🔴 Sin stock</>
+    )}
+  </div>
+)}
             <hr className="my-6 border-gray-200" />
 
             <div className="grid md:grid-cols-2 gap-6 mt-6 mb-8">
@@ -286,10 +316,10 @@ export default function ProductPage() {
                 disabled={isOutOfStock}
                 onClick={() => {
                   if (isOutOfStock) return;
-                  const price = selectedOption?.priceUSD ?? product.priceUSD;
 
+                  // Validar selección de variante si existen variantes
                   if (Array.isArray(product.variants) && product.variants.length > 0 && !selectedOption) {
-                    alert(lang === 'en' ? 'Please select an option.' : 'Por favor selecciona una opción.');
+                    setToastMessage(lang === 'en' ? 'Please select an option.' : 'Por favor selecciona una opción.');
                     return;
                   }
 
@@ -307,34 +337,29 @@ export default function ProductPage() {
                   const requestedTotal = currentQuantityInCart + quantity;
 
                   if (requestedTotal > availableStock) {
-                    alert(`Solo hay ${availableStock} unidades disponibles`);
+                    setStock(availableStock);
+                    setShowToast(true);
+                    setTimeout(() => setShowToast(false), 2500);
                     return;
                   }
 
-                  const variantLabel = (selectedOption as any)?.variantLabel || "Opción";
-
-                  addToCart({
-                    id: String(product.id),
+                  // Construir el objeto cartItem según las propiedades requeridas por CartItem
+                  const cartItem = {
+                    id: product.id,
                     slug: product.slug,
                     name: product.title,
-                    title: {
-                      en: product.title?.en || '',
-                      es: product.title?.es || '',
-                    },
-                    subtitle: product.subtitle || '',
-                    description: {
-                      en: product.description?.en || '',
-                      es: product.description?.es || '',
-                    },
+                    title: product.title,
                     image: product.images?.[0] || '',
-                    price: selectedOption?.priceUSD ?? product.priceUSD,
-                    priceUSD: product.priceUSD,
                     quantity: quantity,
-                    size: selectedOption?.value || '',
-                    options: selectedOption?.value || '',
-                    variantId: selectedOption?.variantId || '',
-                    variantTitle: product?.variants?.[0]?.label || { en: 'Option', es: 'Opción' },
-                  });
+                    priceUSD: selectedOption?.priceUSD ?? product.priceUSD,
+                    price: selectedOption?.priceUSD ?? product.priceUSD,
+                    variantLabel: selectedOption?.variantLabel,
+                    variantId: selectedOption?.variantId,
+                    stock: selectedOption?.stock,
+                    size: selectedOption?.value ?? '',
+                    color: '',
+                  };
+                  addToCart(cartItem);
                   scrollToTop();
 
                 }}
@@ -367,19 +392,35 @@ export default function ProductPage() {
           <RelatedProducts
             excludeSlugs={[product.slug]}
             categoryName={product.category?.name}
-            title={t('productPage.relatedProducts')}
+            title="También te podría interesar"
           />
         )}
 
         {/* Scroll top */}
         {showScrollTop && (
-          <button onClick={scrollToTop} className="fixed bottom-20 right-6 p-3 bg-black text-white rounded-full shadow-lg z-50">
+          <button onClick={scrollToTop} className="fixed bottom-20 right-6 p-3 bg-black text-white rounded-full shadow-lg z-50 hover:bg-[#FF2D55] transition">
             <ArrowUp size={24} />
           </button>
         )}
 
 
-        {/* No custom alert/confirm modals */}
+        {/* Toast notification for stock limit */}
+        {showToast && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 bg-opacity-90 text-white text-sm px-4 py-2 rounded shadow-md max-w-[90%] z-50 flex items-center gap-2">
+            <HiExclamationCircle className="w-4 h-4" />
+            Solo hay {stock} unidades disponibles
+          </div>
+        )}
+
+        {/* Toaster (for general toast notifications) */}
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              marginTop: '80px', // ajustable si el navbar es más alto
+            },
+          }}
+        />
         </div> {/* cierra container mx-auto */}
 
       </div>

@@ -1,10 +1,11 @@
 // src/App.tsx
+
 import { Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import LayoutRoutes from "./components/LayoutRoutes";
 import Hero from "./components/Hero";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import CategorySection from "./components/CategorySection";
 import PromoSlider from "./components/PromoSlider";
 import AboutPreview from "./components/AboutPreview";

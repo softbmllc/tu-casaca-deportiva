@@ -1,11 +1,11 @@
 // src/components/RelatedProducts.tsx
+
 import { useEffect, useState } from "react";
 import i18n from "../i18n-config";
 import { fetchProducts } from "../firebaseUtils";
 import ProductCard from "./ProductCard";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRef } from "react";
-import { useTranslation } from "react-i18next";
 
 interface Props {
   excludeSlugs?: string[];
@@ -15,8 +15,6 @@ interface Props {
 
 export default function RelatedProducts({ excludeSlugs = [], categoryName, title }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { i18n } = useTranslation();
-  const language = i18n.language;
 
   const [products, setProducts] = useState<any[]>([]);
 
@@ -83,11 +81,7 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
         className="flex gap-5 overflow-x-auto px-4 pb-2 pt-2 scroll-smooth hide-scrollbar snap-x snap-mandatory"
       >
         {filtered.map((product) => {
-          const translatedTitle = typeof product.title === 'object' && product.title !== null
-            ? product.title[language] || product.title['en'] || "Sin título"
-            : typeof product.title === 'string'
-            ? product.title
-            : "Sin título";
+          const titleText = typeof product.title === 'object' ? product.title.es || "Sin título" : product.title;
           const priceUSD = product.priceUSD || 0;
           const slug = product.slug;
 
@@ -96,10 +90,7 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
               <ProductCard
                 product={{
                   ...product,
-                  title: {
-                    en: product.title?.en || "",
-                    es: product.title?.es || ""
-                  },
+                  title: titleText,
                   priceUSD,
                   slug
                 }}

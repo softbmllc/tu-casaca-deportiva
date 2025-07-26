@@ -1,4 +1,5 @@
 // src/components/Hero.tsx
+
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -79,7 +80,7 @@ export default function HeroSection() {
           sensitivity: 1.5,
           releaseOnEdges: true,
         }}
-        className="relative z-10 w-full max-w-[1920px] mx-auto px-0 text-center"
+        className="relative z-10 w-screen text-center"
         onSwiper={(swiper) => (swiperRef.current = swiper)}
         onSlideChange={(swiper) => {
           setTimeout(() => {
@@ -92,7 +93,7 @@ export default function HeroSection() {
             {slide.key === "envios" ? (
               <>
                 <div
-                  className="relative w-full h-[100vh] bg-cover bg-right-top hidden md:block"
+                  className="relative w-screen h-screen bg-cover bg-right-top hidden md:block"
                   style={{ backgroundImage: `url(${slide.image})` }}
                 >
                   <motion.div
@@ -122,7 +123,7 @@ export default function HeroSection() {
                   </motion.div>
                 </div>
                 <div
-                  className="relative w-full h-[100vh] bg-cover bg-right-top block md:hidden"
+                  className="relative w-screen h-screen bg-cover bg-right-top block md:hidden"
                   style={{ backgroundImage: `url(${slide.mobileImage})` }}
                 >
                   <motion.div
@@ -154,7 +155,7 @@ export default function HeroSection() {
               </>
             ) : (
               <div
-                className="relative w-full h-[100vh] bg-cover bg-center"
+                className="relative w-screen h-screen bg-cover bg-center"
                 style={{ backgroundImage: `url(${slide.image})` }}
               >
                 <motion.div

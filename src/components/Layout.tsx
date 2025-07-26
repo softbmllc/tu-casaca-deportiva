@@ -10,7 +10,7 @@ import { FaInstagram, FaGlobe } from "react-icons/fa";
 import i18n from "..";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { Helmet } from "react-helmet";
+import { Helmet } from 'react-helmet-async';
 import { getSeoData } from "../utils/seo";
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -38,6 +38,8 @@ export const createPreference = async (
       });
   
       const data = await response.json();
+      console.log("📥 Status de respuesta:", response.status);
+      console.log("📥 Respuesta completa:", data);
       return data.init_point;
     } catch (error) {
       console.error("Error al crear preferencia:", error);

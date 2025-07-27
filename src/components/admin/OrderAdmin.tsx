@@ -21,7 +21,8 @@ const getClienteInfo = (pedido: Order) => {
 };
 
 import { useState, useEffect } from "react";
-import { discountStockByOrder } from '../../firebaseUtils';
+import { CartItem } from "@/data/types";
+import { discountStockByOrder } from "@/firebaseUtils";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import {
@@ -89,13 +90,9 @@ export default function OrderAdmin() {
     if (!order) return;
 
     // Actualizar en Firestore
-    await updateDoc(doc(db, "orders", orderId.toString()), {
-      status: newStatus,
-    });
-
-    // Descontar stock si corresponde
-    if (order.status === 'En Proceso' && newStatus === 'Confirmado') {
-      await discountStockByOrder({ cartItems: order.items as any });
+    // await updateOrderStatus(order.id, newStatus); // Si se requiere, reimplementa updateOrderStatus aquí
+    if (newStatus === "Confirmado" && order.status !== "Confirmado") {
+      await discountStockByOrder({ cartItems: order.items as CartItem[] });
     }
 
     const updatedOrders: Order[] = orders.map((o) =>

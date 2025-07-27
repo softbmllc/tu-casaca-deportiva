@@ -95,7 +95,7 @@ export default function OrderAdmin() {
 
     // Descontar stock si corresponde
     if (order.status === 'En Proceso' && newStatus === 'Confirmado') {
-      await discountStockByOrder(order);
+      await discountStockByOrder({ cartItems: order.items as any });
     }
 
     const updatedOrders: Order[] = orders.map((o) =>
@@ -163,7 +163,7 @@ export default function OrderAdmin() {
     // Descontar stock si corresponde
     if (order && newStatus === 'Confirmado' && order.status !== 'Confirmado') {
       try {
-        await discountStockByOrder(order);
+        await discountStockByOrder({ cartItems: order.items as any });
         console.log('Stock actualizado con éxito');
       } catch (err) {
         console.error('Error al descontar stock:', err);
@@ -363,10 +363,7 @@ export default function OrderAdmin() {
                       className="border border-gray-300 rounded px-2 py-1"
                     >
                       <option value="Pendiente">Pendiente</option>
-                      <option value="Confirmada">Confirmada</option>
-                      <option value="Enviado">Enviado</option>
-                      <option value="Entregado">Entregado</option>
-                      <option value="Cancelado">Cancelado</option>
+                      <option value="Confirmado">Confirmado</option>
                     </select>
                   </td>
                   <td className="px-4 py-2 text-sm text-gray-800 flex gap-2">

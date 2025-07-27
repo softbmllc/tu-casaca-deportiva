@@ -90,6 +90,8 @@ export type CartItem = {
     es: string;
     en: string;
   };
+  variantLabel?: string; // ⚠️ Necesario para identificar la variante por su label (ej: "COLOR")
+  stock?: number;        // ⚠️ Ya lo trae en Firebase y es útil para debugging o validación
 };
 
 export type User = {

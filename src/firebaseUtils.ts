@@ -760,36 +760,63 @@ export async function registerAdminUser({
     throw error;
   }
 }
-// ✅ Descuenta stock según una orden confirmada
-// La orden debe tener una propiedad items: { slug, variantId, quantity }[]
-export const discountStockByOrder = async (order: any): Promise<void> => {
-  if (!Array.isArray(order.items)) return;
+// ✅ Descuenta stock por cada item en la orden confirmada (usando variantLabel y size)
+export const discountStockByOrder = async (order: {
+  cartItems: CartItem[];
+}): Promise<void> => {
+  if (!Array.isArray(order.cartItems)) return;
 
-  const db = getFirestore();
+  for (const item of order.cartItems) {
+    const { id: productId, variantId, quantity, variantLabel, size } = item;
+    if (!productId || !variantLabel || !size || !quantity) continue;
 
-  for (const item of order.items) {
-    if (typeof item === "string" || !item.slug || !item.variantId) continue;
-
-    const productRef = doc(db, "products", item.slug);
+    const productRef = doc(db, "products", productId);
     const productSnap = await getDoc(productRef);
 
     if (!productSnap.exists()) continue;
 
-    const productData = productSnap.data();
+    const productData = productSnap.data() as Product;
     const variants = productData.variants || [];
 
-    const updatedVariants = variants.map((variant: any) => {
-      if (variant.id === item.variantId && typeof variant.stock === "number") {
+    let stockTotal = 0;
+
+    const updatedVariants = variants.map((variant) => {
+      if (
+        (variant.label?.es || variant.label?.en) === variantLabel &&
+        Array.isArray(variant.options)
+      ) {
+        const updatedOptions = variant.options.map((option) => {
+          if (option.value === size && typeof option.stock === "number") {
+            const newStock = Math.max(0, option.stock - quantity);
+            stockTotal += newStock;
+            return {
+              ...option,
+              stock: newStock,
+            };
+          }
+          stockTotal += option.stock || 0;
+          return option;
+        });
+
         return {
           ...variant,
-          stock: Math.max(0, variant.stock - (item.quantity || 0)),
+          options: updatedOptions,
         };
       }
+
+      // Sumar stock de variantes que no fueron tocadas
+      if (Array.isArray(variant.options)) {
+        variant.options.forEach((opt) => {
+          stockTotal += opt.stock || 0;
+        });
+      }
+
       return variant;
     });
 
     await updateDoc(productRef, {
       variants: updatedVariants,
+      stockTotal,
     });
   }
 };

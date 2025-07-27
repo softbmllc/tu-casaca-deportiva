@@ -14,6 +14,7 @@ const departamentos = [
   "Rocha", "Salto", "San José", "Soriano", "Tacuarembó", "Treinta y Tres",
 ];
 import { loadGoogleMapsScript } from '../utils/loadGoogleMapsScript';
+import { createPreference } from "../utils/createPreference";
 import { useLoadScript } from "@react-google-maps/api";
 import RelatedProducts from "../components/RelatedProducts";
 import { CartItem } from "../data/types";
@@ -32,7 +33,7 @@ import { validateCartForm } from "../utils/formValidation";
 import { registerClient, saveOrderToFirebase, saveCartToFirebase, saveClientToFirebase } from "../firebaseUtils";
 import { extractStateFromAddress, extractAddressComponents } from "@/utils/locationUtils";
 import { prepareInitialOrderData } from '../utils/orderUtils';
-import { calculateTotal, calculateCartBreakdown } from '../utils/cartUtils';
+import { calculateTotal, calculateCartBreakdown, getShippingInfoByDepartment } from '../utils/cartUtils';
 
 // Importá la función para buscar ciudad y estado por ZIP
 import { getCityAndStateFromZip } from "../utils/getCityAndStateFromZip";
@@ -166,8 +167,13 @@ const isValidEmail = (email: string): boolean => {
   };
 
   console.log("🧾 items en CartPage:", items);
-  // Envío gratis y taxes se calculan internamente
+  // Envío dinámico según departamento
+  const department = shippingInfo?.state || "";
+  const { label: shippingText, cost: shippingCost } = getShippingInfoByDepartment(department);
+  // Subtotal
   const breakdown = calculateCartBreakdown(items);
+  // Total con envío
+  const total = breakdown.subtotal + (typeof shippingCost === "number" ? shippingCost : 0);
 
   const handleQuantityChange = (item: CartItem, newQty: number) => {
     if (newQty >= 1 && newQty <= 99) {
@@ -184,6 +190,22 @@ const isValidEmail = (email: string): boolean => {
   if (!isLoaded) {
     return <p>Cargando mapa...</p>;
   }
+
+  // Agregá la función handlePay justo antes del return
+  const handlePay = async () => {
+    const url = await createPreference(items, {
+      ...shippingInfo,
+      department: shippingInfo.state || "",
+      wantsToRegister: shippingInfo.wantsToRegister ?? false,
+      password: shippingInfo.password || "",
+      confirmPassword: shippingInfo.confirmPassword || "",
+    });
+    if (url) {
+      window.location.href = url;
+    } else {
+      toast.error("No se pudo generar la orden de pago.");
+    }
+  };
 
   return (
     <>
@@ -494,6 +516,23 @@ const isValidEmail = (email: string): boolean => {
                   </ul>
 
                   <div className="bg-gray-100 p-6 rounded-2xl shadow-inner mt-10">
+                    {/* Dirección de envío resumen: ciudad, departamento, código postal */}
+                    <div className="mb-4 text-sm text-gray-700">
+                      <div>
+                        <span className="font-medium">Envío a:</span>{" "}
+                        {shippingInfo?.address}
+                        {shippingInfo?.address2 ? `, ${shippingInfo.address2}` : ""}
+                        {shippingInfo?.city ? `, ${shippingInfo.city}` : ""}
+                        {shippingInfo?.state ? (
+                          <>
+                            {", "}
+                            {shippingInfo.state.replace(/^Departamento de\s+/i, "")}
+                          </>
+                        ) : ""}
+                        {shippingInfo?.postalCode ? `, ${shippingInfo.postalCode}` : ""}
+                        {shippingInfo?.country ? `, ${shippingInfo.country}` : ""}
+                      </div>
+                    </div>
                     <div className="space-y-2 text-gray-700 text-sm">
                       <div className="flex justify-between">
                         <span>Subtotal</span>
@@ -501,21 +540,24 @@ const isValidEmail = (email: string): boolean => {
                       </div>
                       <div className="flex justify-between">
                         <span>Envío</span>
-                        <span>Gratis</span>
+                        <span>{shippingText}</span>
                       </div>
                       <div className="flex justify-between text-lg font-semibold border-t pt-2">
                         <span>Total</span>
-                        <span>{`$${breakdown.total.toFixed(2)}`}</span>
+                        <span>
+                          {typeof shippingCost === "number"
+                            ? `$${total.toFixed(2)}`
+                            : `$${breakdown.subtotal.toFixed(2)}`}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Botón de checkout deshabilitado para Mercado Pago próximamente */}
+                    {/* Botón de checkout funcional Mercado Pago */}
                     <button
-                      disabled
-                      className="bg-gray-300 text-gray-600 px-6 py-2 rounded cursor-not-allowed"
-                      title="Próximamente disponible con Mercado Pago"
+                      onClick={handlePay}
+                      className="bg-[#FF2D55] hover:bg-[#e0264a] text-white px-6 py-2 rounded transition font-semibold w-full mt-6"
                     >
-                      Próximamente con Mercado Pago
+                      Finalizar compra
                     </button>
                   </div>
 
@@ -793,7 +835,11 @@ const isValidEmail = (email: string): boolean => {
                 name="state"
                 placeholder="Departamento"
                 disabled
-                value={formData.state}
+                value={
+                  formData.state
+                    ? formData.state.replace(/^Departamento de\s+/i, "")
+                    : ""
+                }
                 className="w-full border border-gray-300 px-4 py-2 rounded-md bg-gray-100 text-gray-500"
               />
               <input
@@ -918,3 +964,4 @@ const handleCheckout = async (clientData, cartItems) => {
 //   console.log("✅ Carrito guardado en Firebase antes del checkout");
 //   // ... luego redireccionás a Stripe o el checkout
 // }
+// Si necesitás recalcular el total cuando cambia el departamento, podés agregar un useEffect, pero aquí el total se recalcula en cada render.

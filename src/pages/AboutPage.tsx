@@ -9,33 +9,24 @@ const AboutPage = () => {
   return (
     <section className="bg-white py-24 px-6 shadow-sm" data-aos="fade-up">
       <div className="max-w-2xl mx-auto text-center text-gray-800">
-        <h1 className="text-4xl font-bold mb-10 tracking-tight">{t('about.title')}</h1>
+        <h1 className="text-4xl font-bold mb-10 tracking-tight">Nuestra historia</h1>
 
         <p className="text-lg leading-relaxed mb-5">
-          {t('about.description').split('\n')[0]}
+          Somos una tienda uruguaya con más de 20 años de experiencia en el comercio. Comenzamos en ferias barriales de La Teja a fines de los 90, cuando vender era tan simple como armar un puesto y atender con ganas.
         </p>
-        <p className="text-lg leading-relaxed mb-8">
-          {t('about.description').split('\n')[1]}
+        <p className="text-lg leading-relaxed mb-5">
+          Luego abrimos uno de los primeros cibercafés del barrio, y con los años fuimos adaptándonos a las nuevas formas de vender. Hoy seguimos ese mismo espíritu, pero en el mundo digital.
         </p>
-        <p className="text-lg leading-relaxed mb-10">{t('about.mission')}</p>
+        <p className="text-lg leading-relaxed mb-10">
+          Con miles de ventas concretadas a través de MercadoLibre y una comunidad que confía en nuestros productos, damos un paso más: lanzamos nuestra tienda online para brindar una experiencia más directa, rápida y profesional.
+        </p>
 
-        <div className="text-left mt-12">
-          <h2 className="text-xl font-semibold mb-2">{t('about.addressLabel')}</h2>
-          <p className="mb-6">
-            20200 NW 2nd Ave, STE 108<br />
-            Miami Gardens, FL 33169<br />
-            {i18n.language === 'es' ? 'Estados Unidos' : 'United States'}
-          </p>
-
-          <h2 className="text-xl font-semibold mb-2">{t('about.emailLabel')}</h2>
-          <p className="text-blue-600 mb-10">{t('about.email')}</p>
-        </div>
 
         <a
           href="/shop"
-          className="inline-block bg-blue-600 text-white font-semibold px-6 py-3 rounded-md hover:bg-blue-700 transition"
+          className="inline-block bg-[#FF2D55] text-white font-semibold px-6 py-3 rounded-md hover:bg-red-700 transition"
         >
-          {t('about.cta_shop')}
+          Ver Tienda
         </a>
       </div>
     </section>

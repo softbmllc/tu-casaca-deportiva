@@ -37,7 +37,10 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
   //     !excludeSlugs.includes(p.slug) &&
   //     (!categoryName || p.category?.name?.toLowerCase() === categoryName.toLowerCase())
   // );
-  const filtered = products;
+  const filtered = products.map((product) => ({
+    ...product,
+    title: typeof product.title === "object" ? product.title?.es || product.name || "Sin título" : product.title || product.name || "Sin título",
+  }));
 
   console.log("🧩 Productos después del filtro", filtered);
 
@@ -81,7 +84,6 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
         className="flex gap-5 overflow-x-auto px-4 pb-2 pt-2 scroll-smooth hide-scrollbar snap-x snap-mandatory"
       >
         {filtered.map((product) => {
-          const titleText = typeof product.title === 'object' ? product.title.es || "Sin título" : product.title;
           const priceUSD = product.priceUSD || 0;
           const slug = product.slug;
 
@@ -90,7 +92,6 @@ export default function RelatedProducts({ excludeSlugs = [], categoryName, title
               <ProductCard
                 product={{
                   ...product,
-                  title: titleText,
                   priceUSD,
                   slug
                 }}

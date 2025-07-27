@@ -9,7 +9,6 @@ function getAnonymousUID(): string {
   localStorage.setItem("anonymousUID", newUID);
   return newUID;
 }
-// src/context/CartContext.tsx
 
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
@@ -23,6 +22,7 @@ export type ShippingData = {
   address: string;
   address2?: string;
   city: string;
+  departamento: string;
   state: string;
   postalCode: string;
   phone: string;
@@ -76,7 +76,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     postalCode: "",
     phone: "",
     email: "",
-    country: "United States",
+    country: "",
     password: "",
     confirmPassword: "",
     wantsToRegister: false,
@@ -85,6 +85,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       lng: 0,
     },
     zip: "",
+    departamento: "Montevideo",
   });
 
   const [shippingData, setShippingData] = useState<ShippingData>(() => {
@@ -287,20 +288,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setShippingData(data); // Sync both states
   };
 
-  // Nueva función calculateTotals según instrucciones (elimina el cálculo de impuestos)
-  const calculateTotals = (items: CartItem[]) => {
-    const subtotal = items.reduce((acc, item) => {
-      const itemPrice = item.priceUSD ?? item.price ?? 0;
-      return acc + itemPrice * item.quantity;
-    }, 0);
+  // Nueva función calculateCartTotal que suma envío si corresponde a Montevideo
+  const calculateCartTotal = () => {
+    let total = 0;
 
-    const total = subtotal; // ✅ ya no se suman impuestos
+    cartItems.forEach((item) => {
+      const price = item.price || 0;
+      const quantity = item.quantity || 1;
+      total += price * quantity;
+    });
 
-    return {
-      subtotal,
-      tax: 0,
-      total,
-    };
+    if (shippingInfo?.departamento === "Montevideo") {
+      total += 169;
+    }
+
+    return total;
   };
 
   // Si existieran funciones con impuestos, las comentamos:
@@ -364,6 +366,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Efecto para recalcular total cuando cambian cartItems o shippingInfo
+  const [total, setTotal] = useState<number>(() => calculateCartTotal());
+  useEffect(() => {
+    setTotal(calculateCartTotal());
+  }, [cartItems, shippingInfo]);
+
   if (loading) return null;
 
   return (
@@ -380,7 +388,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         shippingData,
         setShippingData,
         validateShippingData,
-        total: calculateTotals(cartItems).subtotal, // Total limpio sin impuestos
+        total,
       }}
     >
       {children}

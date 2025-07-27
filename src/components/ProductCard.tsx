@@ -29,7 +29,9 @@ export default function ProductCard({ product, className, imgClassName }: Produc
   const { i18n } = useTranslation();
   const language = i18n.language as "en" | "es";
 
-  const productName = product.title?.[language] || "Sin título";
+  const productName = typeof product.title === "string"
+    ? product.title
+    : product.title?.[language] || product.name || "Sin título";
 
   const productSubtitle = (typeof product.subtitle === "string")
     ? product.subtitle

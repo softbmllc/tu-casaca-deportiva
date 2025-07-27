@@ -1,7 +1,6 @@
-// src/utils.carUtils.ts
+// src/utils.cartUtils.ts
 
 import { fetchProductBySlug } from "../firebaseUtils";
-//src/utils/cartUtils.ts
 
 import { db } from "../firebase"; // Asegurate de que este import exista en el archivo final
 import { collection, doc, setDoc } from "firebase/firestore"; // También al comienzo si aún no están
@@ -144,4 +143,21 @@ export async function enrichCartItems(items: CartItem[]): Promise<CartItem[]> {
   }));
 
   return enriched;
+}
+
+export function getShippingInfoByDepartment(department: string): {
+  label: string;
+  cost: number;
+} {
+  if (department?.toLowerCase() === 'montevideo') {
+    return {
+      label: 'Entrega en Montevideo - $169',
+      cost: 169,
+    };
+  }
+
+  return {
+    label: 'Envío al interior del país - Se paga al recibir (DAC)',
+    cost: 0,
+  };
 }

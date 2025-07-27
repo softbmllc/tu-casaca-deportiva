@@ -146,7 +146,7 @@ export type ShippingInfo = {
   address: string;
   address2?: string; // <- campo opcional para unidad/apto
   city: string;
-  department?: string;
+  department: string;
   state: string;
   country?: string; // <- campo opcional para país
   postalCode: string;

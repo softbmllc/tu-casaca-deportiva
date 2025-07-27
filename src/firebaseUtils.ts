@@ -760,3 +760,36 @@ export async function registerAdminUser({
     throw error;
   }
 }
+// ✅ Descuenta stock según una orden confirmada
+// La orden debe tener una propiedad items: { slug, variantId, quantity }[]
+export const discountStockByOrder = async (order: any): Promise<void> => {
+  if (!Array.isArray(order.items)) return;
+
+  const db = getFirestore();
+
+  for (const item of order.items) {
+    if (typeof item === "string" || !item.slug || !item.variantId) continue;
+
+    const productRef = doc(db, "products", item.slug);
+    const productSnap = await getDoc(productRef);
+
+    if (!productSnap.exists()) continue;
+
+    const productData = productSnap.data();
+    const variants = productData.variants || [];
+
+    const updatedVariants = variants.map((variant: any) => {
+      if (variant.id === item.variantId && typeof variant.stock === "number") {
+        return {
+          ...variant,
+          stock: Math.max(0, variant.stock - (item.quantity || 0)),
+        };
+      }
+      return variant;
+    });
+
+    await updateDoc(productRef, {
+      variants: updatedVariants,
+    });
+  }
+};

@@ -7,7 +7,7 @@ import LayoutRoutes from "./components/LayoutRoutes";
 import Hero from "./components/Hero";
 import { Helmet } from "react-helmet-async";
 import CategorySection from "./components/CategorySection";
-import PromoSlider from "./components/PromoSlider";
+import Footer from "./components/Footer";
 import AboutPreview from "./components/AboutPreview";
 import ProductPage from "./pages/ProductPage";
 // import FootballPage from "./pages/FootballPage";
@@ -54,8 +54,8 @@ function Home() {
       </Helmet>
       <Hero />
       <CategorySection />
-      <PromoSlider />
       <AboutPreview />
+      <Footer />
     </>
   );
 }

@@ -24,6 +24,9 @@ import AuthChoice from "../components/AuthChoice";
 import Footer from "../components/Footer";
 import { db } from "../firebase";
 import { collection, doc, setDoc, Timestamp } from "firebase/firestore";
+
+// Importaciones para guardar orden en Firebase antes de Mercado Pago
+import { addDoc, serverTimestamp } from 'firebase/firestore';
 import { useLanguage } from '../hooks/useLanguage';
 import CartNavbar from "../components/CartNavbar";
 import { toast } from "react-hot-toast";
@@ -193,6 +196,22 @@ const isValidEmail = (email: string): boolean => {
 
   // Agregá la función handlePay justo antes del return
   const handlePay = async () => {
+    // Crear orden en Firebase antes de redirigir
+    try {
+      const orderData = {
+        items,
+        shippingInfo,
+        createdAt: serverTimestamp(),
+        status: 'pendiente',
+      };
+      const docRef = await addDoc(collection(db, 'orders'), orderData);
+      // Guardamos ID en localStorage para actualizar luego
+      localStorage.setItem('lastOrderId', docRef.id);
+    } catch (error) {
+      toast.error("No se pudo guardar la orden en Firebase.");
+      return;
+    }
+    // Luego redirigimos a Mercado Pago
     const url = await createPreference(items, {
       ...shippingInfo,
       department: shippingInfo.state || "",

@@ -19,9 +19,9 @@ const getClienteInfo = (pedido: Order) => {
     email: cliente.email || "-"
   };
 };
-// src/components/admin/OrderAdmin.tsx
 
 import { useState, useEffect } from "react";
+import { discountStockByOrder } from '../../firebaseUtils';
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import {
@@ -81,6 +81,28 @@ interface Order {
 
 export default function OrderAdmin() {
   const [orders, setOrders] = useState<Order[]>([]);
+  // Para tipado de la función handleStatusChange
+  type OrderType = Order;
+  // Nueva función para cambiar el estado de un pedido y descontar stock si corresponde
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    const order = orders.find((o: OrderType) => o.id === orderId);
+    if (!order) return;
+
+    // Actualizar en Firestore
+    await updateDoc(doc(db, "orders", orderId.toString()), {
+      status: newStatus,
+    });
+
+    // Descontar stock si corresponde
+    if (order.status === 'En Proceso' && newStatus === 'Confirmado') {
+      await discountStockByOrder(order);
+    }
+
+    const updatedOrders: Order[] = orders.map((o) =>
+      o.id === orderId ? { ...o, status: newStatus as Order['status'] } : o
+    );
+    setOrders(updatedOrders);
+  };
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   // Estado para el filtro de estado de pedido
   const [filtroEstado, setFiltroEstado] = useState("Todos");
@@ -129,6 +151,7 @@ export default function OrderAdmin() {
   };
 
   const updateStatus = async (id: number | string, newStatus: Order["status"]) => {
+    const order = orders.find((order) => order.id === id);
     const updatedOrders = orders.map((order) =>
       order.id === id ? { ...order, status: newStatus } : order
     );
@@ -137,6 +160,15 @@ export default function OrderAdmin() {
     await updateDoc(doc(db, "orders", id.toString()), {
       status: newStatus,
     });
+    // Descontar stock si corresponde
+    if (order && newStatus === 'Confirmado' && order.status !== 'Confirmado') {
+      try {
+        await discountStockByOrder(order);
+        console.log('Stock actualizado con éxito');
+      } catch (err) {
+        console.error('Error al descontar stock:', err);
+      }
+    }
   };
 
   const generateLabel = async (order: Order) => {
@@ -291,8 +323,9 @@ export default function OrderAdmin() {
           <thead className="bg-gray-100">
             <tr>
               <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Fecha</th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Cliente</th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Email</th>
+              <th className="px-4 py-2 border text-left text-sm font-semibold text-gray-700">Nombre</th>
+              <th className="px-4 py-2 border text-left text-sm font-semibold text-gray-700">Email</th>
+              <th className="px-4 py-2 border text-left text-sm font-semibold text-gray-700">Teléfono</th>
               <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Total</th>
               <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Estado</th>
               <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Acciones</th>
@@ -304,27 +337,37 @@ export default function OrderAdmin() {
               return (
                 <tr key={pedido.id}>
                   <td className="px-4 py-2 text-sm text-gray-800">{formatDate(pedido.createdAt)}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800">{clienteInfo.nombre}</td>
+                  <td className="px-4 py-2 border">{pedido.shippingInfo?.name || 'No disponible'}</td>
+                  <td className="px-4 py-2 border">{pedido.shippingInfo?.email || 'No disponible'}</td>
+                  <td className="px-4 py-2 border">{pedido.shippingInfo?.phone || 'No disponible'}</td>
                   <td className="px-4 py-2 text-sm text-gray-800">
-                    {clienteInfo.email}
-                  </td>
-                  <td className="px-4 py-2 text-sm text-gray-800">
-                    ${(
-                      pedido.totalAmount ??
-                      pedido.amountPaid ??
-                      pedido.total ??
-                      0
-                    ).toFixed(2)}
+                    {(() => {
+                      const total = Array.isArray(pedido.items)
+                        ? pedido.items.reduce((sum, item) => {
+                            if (typeof item !== "object") return sum;
+                            const price =
+                              item?.price !== undefined
+                                ? item.price
+                                : (item as any)?.priceUSD ?? 0;
+                            const quantity = item?.quantity ?? 0;
+                            return sum + price * quantity;
+                          }, 0)
+                        : 0;
+                      return `$${total.toFixed(2)}`;
+                    })()}
                   </td>
                   <td className="px-4 py-2 text-sm">
-                    <span className={`px-2 py-1 rounded text-white text-xs ${
-                      pedido.status === 'Entregado' ? 'bg-green-500' :
-                      pedido.status === 'En Proceso' ? 'bg-yellow-500' :
-                      pedido.status === 'Cancelado' ? 'bg-red-500' :
-                      'bg-gray-500'
-                    }`}>
-                      {pedido.status}
-                    </span>
+                    <select
+                      value={pedido.status}
+                      onChange={(e) => handleStatusChange(pedido.id as string, e.target.value)}
+                      className="border border-gray-300 rounded px-2 py-1"
+                    >
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Confirmada">Confirmada</option>
+                      <option value="Enviado">Enviado</option>
+                      <option value="Entregado">Entregado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
                   </td>
                   <td className="px-4 py-2 text-sm text-gray-800 flex gap-2">
                     <button
@@ -360,15 +403,34 @@ export default function OrderAdmin() {
 
       {selectedOrder && (() => {
         const clienteInfo = getClienteInfo(selectedOrder);
+        // Calcular el total correctamente sumando los subtotales de cada producto
+        const total =
+          Array.isArray(selectedOrder.items)
+            ? selectedOrder.items.reduce(
+                (sum, item) =>
+                  typeof item === "object"
+                    ? sum +
+                      (
+                        ((item.price !== undefined ? item.price : (item as any).priceUSD ?? 0) *
+                        (item.quantity ?? 0))
+                      )
+                    : sum,
+                0
+              )
+            : 0;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white p-6 rounded shadow-lg max-w-2xl w-full">
               <h2 className="text-xl font-bold mb-4">Detalle del Pedido</h2>
+              {/* Datos del cliente por shippingInfo */}
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-1">Datos del cliente</h3>
+                <p><strong>Nombre:</strong> {selectedOrder?.shippingInfo?.name || 'No disponible'}</p>
+                <p><strong>Email:</strong> {selectedOrder?.shippingInfo?.email || 'No disponible'}</p>
+                <p><strong>Teléfono:</strong> {selectedOrder?.shippingInfo?.phone || 'No disponible'}</p>
+              </div>
               <div className="mb-4">
                 <p><strong>ID:</strong> {selectedOrder.id}</p>
-                <p><strong>Nombre:</strong> {clienteInfo.nombre}</p>
-                <p><strong>Email:</strong> {clienteInfo.email}</p>
-                <p><strong>Teléfono:</strong> {clienteInfo.telefono}</p>
                 <p>
                   <strong>Dirección:</strong>{" "}
                   {
@@ -418,7 +480,9 @@ export default function OrderAdmin() {
                 </table>
               </div>
               <div className="mt-4 text-right">
-                <strong>Total:</strong> ${selectedOrder.totalAmount?.toFixed(2) || "0.00"}
+                <p className="font-semibold mt-2 text-right">
+                  Total: ${total.toFixed(2)}
+                </p>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">Cerrar</button>
             </div>

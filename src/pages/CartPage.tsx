@@ -13,9 +13,7 @@ const departamentos = [
   "Lavalleja", "Maldonado", "Montevideo", "Paysandú", "Río Negro", "Rivera",
   "Rocha", "Salto", "San José", "Soriano", "Tacuarembó", "Treinta y Tres",
 ];
-import { loadGoogleMapsScript } from '../utils/loadGoogleMapsScript';
 import { createPreference } from "../utils/createPreference";
-import { useLoadScript } from "@react-google-maps/api";
 import RelatedProducts from "../components/RelatedProducts";
 import { CartItem } from "../data/types";
 import { ShippingInfo } from "../data/types";
@@ -40,7 +38,6 @@ import { calculateTotal, calculateCartBreakdown, getShippingInfoByDepartment } f
 
 // Importá la función para buscar ciudad y estado por ZIP
 import { getCityAndStateFromZip } from "../utils/getCityAndStateFromZip";
-import { Autocomplete } from "@react-google-maps/api";
 
 
 const createOrder = () => {
@@ -50,10 +47,6 @@ const createOrder = () => {
 export default function CartPage() {
   // Always call hooks at the top level, never conditionally
   const { shippingInfo, setShippingInfo } = useCart();
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: ["places"],
-  });
   const { items, updateItem, clearCart, removeItem, setShippingData, shippingData, validateShippingData } = useCart();
   const { language } = useLanguage() as { language: 'en' | 'es' };
   const [loading, setLoading] = useState(false);
@@ -142,32 +135,6 @@ const isValidEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-  // Google Places Autocomplete
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-  // Utilidad para extraer componentes de dirección
-  const getAddressComponent = (components: any[], type: string): string => {
-    return components.find((c: any) => c.types.includes(type))?.long_name || "";
-  };
-  const handlePlaceChanged = () => {
-    if (autocomplete !== null) {
-      const place = autocomplete.getPlace();
-      if (!place.address_components) return;
-      const components = place.address_components;
-      const direccion = `${getAddressComponent(components, "street_number")} ${getAddressComponent(components, "route")}`.trim();
-      const ciudad = getAddressComponent(components, "locality");
-      const estado = getAddressComponent(components, "administrative_area_level_1");
-      const zip = getAddressComponent(components, "postal_code");
-      const pais = getAddressComponent(components, "country");
-      setShippingInfo((prev) => ({
-        ...prev,
-        address: direccion,
-        city: ciudad,
-        state: estado,
-        postalCode: zip,
-        country: pais,
-      }));
-    }
-  };
 
   console.log("🧾 items en CartPage:", items);
   // Envío dinámico según departamento
@@ -189,10 +156,6 @@ const isValidEmail = (email: string): boolean => {
     removeItem(item.id, item.size);
   };
 
-  // Render loading if Google Maps script is not loaded
-  if (!isLoaded) {
-    return <p>Cargando mapa...</p>;
-  }
 
   // Agregá la función handlePay justo antes del return
   const handlePay = async () => {
@@ -260,9 +223,9 @@ const isValidEmail = (email: string): boolean => {
                   {/* Formulario de envío */}
                   <div className="space-y-4 mb-10">
                     {/* Fila 1: Nombre (50%) + Dirección (50%) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1 w-full">
-                      <label className="text-sm font-medium">Nombre completo</label>
+                    <div className="flex flex-row gap-4">
+                      <div className="flex flex-col gap-1 w-1/2">
+                        <label className="text-sm font-medium">Nombre completo</label>
                         <input
                           id="name"
                           ref={nameRef}
@@ -277,22 +240,17 @@ const isValidEmail = (email: string): boolean => {
                           className={`w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.name ? 'border-red-600' : ''}`}
                         />
                       </div>
-                      <div className="flex flex-col gap-1 w-full">
-                      <label className="text-sm font-medium">Dirección</label>
-                        <div className="relative">
-                          <Autocomplete onLoad={setAutocomplete} onPlaceChanged={handlePlaceChanged}>
-                            <input
-                              type="text"
-                              name="address"
-                              placeholder="Dirección"
-                              value={shippingInfo.address}
-                              onChange={(e) =>
-                                setShippingInfo((prev) => ({ ...prev, address: e.target.value }))
-                              }
-                              className={`w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.address ? 'border-red-600' : ''}`}
-                            />
-                          </Autocomplete>
-                        </div>
+                      <div className="flex flex-col gap-1 w-1/2">
+                        <label className="text-sm font-medium">Dirección</label>
+                        <input
+                          type="text"
+                          value={shippingInfo.address}
+                          onChange={(e) =>
+                            setShippingInfo({ ...shippingInfo, address: e.target.value })
+                          }
+                          required
+                          className="w-full border px-3 py-2 rounded-md"
+                        />
                       </div>
                     </div>
 
@@ -943,63 +901,8 @@ const isValidEmail = (email: string): boolean => {
     </>
   );
 }
-// Alternativamente, podés inyectar el script de Google Maps desde React con este efecto:
-/*
-useEffect(() => {
-  const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-  if (!existingScript) {
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-  }
-}, []);
-*/
 import { Order } from '@/data/types';
-  // --- handleSubmit ejemplo ---
-  // Buscá tu función handleSubmit y agregá la llamada a saveCartToFirebase antes del try
-  /*
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    await saveCartToFirebase(shippingData.email, cartItems);
-    try {
-      // resto del código...
-    } catch (error) {
-      // manejo de errores...
-    }
-  }
-  */
-// --- handleCheckout ejemplo ---
-// Buscá tu función handleCheckout y agregá la llamada a saveCartToFirebase antes del try
-/*
-const handleCheckout = async (clientData, cartItems) => {
-  try {
-    await saveCartToFirebase(clientData.email, cartItems);
-    console.log("✅ Carrito guardado en Firebase");
-  } catch (error) {
-    console.error("❌ Error al guardar el carrito en Firebase:", error);
-    toast.error("No se pudo guardar el carrito.");
-    return;
-  }
-  // fetch("/api/create-checkout-session", ...)
-};
-*/
+// Alternativamente, podés inyectar el script de Google Maps desde React con este efecto:
 
-// --- IMPLEMENTACIÓN DE handleCheckout con validación y guardado de carrito ---
-// Si ya existe una función handleCheckout, agregá la validación y el guardado según las instrucciones.
-// Si no existe, aquí hay un ejemplo de cómo debería verse:
-//
-// Buscá tu función handleCheckout y modificá así:
-//
-// const handleCheckout = async () => {
-//   const email = shippingData.email;
-//   if (!email || cartItems.length === 0) {
-//     toast.error("Faltan datos o el carrito está vacío.");
-//     return;
-//   }
-//   await saveCartToFirebase(email, cartItems);
-//   console.log("✅ Carrito guardado en Firebase antes del checkout");
-//   // ... luego redireccionás a Stripe o el checkout
-// }
-// Si necesitás recalcular el total cuando cambia el departamento, podés agregar un useEffect, pero aquí el total se recalcula en cada render.
+// Asegurarse que shippingData contiene las propiedades direccion y departamento
+// Si no existen, inicializarlas aquí (esto es solo un recordatorio para el desarrollador: la inicialización real de shippingData debería hacerse en el contexto o donde corresponda)

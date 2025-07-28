@@ -377,16 +377,17 @@ export default function ProductPage() {
               </button>
             </div>
 
-            {/* Descripción del producto */}
-            {productDescription && (
-              <div
-                className="prose prose-blue prose-lg max-w-none mb-8 text-gray-800 [&>p]:mb-4 [&>h2]:mt-8 [&>ul]:mb-4 [&>ul>li]:mb-2"
-                dangerouslySetInnerHTML={{ __html: productDescription }}
-              />
-            )}
 
           </div>
         </div>
+
+        {/* Descripción del producto (al final, ancho completo) */}
+        {productDescription && (
+          <div
+            className="prose prose-blue prose-lg max-w-none mb-8 text-gray-800 [&>p]:mb-4 [&>h2]:mt-8 [&>ul]:mb-4 [&>ul>li]:mb-2"
+            dangerouslySetInnerHTML={{ __html: productDescription }}
+          />
+        )}
 
         {product && (
           <RelatedProducts

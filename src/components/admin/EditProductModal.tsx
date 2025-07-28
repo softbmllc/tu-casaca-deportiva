@@ -139,6 +139,12 @@ function SortableImageItem({
   );
 }
 
+// --- ProductFormData type ---
+type ProductFormData = Omit<Product, 'id'> & {
+  id?: string;
+  tipo?: string;
+};
+
 export default function EditProductModal({ product, onSave, onClose, subcategories, open }: Props) {
   // Reinicializa formData cada vez que el modal se abre y cambia el producto
   useEffect(() => {
@@ -150,7 +156,7 @@ export default function EditProductModal({ product, onSave, onClose, subcategori
       });
     }
   }, [open, product]);
-  const [formData, setFormData] = useState<Product | null>(null);
+  const [formData, setFormData] = useState<ProductFormData | null>(null);
 
 useEffect(() => {
   if (product) {

@@ -46,6 +46,7 @@ export type Product = {
   stockTotal?: number;
   sku?: string;
   tipo?: string; // Ej: "Juego" | "Consola" | "Accesorio" | "Merch"
+  type?: string; // Ej: "Juego", "Consola", etc.
 };
 
 export interface League {

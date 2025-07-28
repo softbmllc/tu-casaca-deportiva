@@ -564,7 +564,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             <input
               id="search"
               type="text"
-              placeholder={t("shop.searchPlaceholder", "Ej: magnesio")}
+              placeholder={t("shop.searchPlaceholder", "Ej: GTA 5")}
               className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -649,7 +649,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
                       </label>
                     <input
                       type="text"
-                      placeholder={t("shop.searchPlaceholder", "Ej: magnesio")}
+                      placeholder={t("shop.searchPlaceholder", "Ej: GTA 5")}
                       className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}

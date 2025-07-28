@@ -170,6 +170,8 @@ useEffect(() => {
   const [error, setError] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
 
+  const [stockTotal, setStockTotal] = useState<number>(product.stockTotal || 0);
+
   const [categories, setCategories] = useState<{ id: string; name: string | { es?: string; en?: string }; categoryId: string }[]>([]);
 
 
@@ -201,8 +203,7 @@ useEffect(() => {
   const [selectedTeam, setSelectedTeam] = useState<string>("");
 
   // Descripciones en inglés y español (inputs controlados)
-  const [descriptionEN, setDescriptionEN] = useState(product.description?.en || "");
-  const [descriptionES, setDescriptionES] = useState(product.description?.es || "");
+  const [description, setDescription] = useState(product.description || "");
   const [variants, setVariants] = useState(
     product.variants || [{ label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0 }] }]
   );
@@ -367,7 +368,7 @@ const handleUpload = async (file: File): Promise<string | null> => {
         ...productData,
         images: images.map((img) => img.url),
         id: productId,
-        stockTotal: calculatedStockTotal,
+        stockTotal: product.variants?.length === 0 ? stockTotal : calculatedStockTotal,
         title: {
           en: productData.title?.en?.trim() || "",
           es: productData.title?.es?.trim() || "",
@@ -398,10 +399,7 @@ const handleUpload = async (file: File): Promise<string | null> => {
         defaultDescriptionType: productData.defaultDescriptionType || "none",
         extraDescriptionTop: productData.extraDescriptionTop || "",
         extraDescriptionBottom: productData.extraDescriptionBottom || "",
-        description: {
-          en: descriptionEN.trim(),
-          es: descriptionES.trim(),
-        },
+        description: description.trim(),
         allowCustomization: productData.allowCustomization || false,
         descriptionPosition: productData.descriptionPosition || "bottom",
         active: productData.active !== undefined ? productData.active : true,
@@ -651,17 +649,37 @@ return (
 
             {/* Descripción */}
             <div className="pt-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Descripción (EN)</label>
-                  <TiptapEditor content={descriptionEN} onChange={setDescriptionEN} withDefaultStyles={true} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Descripción (ES)</label>
-                  <TiptapEditor content={descriptionES} onChange={setDescriptionES} withDefaultStyles={true} />
-                </div>
-              </div>
-            </div>
+            <div className="pt-6">
+  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Descripción</label>
+  <TiptapEditor content={description} onChange={setDescription} withDefaultStyles={true} />
+</div>            </div>
+
+            {/* Precio y stock editable si no hay variantes */}
+{(!product.variants || product.variants.length === 0) && (
+  <>
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700">Precio (USD)</label>
+      <input
+        type="number"
+        value={formData.priceUSD || ''}
+        onChange={(e) =>
+          setFormData({ ...formData, priceUSD: Number(e.target.value) })
+        }
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+      />
+    </div>
+
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700">Stock disponible</label>
+      <input
+        type="number"
+        value={stockTotal}
+        onChange={(e) => setStockTotal(Number(e.target.value))}
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+      />
+    </div>
+  </>
+)}
 
             {/* Variantes */}
             <div className="bg-gray-50 p-4 rounded-md shadow-inner mt-6">
@@ -765,6 +783,7 @@ return (
                   >
                     + Agregar opción
                   </button>
+                  
                   {/* Eliminar variante */}
                   <button
                     type="button"

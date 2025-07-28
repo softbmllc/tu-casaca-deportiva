@@ -9,10 +9,7 @@ export type Product = {
   subtitle?: string;
   name: string;
   slug?: string;
-  description: {
-    en: string;
-    es: string;
-  };
+  description: string;
   extraDescription?: string;
   priceUSD: number;
   category: { id: string; name: string };

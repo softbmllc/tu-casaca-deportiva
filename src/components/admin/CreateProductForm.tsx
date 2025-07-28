@@ -1,6 +1,7 @@
 // src/components/admin/CreateProductForm.tsx
 
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from 'react-hot-toast';
 import { TIPOS } from "../../constants/tipos";
 import ImageUploader from "./ImageUploader";
 import TiptapEditor from "./TiptapEditor";
@@ -132,7 +133,6 @@ export default function CreateProductForm() {
     images: [],
     active: true,
     customizable: true,
-    descriptionEs: "",
     sku: "",
     stockTotal: 0,
     description: "", // <--- Aseguramos que description esté presente
@@ -140,7 +140,6 @@ export default function CreateProductForm() {
 
   // Estados para campos en inglés
   const [titleEn, setTitleEn] = useState("");
-  const [descriptionEn, setDescriptionEn] = useState("");
 
   const [cjProductId, setCjProductId] = useState('');
 
@@ -151,6 +150,8 @@ export default function CreateProductForm() {
 const [loading, setLoading] = useState(false);
 const [error, setError] = useState("");
 const [images, setImages] = useState<string[]>([]);
+const [priceUSD, setPriceUSD] = useState<number>(0);
+const [stockTotal, setStockTotal] = useState<number>(0);
 type Category = {
   id: string;
   name: string | { es?: string; en?: string };
@@ -357,6 +358,13 @@ useEffect(() => {
       return;
     }
 
+    // Nueva validación: si no hay variantes y no hay precio, no permitir guardar
+    const hasVariants = variants.length > 0;
+    if (!hasVariants && !priceUSD) {
+      toast.error('Debes ingresar un precio si no agregaste variantes.');
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -376,16 +384,13 @@ useEffect(() => {
       const categoryName = typeof categoryRawName === "string" ? categoryRawName : (categoryRawName[language] || categoryRawName.es || "");
       const subcategoryRawName = subcategories.find((sub) => sub.id === selectedSubcategory)?.name || "";
       // ✅ Ya no se redeclara subcategoryName aquí
-      // Guardar los campos title, titleEn, description, descriptionEn como strings separados
+      // Guardar los campos title, titleEn, description como string
       const newProduct: Partial<Product> = {
         title: {
           es: data.title.trim(),
           en: titleEn.trim(),
         },
-        description: {
-          es: formData.descriptionEs,
-          en: descriptionEn,
-        },
+        description: formData.description,
         slug: slug,
         category: { id: selectedCategory, name: categoryName },
         subcategory: selectedSubcategory
@@ -410,11 +415,8 @@ useEffect(() => {
           title: variant.label,
         })),
         sku: formData.sku || "",
-        stockTotal: variants.reduce(
-          (total, variant) =>
-            total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
-          0
-        ),
+        priceUSD: variants.length === 0 ? priceUSD : undefined,
+        stockTotal: variants.length === 0 ? stockTotal : undefined,
       };
 
       console.log("🧪 DEBUG: createProduct =", createProduct.toString());
@@ -464,44 +466,31 @@ useEffect(() => {
         )}
 
 
-        {/* Título del producto */}
+        {/* Título */}
 <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700">Título del producto</label>
+  <label htmlFor="title" className="block font-medium">
+    Título del producto <span className="text-red-500">*</span>
+  </label>
   <input
+    id="title"
     type="text"
-    className="mt-1 block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-    placeholder="Ej: Joystick Inalámbrico PS5"
-    value={formData.title}
-    onChange={(e) =>
-      setFormData((prevData) => ({
-        ...prevData,
-        title: e.target.value,
-      }))
-    }
+    {...register("title", { required: "El título es obligatorio" })}
+    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+    placeholder="Ej: Omega 3 Ultra"
   />
+  {errors.title && (
+    <span className="text-red-500 text-sm">{errors.title.message}</span>
+  )}
 </div>
-
-{/* SKU (opcional) */}
-<div className="mb-6">
-  <label className="block text-sm font-medium text-gray-700">SKU (opcional)</label>
-  <input
-    type="text"
-    className="mt-1 block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-    placeholder="Ej: MG-PS5-001"
-    value={formData.sku || ""}
-    onChange={(e) =>
-      setFormData((prev) => ({ ...prev, sku: e.target.value }))
-    }
-  />
-</div>
-
         {/* Campo Descripción */}
-        <label className="block text-sm font-medium text-gray-700 mt-4">Descripción</label>
-<div className="rounded-md border border-gray-300 p-2.5 bg-white mb-4">
+<label className="block text-sm font-medium text-gray-700 mt-4">
+  Descripción <span className="text-red-500">*</span>
+</label>
+<div className="mt-1 rounded-md border border-gray-300 bg-white p-2 shadow-sm">
   <TiptapEditor
-    content={formData.descriptionEs}
+    content={formData.description}
     onChange={(value) =>
-      setFormData((prev) => ({ ...prev, descriptionEs: value }))
+      setFormData((prev) => ({ ...prev, description: value }))
     }
   />
 </div>
@@ -583,27 +572,27 @@ useEffect(() => {
 
       {/* Estado activo */}
       <div className="space-y-2">
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            {...register("active")}
-            className="text-black rounded focus:ring-black h-5 w-5"
-          />
-          <span>Producto activo (visible para clientes)</span>
-        </label>
-      </div>
-      <div className="space-y-2">
   <label className="block text-sm font-medium">Stock disponible</label>
-  <input
-  type="number"
-  readOnly
-  value={variants.reduce(
-    (total, variant) =>
-      total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
-    0
+
+  {variants.length === 0 ? (
+    <input
+      type="number"
+      value={stockTotal}
+      onChange={(e) => setStockTotal(Number(e.target.value))}
+      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black sm:text-sm"
+    />
+  ) : (
+    <input
+      type="number"
+      readOnly
+      value={variants.reduce(
+        (total, variant) =>
+          total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
+        0
+      )}
+      className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:outline-none cursor-not-allowed"
+    />
   )}
-  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:outline-none cursor-not-allowed"
-/>
 </div>
 
       {/* Imágenes */}
@@ -649,16 +638,36 @@ useEffect(() => {
         )}
       </div>
 
-        {/* Variantes del producto con un único campo de nombre */}
+      {/* Precio individual si no hay variantes */}
+      {(() => {
+        const hasVariants = variants.length > 0;
+        return (
+          !hasVariants && (
+            <div className="mb-4">
+              <label className="block text-sm font-semibold mb-1">Precio USD (si no hay variantes)</label>
+              <input
+                type="number"
+                className="w-full border px-3 py-2 rounded"
+                value={priceUSD}
+                onChange={(e) => setPriceUSD(Number(e.target.value))}
+                required
+              />
+            </div>
+          )
+        );
+      })()}
+
+        {/* Variantes del producto con soporte multilenguaje y precios */}
         <div className="mb-6">
           <label className="block font-semibold mb-2">Variantes del producto</label>
           {variants.map((variant, vIndex) => (
             <div key={vIndex} className="mb-4 border p-3 rounded-md bg-gray-50">
-              <div className="flex gap-4 mb-2 items-center">
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nombre de la variante</label>
                 <input
                   type="text"
-                  className="w-full border p-2"
-                  placeholder="Nombre de la variante (Ej: Color, Tamaño)"
+                  className="w-full border border-gray-300 p-2 rounded-md"
+                  placeholder="Ej: Tamaño"
                   value={variant.label.es}
                   onChange={(e) => {
                     const updated = [...variants];
@@ -666,17 +675,6 @@ useEffect(() => {
                     setVariants(updated);
                   }}
                 />
-                <button
-                  type="button"
-                  className="text-red-500 text-sm ml-2"
-                  onClick={() => {
-                    const updated = [...variants];
-                    updated.splice(vIndex, 1);
-                    setVariants(updated);
-                  }}
-                >
-                  Eliminar variante
-                </button>
               </div>
               {variant.options.map((option, oIndex) => (
                 <div key={oIndex} className="grid grid-cols-3 gap-2 mb-1">
@@ -685,7 +683,7 @@ useEffect(() => {
                     <input
                       type="text"
                       className="w-full border p-2"
-                      placeholder="Ej: Azul, Mediano"
+                      placeholder="Ej: Joystick Original"
                       value={option.value}
                       onChange={(e) => {
                         const updated = [...variants];
@@ -723,31 +721,53 @@ useEffect(() => {
                       }}
                     />
                   </div>
+                  {/* Botón para eliminar esta opción */}
+                  <div className="col-span-3 flex justify-end">
+                    <button
+                      type="button"
+                      className="text-red-500 text-xs mt-1"
+                      onClick={() => {
+                        const updated = [...variants];
+                        updated[vIndex].options.splice(oIndex, 1);
+                        setVariants(updated);
+                      }}
+                    >
+                      Eliminar esta opción
+                    </button>
+                  </div>
                 </div>
               ))}
               <button
                 type="button"
-                className="text-blue-500 text-sm mt-2"
+                className="text-blue-600 text-sm mt-2"
                 onClick={() => {
                   const updated = [...variants];
-                  updated[vIndex].options.push({ value: '', priceUSD: 0, stock: 0 });
+                  updated[vIndex].options.push({ value: "", priceUSD: 0, stock: 0 });
                   setVariants(updated);
                 }}
               >
                 + Agregar opción
               </button>
+              <button
+                type="button"
+                className="text-red-600 text-sm mt-2"
+                onClick={() => {
+                  const updated = [...variants];
+                  updated.splice(vIndex, 1);
+                  setVariants(updated);
+                }}
+              >
+                 🗑️ Eliminar
+              </button>
             </div>
           ))}
           <button
             type="button"
-            className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm"
+            className="text-blue-600 mt-2"
             onClick={() => {
               setVariants([
                 ...variants,
-                {
-                  label: { es: '', en: '' },
-                  options: [{ value: '', priceUSD: 0, stock: 0 }],
-                },
+                { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0, stock: 0 }] },
               ]);
             }}
           >

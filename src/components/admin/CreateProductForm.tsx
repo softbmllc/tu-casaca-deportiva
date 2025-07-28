@@ -464,41 +464,47 @@ useEffect(() => {
         )}
 
 
-        {/* Título */}
-        <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Título del producto</label>
-<input
-  type="text"
-  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-  value={formData.title}
-  onChange={(e) =>
-    setFormData((prevData) => ({
-      ...prevData,
-      title: e.target.value,
-    }))
-  }
-/>
-        </div>
-        <label className="block text-sm font-medium text-gray-700 mt-4">SKU (opcional)</label>
-        <input
-          type="text"
-          value={formData.sku || ""}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, sku: e.target.value }))
-          }
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-        />
-        {/* Campo Descripción en Inglés */}
-        <label className="block text-sm font-medium text-gray-700 mt-4">Description (EN)</label>
-        <TiptapEditor content={descriptionEn} onChange={setDescriptionEn} />
-        {/* Campo Descripción en Español */}
-        <label className="block text-sm font-medium text-gray-700 mt-4">Descripción (ES)</label>
-        <TiptapEditor
-          content={formData.descriptionEs}
-          onChange={(value) =>
-            setFormData((prev) => ({ ...prev, descriptionEs: value }))
-          }
-        />
+        {/* Título del producto */}
+<div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700">Título del producto</label>
+  <input
+    type="text"
+    className="mt-1 block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    placeholder="Ej: Joystick Inalámbrico PS5"
+    value={formData.title}
+    onChange={(e) =>
+      setFormData((prevData) => ({
+        ...prevData,
+        title: e.target.value,
+      }))
+    }
+  />
+</div>
+
+{/* SKU (opcional) */}
+<div className="mb-6">
+  <label className="block text-sm font-medium text-gray-700">SKU (opcional)</label>
+  <input
+    type="text"
+    className="mt-1 block w-full rounded-md border border-gray-300 bg-white p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    placeholder="Ej: MG-PS5-001"
+    value={formData.sku || ""}
+    onChange={(e) =>
+      setFormData((prev) => ({ ...prev, sku: e.target.value }))
+    }
+  />
+</div>
+
+        {/* Campo Descripción */}
+        <label className="block text-sm font-medium text-gray-700 mt-4">Descripción</label>
+<div className="rounded-md border border-gray-300 p-2.5 bg-white mb-4">
+  <TiptapEditor
+    content={formData.descriptionEs}
+    onChange={(value) =>
+      setFormData((prev) => ({ ...prev, descriptionEs: value }))
+    }
+  />
+</div>
 
       {/* CATEGORÍA */}
 <div className="mb-4">

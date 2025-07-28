@@ -164,12 +164,27 @@ function mapProductData(id: string, data: any): Product {
 
 export async function createProduct(product: Partial<Product>) {
   try {
+    if (!product.slug || typeof product.slug !== "string" || product.slug.trim() === "") {
+      const rawTitle =
+        typeof product.title === "object"
+          ? product.title?.es || product.title?.en
+          : product.title;
+      const fallback = (rawTitle || "producto-generico")
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+      const subcat =
+        typeof product.subcategory?.name === "string"
+          ? product.subcategory.name
+          : ((product.subcategory?.name as unknown) as { es?: string })?.es || "";
+      product.slug = `${fallback}-${subcat.toLowerCase().replace(/\s+/g, "-")}`;
+    }
+
     const productsCollection = collection(db, "products");
     const docRef = await addDoc(productsCollection, product);
-    console.log("Producto creado con ID:", docRef.id);
+    console.log("✅ Producto creado con ID:", docRef.id, "| Slug:", product.slug);
     return docRef.id;
   } catch (error) {
-    console.error("Error creando producto:", error);
+    console.error("❌ Error creando producto:", error);
     throw error;
   }
 }

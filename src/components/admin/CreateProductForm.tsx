@@ -362,14 +362,20 @@ useEffect(() => {
 
     try {
       const title = data.title.trim();
-      const slug = generateCleanSlug(title);
+      // Nueva lógica para subcategorySlug y subcategoryName
+      const subcategoryRaw = product?.subcategory?.name || "";
+      const subcategorySlug = typeof subcategoryRaw === "string"
+        ? subcategoryRaw
+        : subcategoryRaw?.es || subcategoryRaw?.en || "";
+      const subcategoryName = subcategorySlug;
+      const slug = `${generateCleanSlug(title)}-${subcategorySlug.toLowerCase().replace(/\s+/g, "-")}`;
 
       // Verificación de duplicidad de slug (ver comentarios anteriores para implementación)
 
       const categoryRawName = categories.find((cat) => cat.id === selectedCategory)?.name || "";
       const categoryName = typeof categoryRawName === "string" ? categoryRawName : (categoryRawName[language] || categoryRawName.es || "");
       const subcategoryRawName = subcategories.find((sub) => sub.id === selectedSubcategory)?.name || "";
-      const subcategoryName = typeof subcategoryRawName === "string" ? subcategoryRawName : (subcategoryRawName[language] || subcategoryRawName.es || "");
+      // ✅ Ya no se redeclara subcategoryName aquí
       // Guardar los campos title, titleEn, description, descriptionEn como strings separados
       const newProduct: Partial<Product> = {
         title: {
@@ -385,10 +391,7 @@ useEffect(() => {
         subcategory: selectedSubcategory
           ? {
               id: selectedSubcategory,
-              name:
-                typeof subcategories.find((sub) => sub.id === selectedSubcategory)?.name === "string"
-                  ? subcategories.find((sub) => sub.id === selectedSubcategory)?.name as string
-                  : (subcategories.find((sub) => sub.id === selectedSubcategory)?.name as { es?: string })?.es || "",
+              name: subcategoryName,
               categoryId: selectedCategory,
             }
           : { id: "", name: "", categoryId: selectedCategory },
@@ -413,6 +416,8 @@ useEffect(() => {
           0
         ),
       };
+
+      console.log("🧪 DEBUG: createProduct =", createProduct.toString());
 
       await createProduct(newProduct);
       setSuccessMessage("¡Producto creado correctamente!");
@@ -460,36 +465,19 @@ useEffect(() => {
 
 
         {/* Título */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="titleEs" className="block font-medium">
-              Título en Español <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="titleEs"
-              type="text"
-              {...register("title", { required: "El título es obligatorio" })}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-              placeholder="Ej: Omega 3 Ultra"
-            />
-            {errors.title && (
-              <span className="text-red-500 text-sm">{errors.title.message}</span>
-            )}
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="titleEn" className="block font-medium">
-              Título en Inglés <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="titleEn"
-              type="text"
-              value={titleEn}
-              onChange={(e) => setTitleEn(e.target.value)}
-              required
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-              placeholder="e.g. Omega 3 Ultra"
-            />
-          </div>
+        <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">Título del producto</label>
+<input
+  type="text"
+  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+  value={formData.title}
+  onChange={(e) =>
+    setFormData((prevData) => ({
+      ...prevData,
+      title: e.target.value,
+    }))
+  }
+/>
         </div>
         <label className="block text-sm font-medium text-gray-700 mt-4">SKU (opcional)</label>
         <input
@@ -655,16 +643,16 @@ useEffect(() => {
         )}
       </div>
 
-        {/* Variantes del producto con soporte multilenguaje y precios */}
+        {/* Variantes del producto con un único campo de nombre */}
         <div className="mb-6">
           <label className="block font-semibold mb-2">Variantes del producto</label>
           {variants.map((variant, vIndex) => (
             <div key={vIndex} className="mb-4 border p-3 rounded-md bg-gray-50">
-              <div className="flex gap-4 mb-2">
+              <div className="flex gap-4 mb-2 items-center">
                 <input
                   type="text"
-                  className="w-1/2 border p-2"
-                  placeholder="Nombre en español (Ej: Color)"
+                  className="w-full border p-2"
+                  placeholder="Nombre de la variante (Ej: Color, Tamaño)"
                   value={variant.label.es}
                   onChange={(e) => {
                     const updated = [...variants];
@@ -672,17 +660,17 @@ useEffect(() => {
                     setVariants(updated);
                   }}
                 />
-                <input
-                  type="text"
-                  className="w-1/2 border p-2"
-                  placeholder="Nombre en inglés (Ej: Size)"
-                  value={variant.label.en}
-                  onChange={(e) => {
+                <button
+                  type="button"
+                  className="text-red-500 text-sm ml-2"
+                  onClick={() => {
                     const updated = [...variants];
-                    updated[vIndex].label.en = e.target.value;
+                    updated.splice(vIndex, 1);
                     setVariants(updated);
                   }}
-                />
+                >
+                  Eliminar variante
+                </button>
               </div>
               {variant.options.map((option, oIndex) => (
                 <div key={oIndex} className="grid grid-cols-3 gap-2 mb-1">
@@ -691,7 +679,7 @@ useEffect(() => {
                     <input
                       type="text"
                       className="w-full border p-2"
-                      placeholder="Ej: Joystick Original"
+                      placeholder="Ej: Azul, Mediano"
                       value={option.value}
                       onChange={(e) => {
                         const updated = [...variants];
@@ -729,53 +717,31 @@ useEffect(() => {
                       }}
                     />
                   </div>
-                  {/* Botón para eliminar esta opción */}
-                  <div className="col-span-3 flex justify-end">
-                    <button
-                      type="button"
-                      className="text-red-500 text-xs mt-1"
-                      onClick={() => {
-                        const updated = [...variants];
-                        updated[vIndex].options.splice(oIndex, 1);
-                        setVariants(updated);
-                      }}
-                    >
-                      Eliminar esta opción
-                    </button>
-                  </div>
                 </div>
               ))}
               <button
                 type="button"
-                className="text-blue-600 text-sm mt-2"
+                className="text-blue-500 text-sm mt-2"
                 onClick={() => {
                   const updated = [...variants];
-                  updated[vIndex].options.push({ value: "", priceUSD: 0, stock: 0 });
+                  updated[vIndex].options.push({ value: '', priceUSD: 0, stock: 0 });
                   setVariants(updated);
                 }}
               >
                 + Agregar opción
               </button>
-              <button
-                type="button"
-                className="text-red-600 text-sm mt-2"
-                onClick={() => {
-                  const updated = [...variants];
-                  updated.splice(vIndex, 1);
-                  setVariants(updated);
-                }}
-              >
-                 🗑️ Eliminar
-              </button>
             </div>
           ))}
           <button
             type="button"
-            className="text-blue-600 mt-2"
+            className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm"
             onClick={() => {
               setVariants([
                 ...variants,
-                { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0, stock: 0 }] },
+                {
+                  label: { es: '', en: '' },
+                  options: [{ value: '', priceUSD: 0, stock: 0 }],
+                },
               ]);
             }}
           >

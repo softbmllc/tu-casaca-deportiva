@@ -346,6 +346,15 @@ const handleUpload = async (file: File): Promise<string | null> => {
         (s) => s.id === selectedSubcategory
       );
 
+      // Generar slug único por subcategoría
+      const subcategoryName = typeof selectedSubcategoryObject?.name === "string"
+        ? selectedSubcategoryObject.name
+        : selectedSubcategoryObject?.name?.es || selectedSubcategoryObject?.name?.en || "";
+
+      const cleanSubcat = subcategoryName.toLowerCase().replace(/\s+/g, "-");
+      const baseSlug = generateSlug(productData.title?.en || "");
+      const finalSlug = `${baseSlug}-${cleanSubcat}`;
+
       // Solo incluir subcategory (minúscula) en updatedProduct, nunca subCategory
       const updatedProduct: Product = {
         ...product,
@@ -357,7 +366,7 @@ const handleUpload = async (file: File): Promise<string | null> => {
           en: productData.title?.en?.trim() || "",
           es: productData.title?.es?.trim() || "",
         },
-        slug: productData.slug ?? generateSlug(productData.title?.en ?? ""),
+        slug: finalSlug,
         priceUSD: productData.priceUSD || 0,
         stock: {},
         category: {
@@ -500,26 +509,22 @@ return (
             <div className="bg-gray-50 p-4 rounded-md shadow-inner">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="lg:col-span-4">
-                  <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Título Interno</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Título (EN)</label>
-                      <input
-                        type="text"
-                        value={formData.title?.en || ""}
-                        onChange={(e) => handleChange("title", { ...formData.title, en: e.target.value })}
-                        className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium tracking-wide text-gray-800 mb-1">Título (ES)</label>
-                      <input
-                        type="text"
-                        value={formData.title?.es || ""}
-                        onChange={(e) => handleChange("title", { ...formData.title, es: e.target.value })}
-                        className="shadow-sm focus:ring-black focus:border-black block w-full sm:text-sm border-gray-300 rounded-md appearance-none"
-                      />
-                    </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">Título del producto</label>
+                    <input
+                      type="text"
+                      className="w-full border px-3 py-2 rounded"
+                      value={formData.title?.es || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          title: {
+                            es: e.target.value,
+                            en: e.target.value,
+                          },
+                        })
+                      }
+                    />
                   </div>
                 </div>
                 <div className="lg:col-span-2">

@@ -146,31 +146,11 @@ type ProductFormData = Omit<Product, 'id'> & {
 };
 
 export default function EditProductModal({ product, onSave, onClose, subcategories, open }: Props) {
-  // Reinicializa formData cada vez que el modal se abre y cambia el producto
-  useEffect(() => {
-    if (open && product) {
-      console.log("🧪 product recibido al abrir modal: ", product);
-      setFormData({
-        ...product,
-        tipo: product.tipo ?? "",
-      });
-    }
-  }, [open, product]);
+  // Estado para los datos del formulario
   const [formData, setFormData] = useState<ProductFormData | null>(null);
-
-useEffect(() => {
-  if (product) {
-    setFormData({
-      ...product,
-      tipo: product.tipo ?? "",
-    });
-  }
-}, [product]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
-
-  const [stockTotal, setStockTotal] = useState<number>(product.stockTotal || 0);
 
   const [categories, setCategories] = useState<{ id: string; name: string | { es?: string; en?: string }; categoryId: string }[]>([]);
 
@@ -213,26 +193,28 @@ useEffect(() => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-useEffect(() => {
-  if (!product || subcategories.length === 0 || categories.length === 0) return;
+  // Consolidated effect for formData normalization and fallbacks
+  useEffect(() => {
+    if (!product || subcategories.length === 0 || categories.length === 0) return;
 
-  const initialCategory = categories.find((cat) => cat.id === product.category?.id);
-  const initialSubcategory = subcategories.find((s) => s.id === product.subcategory?.id);
+    const initialCategory = categories.find((cat) => cat.id === product.category?.id);
+    const initialSubcategory = subcategories.find((s) => s.id === product.subcategory?.id);
 
-  setSelectedCategory(initialCategory?.id || product.category?.id || "");
-  setSelectedSubcategory(initialSubcategory?.id || product.subcategory?.id || "");
+    const tipoFinal = product.tipo ?? "";
 
-  // Log del producto recibido al abrir modal
-  console.log("🧪 product recibido al abrir modal:", product);
+    const titleEs = product.title?.es?.trim() || product.title?.en?.trim() || "";
+    const titleEn = product.title?.en?.trim() || product.title?.es?.trim() || "";
 
-  // Nuevo bloque para tipo
-  const tipoFinal = product.tipo ?? "";
-  console.log("✅ Tipo recibido desde Firebase:", tipoFinal);
-  setFormData((prev) => {
-    if (prev?.id === product.id) return prev;
-    return {
+    setSelectedCategory(initialCategory?.id || product.category?.id || "");
+    setSelectedSubcategory(initialSubcategory?.id || product.subcategory?.id || "");
+
+    setFormData({
       ...product,
       tipo: tipoFinal,
+      title: {
+        es: titleEs,
+        en: titleEn,
+      },
       category: {
         id: initialCategory?.id || product.category?.id || "",
         name:
@@ -251,10 +233,9 @@ useEffect(() => {
             ? initialSubcategory.name?.es || initialSubcategory.name?.en || ""
             : "",
         categoryId: initialSubcategory?.categoryId || product.subcategory?.categoryId || "",
-      }
-    };
-  });
-}, [product, categories, subcategories]);
+      },
+    });
+  }, [product, open, categories, subcategories]);
 
 
 
@@ -344,9 +325,16 @@ const handleUpload = async (file: File): Promise<string | null> => {
       const selectedSubcategoryObj =
         subcategories.find((sub) => sub.id === selectedSubcategory) || { id: "", name: "" };
 
-      const calculatedStockTotal = variants.reduce((total, variant) => {
-        return total + variant.options.reduce((sum, opt: any) => sum + (opt.stock || 0), 0);
-      }, 0);
+      // Calcular stockTotal y priceUSD a partir de las variantes
+      const stockTotal = variants.reduce(
+        (total, variant) =>
+          total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
+        0
+      );
+
+      const priceUSD = Math.min(
+        ...variants.flatMap(v => v.options.map(opt => opt.priceUSD))
+      );
 
       // Obtener el objeto completo de la subcategoría seleccionada
       const selectedSubcategoryObject = subcategories.find(
@@ -368,13 +356,14 @@ const handleUpload = async (file: File): Promise<string | null> => {
         ...productData,
         images: images.map((img) => img.url),
         id: productId,
-        stockTotal: product.variants?.length === 0 ? stockTotal : calculatedStockTotal,
+        
         title: {
           en: productData.title?.en?.trim() || "",
           es: productData.title?.es?.trim() || "",
         },
         slug: finalSlug,
-        priceUSD: productData.priceUSD || 0,
+        priceUSD,
+        stockTotal,
         stock: {},
         category: {
           id: selectedCategoryObj?.id ?? selectedCategory ?? "",
@@ -408,6 +397,7 @@ const handleUpload = async (file: File): Promise<string | null> => {
       await updateProduct(productId, {
         ...updatedProduct,
         variants: variants,
+        stockTotal,
       });
       
       onSave({
@@ -654,32 +644,20 @@ return (
   <TiptapEditor content={description} onChange={setDescription} withDefaultStyles={true} />
 </div>            </div>
 
-            {/* Precio y stock editable si no hay variantes */}
-{(!product.variants || product.variants.length === 0) && (
-  <>
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700">Precio (USD)</label>
-      <input
-        type="number"
-        value={formData.priceUSD || ''}
-        onChange={(e) =>
-          setFormData({ ...formData, priceUSD: Number(e.target.value) })
-        }
-        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-      />
-    </div>
-
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700">Stock disponible</label>
-      <input
-        type="number"
-        value={stockTotal}
-        onChange={(e) => setStockTotal(Number(e.target.value))}
-        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-      />
-    </div>
-  </>
-)}
+            {/* Precio editable si no hay variantes */}
+            {(!product.variants || product.variants.length === 0) && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Precio (USD)</label>
+                <input
+                  type="number"
+                  value={formData.priceUSD || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, priceUSD: Number(e.target.value) })
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+            )}
 
             {/* Variantes */}
             <div className="bg-gray-50 p-4 rounded-md shadow-inner mt-6">

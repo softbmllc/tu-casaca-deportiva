@@ -1,7 +1,6 @@
 // src/components/admin/CreateProductForm.tsx
 
 import React, { useState, useEffect, useRef } from "react";
-import { toast } from 'react-hot-toast';
 import { TIPOS } from "../../constants/tipos";
 import ImageUploader from "./ImageUploader";
 import TiptapEditor from "./TiptapEditor";
@@ -150,8 +149,6 @@ export default function CreateProductForm() {
 const [loading, setLoading] = useState(false);
 const [error, setError] = useState("");
 const [images, setImages] = useState<string[]>([]);
-const [priceUSD, setPriceUSD] = useState<number>(0);
-const [stockTotal, setStockTotal] = useState<number>(0);
 type Category = {
   id: string;
   name: string | { es?: string; en?: string };
@@ -358,12 +355,23 @@ useEffect(() => {
       return;
     }
 
-    // Nueva validación: si no hay variantes y no hay precio, no permitir guardar
-    const hasVariants = variants.length > 0;
-    if (!hasVariants && !priceUSD) {
-      toast.error('Debes ingresar un precio si no agregaste variantes.');
+    // --- Validación de variantes ---
+    if (variants.length === 0) {
+      setError("Debes agregar al menos una variante");
       return;
     }
+
+    const hasInvalidVariant = variants.some(variant =>
+      !variant.label.es.trim() ||
+      variant.options.length === 0 ||
+      variant.options.some(opt => !opt.value.trim() || opt.priceUSD < 0 || opt.stock < 0)
+    );
+
+    if (hasInvalidVariant) {
+      setError("Verifica que todas las variantes tengan nombre, opciones con valor, precio y stock válido");
+      return;
+    }
+    // --- Fin validación variantes ---
 
     setLoading(true);
     setError("");
@@ -410,13 +418,18 @@ useEffect(() => {
         allowCustomization: data.customizable,
         customName: "",
         customNumber: "",
+        // 💲 Agregar priceUSD como el menor precio de todas las variantes
+        priceUSD: Math.min(...variants.flatMap(v => v.options.map(opt => opt.priceUSD))),
         variants: variants.map((variant) => ({
           ...variant,
           title: variant.label,
         })),
         sku: formData.sku || "",
-        priceUSD: variants.length === 0 ? priceUSD : undefined,
-        stockTotal: variants.length === 0 ? stockTotal : undefined,
+        stockTotal: variants.reduce(
+          (total, variant) =>
+            total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
+          0
+        ),
       };
 
       console.log("🧪 DEBUG: createProduct =", createProduct.toString());
@@ -572,27 +585,27 @@ useEffect(() => {
 
       {/* Estado activo */}
       <div className="space-y-2">
+        <label className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            {...register("active")}
+            className="text-black rounded focus:ring-black h-5 w-5"
+          />
+          <span>Producto activo (visible para clientes)</span>
+        </label>
+      </div>
+      <div className="space-y-2">
   <label className="block text-sm font-medium">Stock disponible</label>
-
-  {variants.length === 0 ? (
-    <input
-      type="number"
-      value={stockTotal}
-      onChange={(e) => setStockTotal(Number(e.target.value))}
-      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black sm:text-sm"
-    />
-  ) : (
-    <input
-      type="number"
-      readOnly
-      value={variants.reduce(
-        (total, variant) =>
-          total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
-        0
-      )}
-      className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:outline-none cursor-not-allowed"
-    />
+  <input
+  type="number"
+  readOnly
+  value={variants.reduce(
+    (total, variant) =>
+      total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
+    0
   )}
+  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:outline-none cursor-not-allowed"
+/>
 </div>
 
       {/* Imágenes */}
@@ -637,25 +650,6 @@ useEffect(() => {
           </div>
         )}
       </div>
-
-      {/* Precio individual si no hay variantes */}
-      {(() => {
-        const hasVariants = variants.length > 0;
-        return (
-          !hasVariants && (
-            <div className="mb-4">
-              <label className="block text-sm font-semibold mb-1">Precio USD (si no hay variantes)</label>
-              <input
-                type="number"
-                className="w-full border px-3 py-2 rounded"
-                value={priceUSD}
-                onChange={(e) => setPriceUSD(Number(e.target.value))}
-                required
-              />
-            </div>
-          )
-        );
-      })()}
 
         {/* Variantes del producto con soporte multilenguaje y precios */}
         <div className="mb-6">

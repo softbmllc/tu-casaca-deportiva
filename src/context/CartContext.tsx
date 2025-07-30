@@ -10,6 +10,18 @@ function getAnonymousUID(): string {
   return newUID;
 }
 
+// --- ShippingInfo type for createPreference and other uses ---
+export interface ShippingInfo {
+  nombreCompleto: string;
+  direccion: string;
+  departamento: string;
+  ciudad: string;
+  codigoPostal: string;
+  telefono: string;
+  email: string;
+  shippingCost?: number;
+}
+
 import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { loadCartFromFirebase as loadCartFromFirebaseUtils, saveCartToFirebase, loadCartFromFirebaseAndSync } from "../utils/cartFirebase";

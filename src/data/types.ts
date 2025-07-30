@@ -132,6 +132,7 @@ export type ShippingInfo = {
   email: string;
   password: string;
   confirmPassword: string;
+  shippingCost?: number;
 };
 export interface Order {
   id: string;

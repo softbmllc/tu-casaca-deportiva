@@ -7,13 +7,24 @@ export const createPreference = async (
   shippingData: ShippingInfo
 ): Promise<string | null> => {
     try {
-      const payload = {
-        items: cartItems.map((item: CartItem) => ({
-          title: item.name || item.title || "Producto",
-          quantity: item.quantity,
-          unit_price: Number(item.price) || 0,
+      const items = cartItems.map((item: CartItem) => ({
+        title: item.name || item.title || "Producto",
+        quantity: item.quantity,
+        unit_price: Number(item.price) || 0,
+        currency_id: "UYU",
+      }));
+
+      if (shippingData?.shippingCost && shippingData.shippingCost > 0) {
+        items.push({
+          title: "Costo de envío",
+          quantity: 1,
+          unit_price: shippingData.shippingCost,
           currency_id: "UYU",
-        })),
+        });
+      }
+
+      const payload = {
+        items,
         payer: {
           name: shippingData?.name || "No especificado",
           email: shippingData?.email || "noemail@muttergames.com",

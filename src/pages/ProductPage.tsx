@@ -3,7 +3,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import CartIcon from "../components/CartIcon";
 import ProductPageNavbar from "../components/ProductPageNavbar";
 import { fetchProductById, fetchProducts } from "../firebaseClientUtils";
 import { useCart } from "../context/CartContext";
@@ -329,7 +328,6 @@ export default function ProductPage() {
                   const existingItem = items.find(
                     (item) =>
                       item.id === String(product.id) &&
-                      item.size === (selectedOption?.value || '') &&
                       item.variantId === (selectedOption?.variantId || '')
                   );
 
@@ -356,7 +354,6 @@ export default function ProductPage() {
                     variantLabel: selectedOption?.variantLabel,
                     variantId: selectedOption?.variantId,
                     stock: selectedOption?.stock,
-                    size: selectedOption?.value ?? '',
                     color: '',
                   };
                   addToCart(cartItem);

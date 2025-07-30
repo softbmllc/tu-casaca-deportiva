@@ -5,7 +5,7 @@ import { getFirestore, doc as firestoreDoc, setDoc, getDoc as firestoreGetDoc, c
 import app from "./firebase";
 export const db = getFirestore(app);
 
-import { Product, League, Team, Category, ClientWithId } from "./data/types";
+import { Product, Category, ClientWithId } from "./data/types";
 import type { CartItem } from "./data/types";
 
 // 🔥 Función para traer un producto específico por ID
@@ -20,15 +20,6 @@ export async function fetchProductById(id: string): Promise<Product | null> {
     console.error("Error fetching product by ID:", error);
     return null;
   }
-}
-
-export async function fetchLeagues(): Promise<{ id: string; name: string }[]> {
-  const ref = collection(db, "categories");
-  const snap = await getDocs(ref);
-  return snap.docs.map((doc) => ({
-    id: doc.id,
-    name: doc.data().name?.es || "",
-  }));
 }
 
 // 🔥 Función para traer todos los productos
@@ -66,10 +57,8 @@ export async function fetchProducts(): Promise<Product[]> {
       title,
       images: data.images || [],
       priceUSD: data.priceUSD || 0,
-      league: data.league || "Fútbol",
       category: data.category || { id: "", name: "" },
       subcategory: data.subcategory || { id: "", name: "" },
-      team: data.team || { id: "", name: "" },
       tipo: data.tipo || "",
       subtitle: data.subtitle || "",
       description: data.description || "",
@@ -78,8 +67,7 @@ export async function fetchProducts(): Promise<Product[]> {
       extraDescriptionBottom: data.extraDescriptionBottom || "",
       descriptionPosition: data.descriptionPosition || "bottom",
       active: data.active ?? true,
-      stock: data.stock || { S: 0, M: 0, L: 0, XL: 0 },
-      sizes: data.sizes || ["S", "M", "L", "XL"],
+      // stock and sizes fields related to talles removed
       customName: data.customName || "",
       customNumber: data.customNumber || "",
       allowCustomization: data.allowCustomization ?? false,
@@ -139,10 +127,9 @@ function mapProductData(id: string, data: any): Product {
     },
     images: data.images || [],
     priceUSD: data.priceUSD || 0,
-    league: data.league || "Fútbol",
     category: data.category || { id: "", name: "" },
     subcategory: data.subcategory || { id: "", name: "" },
-    team: data.team || { id: "", name: "" },
+    tipo: data.tipo || "",
     subtitle: data.subtitle || "",
     description: data.description || "",
     defaultDescriptionType: data.defaultDescriptionType || "none",
@@ -150,8 +137,7 @@ function mapProductData(id: string, data: any): Product {
     extraDescriptionBottom: data.extraDescriptionBottom || "",
     descriptionPosition: data.descriptionPosition || "bottom",
     active: data.active ?? true,
-    stock: data.stock || { S: 0, M: 0, L: 0, XL: 0 },
-    sizes: data.sizes || ["S", "M", "L", "XL"],
+    // stock and sizes fields related to talles removed
     customName: data.customName || "",
     customNumber: data.customNumber || "",
     allowCustomization: data.allowCustomization ?? false,
@@ -782,8 +768,8 @@ export const discountStockByOrder = async (order: {
   if (!Array.isArray(order.cartItems)) return;
 
   for (const item of order.cartItems) {
-    const { id: productId, variantId, quantity, variantLabel, size } = item;
-    if (!productId || !variantLabel || !size || !quantity) continue;
+    const { id: productId, variantId, quantity, variantLabel } = item;
+    if (!productId || !variantLabel || !quantity) continue;
 
     const productRef = doc(db, "products", productId);
     const productSnap = await getDoc(productRef);
@@ -801,7 +787,7 @@ export const discountStockByOrder = async (order: {
         Array.isArray(variant.options)
       ) {
         const updatedOptions = variant.options.map((option) => {
-          if (option.value === size && typeof option.stock === "number") {
+          if (typeof option.stock === "number") {
             const newStock = Math.max(0, option.stock - quantity);
             stockTotal += newStock;
             return {

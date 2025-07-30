@@ -16,7 +16,7 @@ type ExtendedCartItem = {
   image: string;
   priceUSD: number;
   quantity: number;
-  size: string;
+  size?: string;
   options?: string;
   variantId?: string;
   variantLabel?: string;
@@ -48,7 +48,7 @@ export default function OrderSummary() {
         item.size;
 
       const key = `${item.id}-${item.variantId || item.size}`;
-      labels[key] = label;
+      labels[key] = label || "-";
     }
 
     setVariantLabels(labels);

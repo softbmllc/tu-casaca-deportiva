@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import ProductCard from "../components/ProductCard";
 import ShopNavbar from "../components/ShopNavbar";
-import { Product, LeagueData, Subcategory, Category as BaseCategory } from "../data/types";
+import { Product, Subcategory, Category as BaseCategory } from "../data/types";
 import type { Category } from "../data/types";
 
 import { FiFilter } from "react-icons/fi";
@@ -15,7 +15,6 @@ import { IoGameControllerOutline } from "react-icons/io5";
 import { Gamepad } from "lucide-react";
 import { TIPOS } from '@/constants/tipos';
 import { motion } from "framer-motion";
-import CartIcon from "../components/CartIcon";
 import { ArrowUp, Bolt } from "lucide-react";
 import { Listbox, Transition } from "@headlessui/react";
 import { ChevronDownIcon, CheckIcon } from "@heroicons/react/20/solid";
@@ -23,7 +22,7 @@ import { Fragment } from 'react';
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Rocket } from "lucide-react";
-import { fetchProducts, fetchLeagues, fetchSubcategories, fetchCategories } from "../firebaseUtils";
+import { fetchProducts, fetchSubcategories, fetchCategories } from "../firebaseUtils";
 import ProductSkeleton from "../components/ProductSkeleton";
 import SidebarFilter from "../components/SidebarFilter";
 import MobileFilterDrawer from "../components/MobileFilterDrawer";
@@ -51,9 +50,6 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
-  const initialCategory = location.state?.category || "";
-  const [selectedLeague, setSelectedLeague] = useState(initialCategory);
-  const [selectedTeam, setSelectedTeam] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
   // Estado de ordenamiento
@@ -101,15 +97,12 @@ export default function Shop() {
   }, []);
   
 // Estado para almacenar las ligas dinámicas
-const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
-  const [noLeaguesAvailable, setNoLeaguesAvailable] = useState(false);
+// (removido: lógica de league)
 
   // Estado para almacenar subcategorías
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   // Estado para almacenar categorías (nuevo)
   const [categories, setCategories] = useState<Category[]>([]);
-  // Estado para almacenar equipos por subcategoría
-  const [teamsBySubcategory, setTeamsBySubcategory] = useState<Record<string, any[]>>({});
   // Estado para categoría y subcategoría seleccionadas (nuevo)
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
@@ -169,72 +162,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
     loadProducts();
   }, []);
 
-  // 🔥 Cargar ligas desde Firebase (actualizado para escuchar filterParam)
-  useEffect(() => {
-    async function loadLeagues() {
-      try {
-        const leaguesFetched = await fetchLeagues();
-        console.log("[Shop] Ligas traídas desde Firebase:", leaguesFetched);
-
-        const allTeamsPromises: Promise<{ id: string; name: string; teams: string[] }>[] = leaguesFetched.map(async (league) => {
-          const allSubcategories = await fetchSubcategories(league.id);
-          // fetchTeams removed; placeholder
-          const allTeamsPromises: Promise<any[]>[] = allSubcategories.map(() =>
-            Promise.resolve([]) // Placeholder
-          );
-          const teamsFromAllSubs = await Promise.all(allTeamsPromises);
-          const flatTeamNames: string[] = teamsFromAllSubs.flat().map((team) => (typeof team === "string" ? team : team.name || ""));
-          return {
-            id: league.id,
-            name: league.name,
-            teams: flatTeamNames,
-          };
-        });
-
-        const processedLeagues = await Promise.all(allTeamsPromises);
-
-        // Nuevo filtrado según filterParam
-        const normalizedParam = filterParam.toLowerCase();
-        setDynamicLeagues(processedLeagues);
-        const filteredLeagues = processedLeagues.filter((league) => {
-          const leagueName = (typeof league.name === "string"
-            ? league.name
-            : league.name[i18n.language as "en" | "es"] || ""
-          ).trim().toLowerCase();
-          if (normalizedParam === "nba") {
-            return leagueName === "nba";
-          }
-          if (normalizedParam === "futbol") {
-            return !["nba", "zapatos", "otros"].includes(leagueName);
-          }
-          return true;
-        });
-
-        console.log("[Shop] Ligas filtradas:", filteredLeagues);
-
-        setDynamicLeagues(
-          filteredLeagues.map((league) => ({
-            id: league.id,
-            name: league.name,
-            teams: league.teams || [],
-          }))
-        );
-
-        if (!selectedLeague && filteredLeagues.length > 0) {
-          setSelectedLeague("");
-        }
-
-        setNoLeaguesAvailable(filteredLeagues.length === 0);
-        setLoading(false);
-      } catch (error) {
-        console.error("[Shop] Error al cargar ligas:", error);
-        setNoLeaguesAvailable(true);
-        setLoading(false);
-      }
-    }
-
-    loadLeagues();
-  }, [filterParam]);
+  // (removido: useEffect de ligas y lógica relacionada)
 
   // 🔥 Cargar categorías y subcategorías (nuevo useEffect)
   useEffect(() => {
@@ -285,40 +213,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
     }
   };
 
-  useEffect(() => {
-    const isStock = searchParams.get("stock") === "true";
-    const alreadyScrolled = sessionStorage.getItem("stockScrollDone");
-
-    if (isStock) {
-      setSelectedLeague("STOCK_EXPRESS");
-      setSelectedTeam("");
-      setSearchTerm("");
-
-      if (!alreadyScrolled) {
-        setTimeout(() => {
-          const section = document.getElementById("stock-express");
-          if (section) {
-            section.scrollIntoView({ behavior: "smooth" });
-            sessionStorage.setItem("stockScrollDone", "true");
-          }
-        }, 300);
-      }
-    } else if (location.state?.category) {
-      setSelectedLeague(location.state.category);
-      setSelectedTeam("");
-      setSearchTerm("");
-
-      if (window.history.replaceState) {
-        window.history.replaceState(
-          { ...window.history.state, usr: undefined, state: undefined },
-          document.title,
-          window.location.pathname + window.location.search
-        );
-      }
-    } else {
-      sessionStorage.removeItem("stockScrollDone");
-    }
-  }, [searchParams]);
+  // (removido: useEffect relacionado a selectedLeague y stock)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -328,38 +223,13 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (searchTerm.trim().length > 0) {
-      setSelectedLeague("");
-      setSelectedTeam("");
-    }
-  }, [searchTerm]);
+  // (removido: useEffect que limpia selectedLeague al buscar)
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleLeagueClick = (league: string) => {
-    setSelectedLeague(league);
-    setSelectedTeam("");
-    setSearchTerm("");
-    setIsFilterOpen(false);
-  };
-
-  const handleTeamClick = (team: string) => {
-    // Buscar en las ligas dinámicas
-    const teamLeague = dynamicLeagues.find((league) =>
-      league.teams.includes(team)
-    )?.name;
-
-    if (teamLeague) {
-      setSelectedLeague(teamLeague);
-    }
-
-    setSelectedTeam(team);
-    setSearchTerm("");
-    setIsFilterOpen(false);
-  };
+  // (removido: handleLeagueClick y handleTeamClick)
 
   // Nuevo filtrado de productos usando useMemo, con lógica de subcategoría (versión robusta) y ordenamiento
   // --- filteredProducts debe estar antes de cualquier useMemo que lo use ---
@@ -476,23 +346,9 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
     return sorted;
   }, [filteredProducts, selectedOrderMobile, i18n.language]);
 
-  const isStockExpress = selectedLeague === "STOCK_EXPRESS";
+  // (removido: isStockExpress, currentLeague, currentLeagueSubcategories y getLeagueId)
   const productsToDisplay = sortedProducts;
-  
-  // Adaptamos esto para usar dynamicLeagues en lugar de leagues
-  const currentLeague = dynamicLeagues.find((l) => l.name === selectedLeague);
-
-  // Obtener subcategorías para la liga seleccionada
-  const currentLeagueSubcategories = subcategories.filter(
-    sub => currentLeague && sub.categoryId === currentLeague.id
-  );
-
   console.log("[Shop] Productos a mostrar:", productsToDisplay);
-
-  function getLeagueId(name: string): string {
-    return dynamicLeagues.find((l) => l.name === name)?.id || "";
-  }
-  
   // Banner dinámico según filtro (normalizando a mayúsculas)
   const normalizedFilter = filterParam.toUpperCase();
   const bannerImage = {
@@ -614,114 +470,8 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             </div>
           </div>
 
-          {/* Para móviles: sidebar en modal */}
-          <AnimatePresence>
-            {isFilterOpen && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 z-50 md:hidden"
-                onClick={() => setIsFilterOpen(false)}
-              >
-                <motion.div
-                  initial={{ x: "-100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "-100%" }}
-                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="absolute top-0 left-0 bottom-0 w-[280px] bg-white p-6 overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Filtros</h2>
-                    <button
-                      onClick={() => setIsFilterOpen(false)}
-                      className="p-1 rounded-full hover:bg-gray-100 transition"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block font-semibold text-sm mb-2">
-                        Buscar por nombre
-                      </label>
-                    <input
-                      type="text"
-                      placeholder={t("shop.searchPlaceholder", "Ej: GTA 5")}
-                      className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    </div>
-
-                    <div>
-                      <Link
-                        to="/productos"
-                        className={`w-full text-left px-3 py-2 rounded-lg transition ring-1 ring-transparent text-[15px] font-semibold ${
-                          !filterParam
-                            ? "bg-black text-white ring-black"
-                            : "hover:bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {t("shop.viewAll", "Ver todo")}
-                      </Link>
-                    </div>
-                    
-                    
-                    {/* Ligas móvil */}
-                    <div>
-                      <ul className="space-y-1 text-sm">
-                        {dynamicLeagues
-                          .filter((league) => league.name !== "STOCK_EXPRESS")
-                          .map((league) => (
-                            <li key={league.id}>
-                              <button
-                                onClick={() => {
-                                  handleLeagueClick(league.name);
-                                  setIsFilterOpen(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-lg transition ring-1 ring-transparent ${
-                                  selectedLeague === league.name
-                                    ? "bg-black text-white ring-black"
-                                    : "hover:bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                {league.name}
-                              </button>
-                              <ul className="space-y-1 ml-2">
-                                {subcategories
-                                  .filter((sub): sub is Subcategory =>
-                                    'categoryId' in sub &&
-                                    typeof sub.categoryId === 'string' &&
-                                    sub.categoryId === league.id
-                                  )
-                                  .map((sub) => (
-                                    <li key={sub.id}>
-                                      <button
-                                        onClick={() => {
-                                          setSelectedLeague(league.name);
-                                          setSelectedTeam("");
-                                          setSearchTerm(sub.name);
-                                          setIsFilterOpen(false);
-                                        }}
-                                        className="text-sm text-gray-800 hover:bg-gray-100 px-2 py-1 rounded transition"
-                                      >
-                                        {sub.name}
-                                      </button>
-                                    </li>
-                                  ))}
-                              </ul>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* Para móviles: sidebar en modal */}
+      {/* (removido: bloque de ligas móvil y lógica asociada) */}
         </motion.aside>
 
         {/* Contenido principal - Productos */}
@@ -730,12 +480,6 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             <h1 className="text-2xl sm:text-3xl font-bold">
               {searchTerm
                 ? t("shop.resultsFor", { search: searchTerm, defaultValue: 'Resultados para "{{search}}"', searchTerm })
-                : isStockExpress
-                ? t("shop.stockExpress", "Stock Express")
-                : selectedLeague && selectedTeam
-                ? `${selectedLeague} - ${selectedTeam}`
-                : selectedLeague
-                ? selectedLeague
                 : filterParam === "NBA"
                 ? t("shop.nba", "NBA")
                 : filterParam === "FUTBOL"
@@ -745,14 +489,13 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             <p className="text-gray-600 mt-1 text-sm">
               {productsToDisplay.length} productos encontrados
             </p>
-            {(searchTerm || selectedLeague || selectedTeam) && (
+            {(searchTerm) && (
               <button
                 onClick={() => {
                   setSearchTerm("");
-                  setSelectedLeague("");
-                  setSelectedTeam("");
                   setSelectedCategory("");
                   setSelectedSubcategory("");
+                  setSelectedType("");
                   navigate(".", { replace: true });
                 }}
                 className="mt-2 text-sm font-semibold text-gray-700 hover:text-black underline"
@@ -762,30 +505,7 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
             )}
           </div>
 
-          {/* Stock Express Banner */}
-          {isStockExpress && (
-            <section id="stock-express" className="mt-4 mb-8">
-              <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 rounded-xl p-6 text-white flex items-center">
-                <div className="mr-6">
-                  <Rocket className="h-10 w-10 text-red-500" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold mb-1 flex items-center">
-                    {t("shop.stockExpress", "Stock Express")}{" "}
-                    <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full ml-2">
-                      {t("shop.immediateShipping", "¡Envío inmediato!")}
-                    </span>
-                  </h2>
-                  <p className="text-gray-300 max-w-lg">
-                    {t(
-                      "shop.stockExpressDescription",
-                      "Estos productos están disponibles para envío inmediato. El envío se realiza dentro de las 24 horas hábiles siguientes a la confirmación de pago."
-                    )}
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
+          {/* (removido: Stock Express Banner) */}
 
           {/* MOBILE: Filtros y ordenar por botones (solo visible en mobile) */}
           <div className="flex justify-between items-center px-4 py-2 sm:hidden">
@@ -964,8 +684,6 @@ const [dynamicLeagues, setDynamicLeagues] = useState<LeagueData[]>([]);
           <button
             onClick={() => {
               setSearchTerm('');
-              setSelectedLeague('');
-              setSelectedTeam('');
               setSelectedCategory('');
               setSelectedSubcategory('');
               setSelectedType('');

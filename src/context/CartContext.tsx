@@ -42,8 +42,8 @@ type CartContextType = {
   items: CartItem[];
   cartItems: CartItem[]; // agregado para compatibilidad con componentes que usan cartItems
   addToCart: (item: CartItem) => void;
-  updateItem: (id: string | number, size: string, updates: Partial<CartItem>) => void;
-  removeItem: (id: string | number, size: string) => void;
+  updateItem: (id: string | number, variantLabel: string, updates: Partial<CartItem>) => void;
+  removeItem: (id: string | number, variantLabel: string) => void;
   clearCart: () => void;
   shippingInfo: ShippingData;
   setShippingInfo: React.Dispatch<React.SetStateAction<ShippingData>>;
@@ -239,7 +239,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const existingIndex = prevItems.findIndex(
         (item) =>
           item.id === itemToAdd.id &&
-          item.size === itemToAdd.size &&
+          item.variantLabel === itemToAdd.variantLabel &&
           item.variantId === itemToAdd.variantId
       );
 
@@ -256,11 +256,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateItem = (id: string | number, size: string, updates: Partial<CartItem>) => {
+  const updateItem = (id: string | number, variantLabel: string, updates: Partial<CartItem>) => {
     setCartItems((prevItems) =>
       prevItems
         .map((item) =>
-          item.id?.toString() === id.toString() && item.size === size
+          item.id?.toString() === id.toString() && item.variantLabel === variantLabel
             ? { ...item, ...updates }
             : item
         )
@@ -268,10 +268,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const removeItem = (id: string | number, size: string) => {
+  const removeItem = (id: string | number, variantLabel: string) => {
     setCartItems((prevItems) =>
       prevItems.filter(
-        (item) => !(item.id?.toString() === id.toString() && item.size === size)
+        (item) => !(item.id?.toString() === id.toString() && item.variantLabel === variantLabel)
       )
     );
   };

@@ -31,32 +31,10 @@ import {
 } from "../../firebaseUtils";
 import { importProductFromCJ } from '../../firebaseUtils';
 
-// Definimos los tamaños disponibles como una constante
-const SIZES = ["S", "M", "L", "XL"] as const;
-// Creamos un tipo a partir de los valores de SIZES
-type Size = typeof SIZES[number];
-
-// Tipamos el objeto de stock para que utilice el tipo Size
-type StockRecord = Record<Size, number>;
-
-// Tipo para ligas almacenadas en localStorage
-type League = {
-  id: number;
-  name: string;
-};
-
-// Tipo para equipos almacenados en localStorage
-type Team = {
-  id: number;
-  name: string;
-  league: string;
-};
 
 // Interfaz para nuestro formulario
 interface FormData {
   title: string;
-  league: string;
-  team: string;
   cjProductId: string;
   defaultDescriptionType: "none" | "camiseta";
   extraDescriptionTop: string;
@@ -64,7 +42,6 @@ interface FormData {
   descriptionPosition: "top" | "bottom";
   active: boolean;
   customizable: boolean;
-  stock: StockRecord;
 }
 
 
@@ -127,7 +104,6 @@ export default function CreateProductForm() {
     category: "",
     subcategory: "",
     tipo: "", // Nuevo campo para distinguir si es Juego, Consola, Accesorio o Merch
-    team: "",
     priceUSD: 0,
     images: [],
     active: true,
@@ -160,7 +136,6 @@ const [uploadingImages, setUploadingImages] = useState(false);
 const fileInputRef = useRef<HTMLInputElement>(null);
 const [selectedCategory, setSelectedCategory] = useState("");
 const [selectedSubcategory, setSelectedSubcategory] = useState("");
-const [selectedTeam, setSelectedTeam] = useState("");
 // Extensiones locales para permitir name multilingüe en category y subcategory
 type MultilingualName = string | { es?: string; en?: string };
 
@@ -279,8 +254,6 @@ useEffect(() => {
   } = useForm<FormData>({
     defaultValues: {
       title: "",
-      league: "",
-      team: "",
       cjProductId: "",
       defaultDescriptionType: "none", // 🔥 Nuevo
       extraDescriptionTop: "",        // 🔥 Nuevo

@@ -19,7 +19,6 @@ export function isSameItem(a: CartItem, b: CartItem): boolean {
   return (
     a.id === b.id &&
     a.variantId === b.variantId &&
-    a.size === b.size &&
     a.customName === b.customName &&
     a.customNumber === b.customNumber &&
     a.options === b.options

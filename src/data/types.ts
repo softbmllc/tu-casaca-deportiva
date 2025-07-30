@@ -14,11 +14,8 @@ export type Product = {
   priceUSD: number;
   category: { id: string; name: string };
   subcategory: Subcategory;
-  team: { id: string; name: string };
-  league: string;
   images?: string[];
   stock?: { [size: string]: number };
-  sizes?: string[];
   active: boolean;
   defaultDescriptionType?: string;
   extraDescriptionTop?: string;
@@ -46,18 +43,6 @@ export type Product = {
   type?: string; // Ej: "Juego", "Consola", etc.
 };
 
-export interface League {
-  id: string;
-  name: string;
-  teams: string[];
-}
-
-export interface Team {
-  id: string;
-  name: string;
-  subcategoryId: string;
-}
-
 export type CartItem = {
   id: string;
   slug: string;
@@ -72,7 +57,6 @@ export type CartItem = {
   price: number; // ✅ Nuevo campo agregado
   priceUSD: number;
   quantity: number;
-  size: string;
   customName?: string;
   customNumber?: string;
   options?: string;
@@ -120,12 +104,6 @@ export interface Client {
 export interface ClientWithId extends Client {
   id: string;
 }
-
-export type LeagueData = {
-  id: string;
-  name: string;
-  teams: string[];
-};
 
 export type Subcategory = {
   id: string;

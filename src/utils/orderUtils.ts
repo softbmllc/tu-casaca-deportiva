@@ -41,7 +41,6 @@ export function prepareInitialOrderData(
     name: string;
     price: number;
     quantity: number;
-    size: string;
     customName?: string;
     customNumber?: string;
     variantLabel?: string;
@@ -66,7 +65,6 @@ export function prepareInitialOrderData(
     name: item.name,
     price: item.price,
     quantity: item.quantity,
-    size: item.size,
     customName: item.customName || '',
     customNumber: item.customNumber || '',
     variantLabel: item.variantLabel || '',

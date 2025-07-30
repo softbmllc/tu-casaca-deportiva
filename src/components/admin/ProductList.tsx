@@ -10,7 +10,7 @@ import { fetchCategories, fetchAllSubcategories } from "@/firebaseUtils";
 
 export default function ProductList() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filter, setFilter] = useState("Todas");
+  const [categoryFilter, setCategoryFilter] = useState("Todas");
   const [searchTerm, setSearchTerm] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteName, setConfirmDeleteName] = useState<string>("");
@@ -152,27 +152,15 @@ export default function ProductList() {
     setConfirmDeleteName("");
   };
 
-  const uniqueLeagues = [
-    "Todas",
-    ...Array.from(
-      new Set(
-        products
-          .map((p) =>
-            typeof p.category === "object" ? p.category?.name : p.category
-          )
-          .filter(Boolean)
-      )
-    ),
-  ].sort();
+  // Eliminar lógica de uniqueLeagues y usar categories directamente
 
   const filteredProducts =
-    filter === "Todas"
+    categoryFilter === "Todas"
       ? products
       : products.filter(
           (p) =>
-            (typeof p.category === "object"
-              ? p.category?.name
-              : p.category) === filter
+            (typeof p.category === "string" && p.category === categoryFilter) ||
+            (typeof p.category === "object" && p.category.name === categoryFilter)
         );
 
   const visibleProducts = filteredProducts.filter((p) =>
@@ -193,13 +181,13 @@ export default function ProductList() {
       <div className="mb-4">
         <label className="mr-2 font-medium">Filtrar por categoría:</label>
         <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
           className="px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
         >
-          {uniqueLeagues.map((league) => (
-            <option key={league} value={league}>
-              {league}
+          {["Todas", ...categories.map((cat) => cat.name)].map((name) => (
+            <option key={name} value={name}>
+              {name}
             </option>
           ))}
         </select>

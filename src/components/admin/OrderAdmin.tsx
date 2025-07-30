@@ -56,7 +56,6 @@ interface ShippingInfo {
 interface OrderItem {
   title?: { es?: string };
   name?: { es?: string };
-  size?: string;
   options?: string;
   quantity?: number;
   price?: number;
@@ -356,7 +355,7 @@ export default function OrderAdmin() {
                   <td className="px-4 py-2 text-sm">
                     <select
                       value={pedido.status}
-                      onChange={(e) => handleStatusChange(pedido.id as string, e.target.value)}
+                      onChange={(e) => updateStatus(pedido.id, e.target.value as Order["status"])}
                       className="border border-gray-300 rounded px-2 py-1"
                     >
                       <option value="Pendiente">Pendiente</option>
@@ -455,7 +454,7 @@ export default function OrderAdmin() {
                       selectedOrder.items.map((item, index) => {
                         if (typeof item === "string") return null;
                         const title = item.title?.es || item.name?.es || "Producto";
-                        const variant = item.size || item.options || "-";
+                        const variant = item.options || "-";
                         const quantity = item.quantity ?? 0;
                         const price = item.price ?? 0;
                         const subtotal = (price * quantity).toFixed(2);

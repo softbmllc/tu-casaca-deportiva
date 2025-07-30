@@ -117,7 +117,7 @@ export default function CartPage() {
         precio: item.priceUSD,
         cantidad: item.quantity,
         variantTitle: item.variantTitle || "Variante",
-        variantValue: item.size,
+        variantValue: item.variantLabel,
         customName: item.customName || "",
         customNumber: item.customNumber || "",
       })),
@@ -147,13 +147,13 @@ const isValidEmail = (email: string): boolean => {
 
   const handleQuantityChange = (item: CartItem, newQty: number) => {
     if (newQty >= 1 && newQty <= 99) {
-      updateItem(Number(item.id), item.size, { quantity: newQty });
+      updateItem(Number(item.id), item.variantLabel ?? "-", { quantity: newQty });
     }
   };
 
   const handleRemoveItem = (item: CartItem) => {
     if (!removeItem) return;
-    removeItem(item.id, item.size);
+    removeItem(item.id, item.variantLabel ?? "-");
   };
 
 
@@ -458,7 +458,7 @@ const isValidEmail = (email: string): boolean => {
                       const price = item.priceUSD;
                       const totalItem = price * item.quantity;
                       return (
-                        <li key={`${item.id}-${item.size}`} className="py-4 flex gap-4 items-start sm:items-center">
+                        <li key={`${item.id}-${item.variantLabel}`} className="py-4 flex gap-4 items-start sm:items-center">
                           <Link to={`/producto/${item.slug}`}>
                             <img
                               src={item.image}
@@ -476,9 +476,9 @@ const isValidEmail = (email: string): boolean => {
                               {`$${item.priceUSD.toFixed(2)} c/u`}
                             </p>
                             <div className="text-sm text-gray-500 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-1 sm:gap-3">
-                              {finalVariantLabel && item.size && (
+                              {finalVariantLabel && item.variantLabel && (
                                 <span className="text-gray-600">
-                                  {finalVariantLabel}: <span>{item.size}</span>
+                                  {finalVariantLabel}: <span>{item.variantLabel}</span>
                                 </span>
                               )}
                               <span>

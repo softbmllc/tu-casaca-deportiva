@@ -6,13 +6,9 @@ import { db } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { getProductById } from "@/utils/productUtils";
 
-type LanguageMap = {
-  [lang: string]: string;
-};
-
 type ExtendedCartItem = {
   id: string;
-  name: string | LanguageMap;
+  name: string;
   image: string;
   priceUSD: number;
   quantity: number;
@@ -24,7 +20,7 @@ type ExtendedCartItem = {
     value: string;
   };
   variant?: {
-    label?: LanguageMap;
+    label?: string;
   };
 };
 
@@ -32,23 +28,17 @@ export default function OrderSummary() {
   const { cartItems: rawCartItems } = useCart();
   const cartItems = rawCartItems as ExtendedCartItem[];
   const { t, i18n } = useTranslation();
-  const [variantLabels, setVariantLabels] = useState<Record<string, string>>({});
+  const [variantLabels, setVariantLabels] = useState<Record<string, { label: string; value: string }>>({});
 
   useEffect(() => {
-    const labels: Record<string, string> = {};
+    const labels: Record<string, { label: string; value: string }> = {};
     const lang = i18n.language;
 
     for (const item of cartItems) {
-      const label =
-        (item.variant?.label && typeof item.variant.label === "object"
-          ? item.variant.label[lang as keyof LanguageMap]
-          : undefined) ||
-        item.variantLabel ||
-        item.options ||
-        item.size;
-
       const key = `${item.id}-${item.variantId || item.size}`;
-      labels[key] = label || "-";
+      const label = item.variant?.label || item.variantLabel || item.options || item.size || "-";
+      const value = item.selectedOption?.value || "-";
+      labels[key] = { label, value };
     }
 
     setVariantLabels(labels);
@@ -80,9 +70,7 @@ export default function OrderSummary() {
       <ul className="space-y-4">
         {cartItems.map((item) => {
           const key = `${item.id}-${item.variantId || item.size}`;
-          const lang = i18n.language as keyof LanguageMap;
-          const translatedName =
-            typeof item.name === "object" ? item.name[lang] : item.name;
+          const translatedName = item.name;
 
           return (
             <li key={key} className="flex items-start gap-4 border-b pb-4">
@@ -94,9 +82,10 @@ export default function OrderSummary() {
               <div className="flex-1">
                 <p className="text-base font-medium text-gray-900">{translatedName}</p>
                 <p className="text-sm text-gray-500">
-                  {(variantLabels[key] && variantLabels[key] !== item.size)
-                    ? `${variantLabels[key]}: ${item.selectedOption?.value || item.options || item.size}`
-                    : item.options || item.size}{" "}
+                  {variantLabels[key]
+                    ? `${variantLabels[key].label}: ${variantLabels[key].value}`
+                    : "-"}
+                  {" "}
                   – {t("checkout.quantity", "Cantidad")}: {item.quantity}
                 </p>
               </div>

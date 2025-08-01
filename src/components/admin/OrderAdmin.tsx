@@ -59,6 +59,7 @@ interface OrderItem {
   options?: string;
   quantity?: number;
   price?: number;
+  variantLabel?: string;
 }
 
 interface Order {
@@ -77,6 +78,7 @@ interface Order {
   amountPaid?: number;
   shippingInfo?: ShippingInfo;
   totalAmount?: number;
+  shippingCost?: number;
 }
 
 export default function OrderAdmin() {
@@ -132,6 +134,7 @@ export default function OrderAdmin() {
           createdAt: data.createdAt?.toDate?.() ?? new Date(),
           shippingInfo: shippingRaw,
           totalAmount: data.totalAmount || data.total || 0,
+          shippingCost: data.shippingCost || 0,
         } as Order;
       });
       setOrders(docs);
@@ -338,7 +341,7 @@ export default function OrderAdmin() {
                   <td className="px-4 py-2 border">{pedido.shippingInfo?.phone || 'No disponible'}</td>
                   <td className="px-4 py-2 text-sm text-gray-800">
                     {(() => {
-                      const total = Array.isArray(pedido.items)
+                      const subtotal = Array.isArray(pedido.items)
                         ? pedido.items.reduce((sum, item) => {
                             if (typeof item !== "object") return sum;
                             const price =
@@ -349,6 +352,7 @@ export default function OrderAdmin() {
                             return sum + price * quantity;
                           }, 0)
                         : 0;
+                      const total = subtotal + (pedido.shippingCost ?? 0);
                       return `$${total.toFixed(2)}`;
                     })()}
                   </td>
@@ -396,7 +400,7 @@ export default function OrderAdmin() {
 
       {selectedOrder && (() => {
         const clienteInfo = getClienteInfo(selectedOrder);
-        // Calcular el total correctamente sumando los subtotales de cada producto
+        // Calcular el subtotal correctamente sumando los subtotales de cada producto
         const total =
           Array.isArray(selectedOrder.items)
             ? selectedOrder.items.reduce(
@@ -454,7 +458,7 @@ export default function OrderAdmin() {
                       selectedOrder.items.map((item, index) => {
                         if (typeof item === "string") return null;
                         const title = item.title?.es || item.name?.es || "Producto";
-                        const variant = item.options || "-";
+                        const variant = item.variantLabel || item.options || "-";
                         const quantity = item.quantity ?? 0;
                         const price = item.price ?? 0;
                         const subtotal = (price * quantity).toFixed(2);
@@ -473,9 +477,9 @@ export default function OrderAdmin() {
                 </table>
               </div>
               <div className="mt-4 text-right">
-                <p className="font-semibold mt-2 text-right">
-                  Total: ${total.toFixed(2)}
-                </p>
+                <p>Subtotal productos: ${total.toFixed(2)}</p>
+                <p>Costo de envío: ${selectedOrder.shippingCost ?? 0}</p>
+                <p className="font-semibold">Total con envío: ${(total + (selectedOrder.shippingCost ?? 0)).toFixed(2)}</p>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">Cerrar</button>
             </div>

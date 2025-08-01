@@ -12,7 +12,6 @@ import AboutPreview from "./components/AboutPreview";
 import ProductPage from "./pages/ProductPage";
 // import FootballPage from "./pages/FootballPage";
 import CartPage from "./pages/CartPage";
-import CheckoutPage from "./pages/CheckoutPage";
 import SuccessPage from "./pages/SuccessPage";
 // import FailurePage from "./pages/FailurePage";
 // import PendingPage from "./pages/PendingPage";
@@ -94,7 +93,6 @@ export default function App() {
 
             {/* ✅ Ruta pública sin layout */}
             <Route path="/carrito" element={<CartPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/success" element={<SuccessPage />} />
 
             {/* ✅ Ruta pública sin layout */}

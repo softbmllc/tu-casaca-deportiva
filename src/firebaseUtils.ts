@@ -455,6 +455,7 @@ export async function saveOrderToFirebase(order: {
     country?: string;
   };
   totalAmount: number;
+  shippingCost?: number;
   paymentIntentId: string;
   paymentStatus: string;
   paymentMethod: string;
@@ -761,7 +762,7 @@ export async function registerAdminUser({
     throw error;
   }
 }
-// ✅ Descuenta stock por cada item en la orden confirmada (usando variantLabel y size)
+// ✅ Descuenta stock por cada item en la orden confirmada (usando variantLabel)
 export const discountStockByOrder = async (order: {
   cartItems: CartItem[];
 }): Promise<void> => {

@@ -166,6 +166,7 @@ const isValidEmail = (email: string): boolean => {
         shippingInfo,
         createdAt: serverTimestamp(),
         status: 'pendiente',
+        shippingCost,
       };
       const docRef = await addDoc(collection(db, 'orders'), orderData);
       // Guardamos ID en localStorage para actualizar luego
@@ -200,6 +201,7 @@ const isValidEmail = (email: string): boolean => {
       wantsToRegister: shippingInfo.wantsToRegister ?? false,
       password: shippingInfo.password || "",
       confirmPassword: shippingInfo.confirmPassword || "",
+      shippingCost: shippingCost,
     });
     if (url) {
       window.location.href = url;
@@ -476,10 +478,10 @@ const isValidEmail = (email: string): boolean => {
                               {`$${item.priceUSD.toFixed(2)} c/u`}
                             </p>
                             <div className="text-sm text-gray-500 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-1 sm:gap-3">
-                              {finalVariantLabel && item.variantLabel && (
-                                <span className="text-gray-600">
-                                  {finalVariantLabel}: <span>{item.variantLabel}</span>
-                                </span>
+                              {item.variantLabel && item.variantId && (
+                                <p className="text-gray-500 text-sm">
+                                  {item.variantLabel}: {item.variantId}
+                                </p>
                               )}
                               <span>
                                 Cantidad:{" "}
@@ -906,3 +908,28 @@ import { Order } from '@/data/types';
 
 // Asegurarse que shippingData contiene las propiedades direccion y departamento
 // Si no existen, inicializarlas aquí (esto es solo un recordatorio para el desarrollador: la inicialización real de shippingData debería hacerse en el contexto o donde corresponda)
+// --- MÉTODO DE ENTREGA (ejemplo de cambio de opción de envío) ---
+// Si tenés un select para el método de entrega, asegurate de usar este bloque:
+/*
+<select
+  value={shippingData.metodo}
+  onChange={(e) => {
+    const selectedOption = e.target.value;
+    let shippingCost = 0;
+    if (selectedOption === 'Montevideo') shippingCost = 169;
+    else if (selectedOption === 'Interior') shippingCost = 249;
+    setShippingData({
+      ...shippingData,
+      metodo: selectedOption,
+      shippingCost,
+    });
+  }}
+>
+  <option value="Montevideo">Montevideo</option>
+  <option value="Interior">Interior</option>
+</select>
+*/
+
+// Si existía el bloque:
+// setShippingData({ ...shippingData, metodo: selectedOption });
+// Reemplazalo por el bloque anterior.

@@ -4,7 +4,7 @@ import { CartItem, ShippingInfo } from "@/data/types";
 
 export const createPreference = async (
   cartItems: CartItem[],
-  shippingData: ShippingInfo
+  shippingData: ShippingInfo & { shippingCost?: number }
 ): Promise<string | null> => {
     try {
       const items = cartItems.map((item: CartItem) => ({

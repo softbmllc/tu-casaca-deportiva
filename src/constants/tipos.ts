@@ -9,5 +9,7 @@ export const TIPOS = [
     "DVD",
     "CD",
     "Cassette",
-    "VHS"
-  ];
+    "VHS",
+    "Juguetes",
+    "Revistas y Libros"
+];

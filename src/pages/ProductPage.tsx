@@ -68,6 +68,22 @@ export default function ProductPage() {
           title: productData.title || "",
           description: productData.description || "",
         });
+
+        // Autoselección si hay una única variante con una sola opción
+        if (
+          productData?.variants &&
+          productData.variants.length === 1 &&
+          productData.variants[0].options.length === 1
+        ) {
+          const single = productData.variants[0].options[0];
+          setSelectedOption({
+            value: single.value,
+            priceUSD: single.priceUSD,
+            variantLabel: productData.variants[0].label?.[lang] || "Opción",
+            variantId: single.variantId || `${productData.variants[0].label?.[lang] || "Opción"}-${single.value}`,
+            stock: single.stock ?? 0,
+          });
+        }
       } catch (error) {
         console.error("[ProductPage] Error cargando producto:", error);
         setProduct(null);
@@ -318,7 +334,9 @@ export default function ProductPage() {
 
                   // Validar selección de variante si existen variantes
                   if (Array.isArray(product.variants) && product.variants.length > 0 && !selectedOption) {
-                    setToastMessage(lang === 'en' ? 'Please select an option.' : 'Por favor selecciona una opción.');
+                    setToastMessage(lang === 'en' ? 'Please select an option before adding to cart.' : 'Por favor seleccioná una opción antes de agregar al carrito.');
+                    setShowToast(true);
+                    setTimeout(() => setShowToast(false), 2500);
                     return;
                   }
 

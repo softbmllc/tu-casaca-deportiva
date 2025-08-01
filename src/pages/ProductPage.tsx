@@ -33,7 +33,7 @@ export default function ProductPage() {
   const { addToCart, items } = useCart();
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
-  const [stock, setStock] = useState<number>(0);
+  const [stockMessage, setStockMessage] = useState<string>('');
 
   // keen-slider logic
   const [sliderRef, slider] = useKeenSlider<HTMLDivElement>({
@@ -330,11 +330,17 @@ export default function ProductPage() {
               <button
                 disabled={isOutOfStock}
                 onClick={() => {
-                  if (isOutOfStock) return;
+                  if (isOutOfStock) {
+                    // Mostrar toast claro cuando no hay stock
+                    setStockMessage('Sin stock disponible de esta opción');
+                    setShowToast(true);
+                    setTimeout(() => setShowToast(false), 2500);
+                    return;
+                  }
 
                   // Validar selección de variante si existen variantes
                   if (Array.isArray(product.variants) && product.variants.length > 0 && !selectedOption) {
-                    setToastMessage(lang === 'en' ? 'Please select an option before adding to cart.' : 'Por favor seleccioná una opción antes de agregar al carrito.');
+                    setStockMessage('Debes seleccionar una opción antes de continuar.');
                     setShowToast(true);
                     setTimeout(() => setShowToast(false), 2500);
                     return;
@@ -353,7 +359,11 @@ export default function ProductPage() {
                   const requestedTotal = currentQuantityInCart + quantity;
 
                   if (requestedTotal > availableStock) {
-                    setStock(availableStock);
+                    if (availableStock === 0) {
+                      setStockMessage('Sin stock disponible de esta opción');
+                    } else {
+                      setStockMessage(`Solo hay ${availableStock} unidades disponibles`);
+                    }
                     setShowToast(true);
                     setTimeout(() => setShowToast(false), 2500);
                     return;
@@ -376,7 +386,6 @@ export default function ProductPage() {
                   };
                   addToCart(cartItem);
                   scrollToTop();
-
                 }}
                 className={`py-3 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 border font-semibold ${
                   isOutOfStock
@@ -420,11 +429,11 @@ export default function ProductPage() {
         )}
 
 
-        {/* Toast notification for stock limit */}
+        {/* Toast notification for stock limit and errors */}
         {showToast && (
           <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 bg-opacity-90 text-white text-sm px-4 py-2 rounded shadow-md max-w-[90%] z-50 flex items-center gap-2">
             <HiExclamationCircle className="w-4 h-4" />
-            Solo hay {stock} unidades disponibles
+            {stockMessage}
           </div>
         )}
 

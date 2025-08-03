@@ -1,6 +1,7 @@
 // src/components/admin/CreateProductForm.tsx
 
 import React, { useState, useEffect, useRef } from "react";
+import { handleImageUpload } from "../../utils/handleImageUpload";
 import { TIPOS } from "../../constants/tipos";
 import ImageUploader from "./ImageUploader";
 import TiptapEditor from "./TiptapEditor";
@@ -366,6 +367,28 @@ useEffect(() => {
       const subcategoryRawName = subcategories.find((sub) => sub.id === selectedSubcategory)?.name || "";
       // ✅ Ya no se redeclara subcategoryName aquí
       // Guardar los campos title, titleEn, description como string
+
+    // --- SUBIDA DE IMÁGENES ---
+    // Si las imágenes ya son URLs, puedes omitir, pero si son archivos, debes subirlas.
+    // Aquí asumimos que images es un array de archivos o URLs locales a subir.
+    // Si images ya son URLs definitivas, puedes dejar imageUrls = images.
+    // Si images son archivos, usa handleImageUpload.
+    let imageUrls: string[] = [];
+    // Detectar si images son File objects o URLs
+    if (images.length > 0 && typeof images[0] !== "string") {
+      // images son archivos, subirlas
+      for (const image of images as unknown as File[]) {
+        const url = await handleImageUpload(image);
+        if (url) {
+          imageUrls.push(url);
+        }
+      }
+    } else {
+      // images ya son URLs
+      imageUrls = images;
+    }
+    // --- FIN SUBIDA DE IMÁGENES ---
+
       const newProduct: Partial<Product> = {
         title: {
           es: data.title.trim(),
@@ -387,7 +410,7 @@ useEffect(() => {
         extraDescriptionBottom: data.extraDescriptionBottom || "",
         descriptionPosition: data.descriptionPosition || "bottom",
         active: data.active,
-        images: images,
+        images: imageUrls,
         allowCustomization: data.customizable,
         customName: "",
         customNumber: "",

@@ -17,7 +17,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   const signature = crypto
     .createHmac('sha1', privateKey)
-    .update(token + expire)
+    .update(token + String(expire))
     .digest('hex');
 
   console.log("🔒 Firma generada:", {

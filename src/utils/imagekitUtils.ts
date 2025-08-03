@@ -1,5 +1,4 @@
 // src/utils/imagekitUtils.ts
-
 export async function uploadImageToImageKit(file: File): Promise<string | null> {
   try {
     const authResponse = await fetch('/api/imagekit-signature');

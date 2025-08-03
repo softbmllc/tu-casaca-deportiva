@@ -1,15 +1,15 @@
 // src/components/admin/ImageUploader.tsx
+
 import React, { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
-import { uploadImageToImageKit } from "../../utils/imagekitUtils";
+import { handleImageUpload } from "../../utils/handleImageUpload";
 
 interface ImageUploaderProps {
   images: string[];
   onChange: (images: string[]) => void;
-  onUpload?: (file: File) => Promise<string | null>;
 }
 
-export default function ImageUploader({ images, onChange, onUpload }: ImageUploaderProps) {
+export default function ImageUploader({ images, onChange }: ImageUploaderProps) {
   // Eliminado el estado local de imágenes
   const [error, setError] = useState("");
   const imageRef = useRef<string[]>(images);
@@ -42,14 +42,23 @@ export default function ImageUploader({ images, onChange, onUpload }: ImageUploa
         return null;
       }
 
+      console.log("🔍 Archivo a subir:", file); // nuevo log
+
+      let url: string | null = null;
       try {
-        const url = await uploadImageToImageKit(file);
-        return url;
-      } catch (uploadError) {
-        console.error("Error al subir imagen a ImageKit:", uploadError);
-        setError("Error al subir una o más imágenes.");
+        const result = await handleImageUpload(file);
+        url = typeof result === "string" ? result : null;
+      } catch (err) {
+        console.error("❌ Error inesperado al subir imagen:", err);
+        setError("Error inesperado al subir la imagen.");
         return null;
       }
+
+      if (!url) {
+        console.warn("⛔ No se recibió una URL válida desde ImageKit:", url);
+        return null;
+      }
+      return url;
     });
 
     const results = await Promise.all(uploadPromises);

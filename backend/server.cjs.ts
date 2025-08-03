@@ -3,10 +3,9 @@
 import dotenv from "dotenv";
 dotenv.config({ path: "./backend/.env" });
 
-import createPaymentIntent from "./api/create-payment-intent-express";
-import saveOrder from "./api/save-order-express";
 
 import express from "express";
+import getImagekitAuth from "./api/getImagekitAuth-express";
 import cors from "cors";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 
@@ -32,12 +31,12 @@ app.post("/api/create_preference", async (req, res) => {
         items,
         payer,
         back_urls: {
-          success: "https://getbionova.com/success",
-          failure: "https://getbionova.com/failure",
-          pending: "https://getbionova.com/pending",
+          success: "https://muttergames.com/success",
+          failure: "https://muttergames.com/failure",
+          pending: "https://muttergames.com/pending",
         },
         auto_return: "approved",
-        notification_url: "https://61c3-2601-582-c302-8510-49fc-e263-4e02-1189.ngrok-free.app/webhook"
+        notification_url: "https://muttergames.com/api/webhook"
       },
     });
 
@@ -57,12 +56,9 @@ app.post("/webhook", (req, res) => {
   res.sendStatus(200);
 });
 
-import getImagekitAuth from "./api/getImagekitAuth-express";
 
-// 🔊 Iniciar servidor
-app.post("/api/create-payment-intent", createPaymentIntent);
-app.post("/api/save-order", saveOrder);
 app.get("/api/imagekit-signature", getImagekitAuth);
+
 app.listen(port, () => {
   console.log(`🟢 Servidor backend corriendo en http://localhost:${port}`);
 });

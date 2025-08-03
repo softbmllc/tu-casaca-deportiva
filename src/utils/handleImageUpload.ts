@@ -4,7 +4,7 @@ export const uploadImageToImageKit = async (file: File): Promise<string | null> 
   const formData = new FormData();
   formData.append("file", file);
   formData.append("fileName", file.name);
-  formData.append("folder", "/bionova");
+  formData.append("folder", "/"); // raíz del espacio muttergames
   formData.append("useUniqueFileName", "true");
 
   try {

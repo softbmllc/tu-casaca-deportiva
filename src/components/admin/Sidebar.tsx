@@ -20,7 +20,7 @@ export default function Sidebar({ activeView, onChangeView }: SidebarProps) {
   ];
 
   return (
-    <aside className="w-64 bg-white shadow-lg border-r border-gray-200 h-screen px-4 py-6 flex flex-col items-center">
+    <aside className="w-64 bg-white shadow-lg border-r border-gray-200 min-h-screen sticky top-0 px-4 py-6 flex flex-col items-center">
       <img src="/logo1.png" alt="Logo Bionova" className="h-20 w-auto mb-4" />
       <h2 className="text-xl font-bold text-center mb-6">Panel de Administración</h2>
       <nav className="space-y-2 w-full">
@@ -37,15 +37,13 @@ export default function Sidebar({ activeView, onChangeView }: SidebarProps) {
             {item.label}
           </button>
         ))}
-      </nav>
-      <div className="mt-auto pt-6 w-full">
         <button
           onClick={logout}
-          className="w-full text-left px-4 py-2 rounded font-medium text-red-600 hover:bg-red-100 transition"
+          className="w-full text-left px-4 py-2 rounded font-medium text-red-600 hover:bg-red-100 transition mt-4"
         >
           Cerrar sesión
         </button>
-      </div>
+      </nav>
     </aside>
   );
 }

@@ -38,16 +38,17 @@ function Home() {
   return (
     <>
       <Helmet>
-        <title>Bionova – Premium supplements for your wellness</title>
-        <meta name="description" content="Online store for high-quality supplements. Shipping across the US. Shop Fuxion, Pure Encapsulations and Double Wood." />
-        <meta property="og:title" content="Bionova – Premium supplements for your wellness" />
-        <meta property="og:description" content="Online store for high-quality supplements. Shipping across the US. Shop Fuxion, Pure Encapsulations and Double Wood." />
+        <title>Mutter Games — Consolas, videojuegos y coleccionables</title>
+        <meta name="description" content="Tienda de consolas, videojuegos y coleccionables. Pago protegido con Mercado Pago y envíos a todo el país." />
+        <meta property="og:title" content="Mutter Games — Consolas, videojuegos y coleccionables" />
+        <meta property="og:description" content="Explorá juegos, consolas, accesorios y figuras. Stock real y atención personalizada." />
         <meta property="og:image" content="/seo-image.jpg" />
-        <meta property="og:url" content="https://getbionova.com/" />
+        <meta property="og:url" content="https://mutter-games.vercel.app/" />
         <meta property="og:type" content="website" />
+        <link rel="canonical" href="https://mutter-games.vercel.app/" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Bionova – Premium supplements for your wellness" />
-        <meta name="twitter:description" content="Online store for high-quality supplements. Shipping across the US. Shop Fuxion, Pure Encapsulations and Double Wood." />
+        <meta name="twitter:title" content="Mutter Games — Consolas, videojuegos y coleccionables" />
+        <meta name="twitter:description" content="Tienda de consolas, videojuegos y coleccionables." />
         <meta name="twitter:image" content="/seo-image.jpg" />
       </Helmet>
       <Hero />

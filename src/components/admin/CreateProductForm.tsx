@@ -32,6 +32,106 @@ import {
 } from "../../firebaseUtils";
 import { importProductFromCJ } from '../../firebaseUtils';
 
+// --- UI helpers (solo estilos, sin lógica) ---
+const UI = {
+  section: "bg-white rounded-xl border border-gray-200 shadow-sm p-5",
+  sectionTitle: "text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3",
+  label: "block text-sm font-medium text-gray-700 mb-1",
+  input: "w-full p-2.5 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55] focus:border-[#FF2D55]",
+  select: "w-full p-2.5 rounded-lg border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55] focus:border-[#FF2D55]",
+};
+
+// --- Minimal Headless Select (no deps, only UI) ---
+type Option = { value: string; label: string };
+
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  placeholder = "Seleccionar...",
+  disabled = false,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: Option[];
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const selected = options.find((o) => o.value === value)?.label ?? "";
+
+  return (
+    <div ref={ref} className={`relative ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full p-2.5 pr-10 rounded-lg border border-gray-300 bg-white shadow-sm text-left focus:outline-none focus:ring-2 focus:ring-[#FF2D55] focus:border-[#FF2D55]"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={selected ? "text-gray-900" : "text-gray-400"}>
+          {selected || placeholder}
+        </span>
+        <svg
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M7 7l3 3 3-3 1.4 1.4L10 12.8 5.6 8.4z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg"
+        >
+          {options.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-gray-500">Sin opciones</div>
+          ) : (
+            options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                role="option"
+                aria-selected={opt.value === value}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
+                  opt.value === value ? "bg-gray-50 font-medium" : ""
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 // Interfaz para nuestro formulario
 interface FormData {
@@ -160,6 +260,27 @@ const [customizable, setCustomizable] = useState(true);
 
   // Simular idioma activo (en producción vendrá del contexto)
   const language = "es"; // o "en"
+
+  // Options for headless selects
+  const categoryOptions: Option[] = categories.map((cat) => ({
+    value: cat.id,
+    label:
+      typeof cat.name === "string"
+        ? cat.name
+        : (cat.name?.[language] || (cat.name as any)?.es || ""),
+  }));
+
+  const subcategoryOptions: Option[] = subcategories
+    .filter((sub) => sub.categoryId === selectedCategory)
+    .map((sub) => ({
+      value: sub.id,
+      label:
+        typeof sub.name === "string"
+          ? sub.name
+          : (sub.name?.[language] || (sub.name as any)?.es || ""),
+    }));
+
+  const tipoOptions: Option[] = TIPOS.map((t) => ({ value: t, label: t }));
 
 useEffect(() => {
   const loadAllData = async () => {
@@ -463,317 +584,314 @@ useEffect(() => {
   return (
     <>
       {successMessage && (
-        <div className="bg-green-100 text-green-800 p-4 rounded-md mb-4">
-          {successMessage}
-        </div>
-      )}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+  <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-4">
+    {successMessage}
+  </div>
+)}
+<form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto pb-[calc(env(safe-area-inset-bottom)+88px)] md:pb-10">
 
         {/* Error general */}
         {error && (
-          <div className="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
+          <div className="bg-red-50 text-red-700 p-4 rounded-lg border border-red-200">{error}</div>
         )}
 
 
-        {/* Título */}
-<div className="mb-4">
-  <label htmlFor="title" className="block font-medium">
-    Título del producto <span className="text-red-500">*</span>
-  </label>
-  <input
-    id="title"
-    type="text"
-    {...register("title", { required: "El título es obligatorio" })}
-    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-    placeholder="Ej: Omega 3 Ultra"
-  />
-  {errors.title && (
-    <span className="text-red-500 text-sm">{errors.title.message}</span>
-  )}
-</div>
-        {/* Campo Descripción */}
-<label className="block text-sm font-medium text-gray-700 mt-4">
-  Descripción <span className="text-red-500">*</span>
-</label>
-<div className="mt-1 rounded-md border border-gray-300 bg-white p-2 shadow-sm">
-  <TiptapEditor
-    content={formData.description}
-    onChange={(value) =>
-      setFormData((prev) => ({ ...prev, description: value }))
-    }
-  />
+        {/* BASICOS */}
+<div className={UI.section}>
+  <h3 className={UI.sectionTitle}>Información básica</h3>
+  <div className="grid grid-cols-1 gap-4">
+    <div>
+      <label htmlFor="title" className={UI.label}>
+        Título del producto <span className="text-red-500">*</span>
+      </label>
+      <input
+        id="title"
+        type="text"
+        {...register("title", { required: "El título es obligatorio" })}
+        className={UI.input}
+        placeholder="Ej: Omega 3 Ultra"
+      />
+      {errors.title && (
+        <span className="text-red-500 text-sm">{errors.title.message}</span>
+      )}
+    </div>
+
+    <div>
+      <label className={UI.label}>
+        Descripción <span className="text-red-500">*</span>
+      </label>
+      <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+        <TiptapEditor
+          content={formData.description}
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, description: value }))
+          }
+        />
+      </div>
+    </div>
+  </div>
 </div>
 
-      {/* CATEGORÍA */}
-<div className="mb-4">
-  <label className="block text-sm font-medium mb-1">Categoría:</label>
-  <select
-    className="w-full border p-2 rounded"
-    value={selectedCategory}
-    onChange={(e) => {
-      const value = e.target.value;
-      setSelectedCategory(value);
-      const categoryName = categories.find((cat) => cat.id === value)?.name || "";
-      setProduct((prev) => ({ ...prev, category: { id: value, name: categoryName } }));
-    }}
-  >
-    <option value="">Seleccionar categoría</option>
-    {categories.map((cat) => (
-      <option key={cat.id} value={cat.id}>
-        {typeof cat.name === "string" ? cat.name : (cat.name?.[language] || cat.name?.es || "")}
-      </option>
-    ))}
-  </select>
-</div>
+      {/* CLASIFICACIÓN */}
+<div className={UI.section}>
+  <h3 className={UI.sectionTitle}>Clasificación</h3>
 
-{/* SUBCATEGORÍA */}
-<div className="mb-4">
-  <label className="block text-sm font-medium mb-1">Subcategoría:</label>
-  <select
-    className="w-full border p-2 rounded"
-    value={selectedSubcategory}
-    onChange={(e) => {
-      const value = e.target.value;
-      setSelectedSubcategory(value);
-      const subcategoryName = subcategories.find((sub) => sub.id === value)?.name || "";
-      setProduct((prev) => ({ ...prev, subcategory: { id: value, name: subcategoryName } }));
-    }}
-    disabled={!selectedCategory}
-  >
-    <option value="">Seleccionar subcategoría</option>
-    {subcategories
-      .filter((sub) => sub.categoryId === selectedCategory)
-      .map((sub) => (
-        <option key={sub.id} value={sub.id}>
-          {typeof sub.name === "string" ? sub.name : (sub.name?.[language] || sub.name?.es || "")}
-        </option>
-      ))}
-  </select>
-</div>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {/* Categoría */}
+    <div className="md:col-span-1">
+      <label className={UI.label}>Categoría</label>
+      <CustomSelect
+        value={selectedCategory}
+        onChange={(value) => {
+          setSelectedCategory(value);
+          const categoryName = categories.find((cat) => cat.id === value)?.name || "";
+          setProduct((prev) => ({ ...prev, category: { id: value, name: categoryName } }));
+        }}
+        options={categoryOptions}
+        placeholder="Categoría"
+      />
+    </div>
 
-{/* TIPO */}
-<div className="mb-4">
-  <label htmlFor="tipo" className="block text-sm font-medium text-gray-700">
-    Tipo <span className="text-red-500">*</span>
-  </label>
-  <select
-    id="tipo"
-    name="tipo"
-    value={formData.tipo || ""}
-    onChange={(e) =>
-      setFormData((prev) => ({ ...prev, tipo: e.target.value }))
-    }
-    required
-    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-  >
-    <option value="">Seleccionar tipo</option>
-    {TIPOS.map((tipo) => (
-      <option key={tipo} value={tipo}>
-        {tipo}
-      </option>
-    ))}
-  </select>
+    {/* Subcategoría */}
+    <div className="md:col-span-1">
+      <label className={UI.label}>Subcategoría</label>
+      <CustomSelect
+        value={selectedSubcategory}
+        onChange={(value) => {
+          setSelectedSubcategory(value);
+          const subcategoryName = subcategories.find((sub) => sub.id === value)?.name || "";
+          setProduct((prev) => ({ ...prev, subcategory: { id: value, name: subcategoryName } }));
+        }}
+        options={subcategoryOptions}
+        placeholder="Subcategoría"
+        disabled={!selectedCategory}
+      />
+    </div>
+
+    {/* Tipo */}
+    <div className="md:col-span-1">
+      <label className={UI.label}>
+        Tipo <span className="text-red-500">*</span>
+      </label>
+      <CustomSelect
+        value={formData.tipo || ""}
+        onChange={(value) =>
+          setFormData((prev) => ({ ...prev, tipo: value }))
+        }
+        options={tipoOptions}
+        placeholder="Seleccionar tipo"
+      />
+    </div>
+  </div>
 </div>
 
         {/* Precios */}
 
 
 
-      {/* Estado activo */}
-      <div className="space-y-2">
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            {...register("active")}
-            className="text-black rounded focus:ring-black h-5 w-5"
-          />
-          <span>Producto activo (visible para clientes)</span>
-        </label>
-      </div>
-      <div className="space-y-2">
-  <label className="block text-sm font-medium">Stock disponible</label>
-  <input
-  type="number"
-  readOnly
-  value={variants.reduce(
-    (total, variant) =>
-      total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
-    0
-  )}
-  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:outline-none cursor-not-allowed"
-/>
+      {/* ESTADO */}
+<div className={UI.section}>
+  <h3 className={UI.sectionTitle}>Estado</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <label className="flex items-center gap-2">
+      <input
+        type="checkbox"
+        {...register("active")}
+        className="text-[#FF2D55] rounded focus:ring-[#FF2D55] h-5 w-5"
+      />
+      <span>Producto activo (visible para clientes)</span>
+    </label>
+
+    <div>
+      <label className={UI.label}>Stock disponible</label>
+      <input
+        type="number"
+        readOnly
+        value={variants.reduce(
+          (total, variant) =>
+            total + variant.options.reduce((sum, opt) => sum + (opt.stock || 0), 0),
+          0
+        )}
+        className="block w-full rounded-lg border-gray-200 bg-gray-100 shadow-sm focus:outline-none cursor-not-allowed p-2.5"
+      />
+    </div>
+  </div>
 </div>
 
-      {/* Imágenes */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <label className="block font-medium">
-            Imágenes <span className="text-red-500">*</span>
-          </label>
-          {/* Nuevo componente ImageUploader */}
-          <ImageUploader onChange={handleImagesUpload} images={images} />
-        </div>
+      {/* IMÁGENES */}
+<div className={UI.section}>
+  <h3 className={UI.sectionTitle}>Imágenes</h3>
 
-        {images.length > 0 && (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              <SortableContext
-                items={images}
-                strategy={verticalListSortingStrategy}
-              >
-                {images.map((url, index) => (
-                  <SortableImageItem
-                    key={url}
-                    id={url}
-                    url={url}
-                    onRemove={() => handleRemoveImage(index)}
-                    onMoveLeft={() => handleMoveImage(index, "left")}
-                    onMoveRight={() => handleMoveImage(index, "right")}
-                  />
-                ))}
-              </SortableContext>
-            </div>
-          </DndContext>
-        )}
-        
-        {images.length === 0 && (
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center text-gray-500">
-            No hay imágenes cargadas
-          </div>
-        )}
+  <div className="flex justify-between items-center">
+    <label className={UI.label}>
+      Imágenes <span className="text-red-500">*</span>
+    </label>
+    <ImageUploader onChange={handleImagesUpload} images={images} />
+  </div>
+
+  {images.length > 0 ? (
+    <div className="mt-4">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <SortableContext items={images} strategy={verticalListSortingStrategy}>
+            {images.map((url, index) => (
+              <SortableImageItem
+                key={url}
+                id={url}
+                url={url}
+                onRemove={() => handleRemoveImage(index)}
+                onMoveLeft={() => handleMoveImage(index, "left")}
+                onMoveRight={() => handleMoveImage(index, "right")}
+              />
+            ))}
+          </SortableContext>
+        </div>
+      </DndContext>
+    </div>
+  ) : (
+    <div className="mt-4 border-2 border-dashed border-gray-300 rounded-md p-6 text-center text-gray-500">
+      No hay imágenes cargadas
+    </div>
+  )}
+</div>
+
+        {/* VARIANTES */}
+<div className={UI.section}>
+  <h3 className={UI.sectionTitle}>Variantes del producto</h3>
+
+  {variants.map((variant, vIndex) => (
+    <div key={vIndex} className="mb-4 border border-gray-200 p-4 rounded-lg bg-gray-50">
+      <div className="mb-3">
+        <label className="block text-xs font-medium text-gray-600 mb-1">Nombre de la variante</label>
+        <input
+          type="text"
+          className={UI.input}
+          placeholder="Ej: Tamaño"
+          value={variant.label.es}
+          onChange={(e) => {
+            const updated = [...variants];
+            updated[vIndex].label.es = e.target.value;
+            setVariants(updated);
+          }}
+        />
       </div>
 
-        {/* Variantes del producto con soporte multilenguaje y precios */}
-        <div className="mb-6">
-          <label className="block font-semibold mb-2">Variantes del producto</label>
-          {variants.map((variant, vIndex) => (
-            <div key={vIndex} className="mb-4 border p-3 rounded-md bg-gray-50">
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nombre de la variante</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 p-2 rounded-md"
-                  placeholder="Ej: Tamaño"
-                  value={variant.label.es}
-                  onChange={(e) => {
-                    const updated = [...variants];
-                    updated[vIndex].label.es = e.target.value;
-                    setVariants(updated);
-                  }}
-                />
-              </div>
-              {variant.options.map((option, oIndex) => (
-                <div key={oIndex} className="grid grid-cols-3 gap-2 mb-1">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Valor</label>
-                    <input
-                      type="text"
-                      className="w-full border p-2"
-                      placeholder="Ej: Joystick Original"
-                      value={option.value}
-                      onChange={(e) => {
-                        const updated = [...variants];
-                        updated[vIndex].options[oIndex].value = e.target.value;
-                        setVariants(updated);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Precio</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      className="w-full border p-2"
-                      value={option.priceUSD}
-                      onChange={(e) => {
-                        const updated = [...variants];
-                        updated[vIndex].options[oIndex].priceUSD = parseFloat(e.target.value);
-                        setVariants(updated);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Stock</label>
-                    <input
-                      type="number"
-                      min={0}
-                      className="w-full border p-2"
-                      value={option.stock || 0}
-                      onChange={(e) => {
-                        const updated = [...variants];
-                        updated[vIndex].options[oIndex].stock = parseInt(e.target.value);
-                        setVariants(updated);
-                      }}
-                    />
-                  </div>
-                  {/* Botón para eliminar esta opción */}
-                  <div className="col-span-3 flex justify-end">
-                    <button
-                      type="button"
-                      className="text-red-500 text-xs mt-1"
-                      onClick={() => {
-                        const updated = [...variants];
-                        updated[vIndex].options.splice(oIndex, 1);
-                        setVariants(updated);
-                      }}
-                    >
-                      Eliminar esta opción
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                className="text-blue-600 text-sm mt-2"
-                onClick={() => {
-                  const updated = [...variants];
-                  updated[vIndex].options.push({ value: "", priceUSD: 0, stock: 0 });
-                  setVariants(updated);
-                }}
-              >
-                + Agregar opción
-              </button>
-              <button
-                type="button"
-                className="text-red-600 text-sm mt-2"
-                onClick={() => {
-                  const updated = [...variants];
-                  updated.splice(vIndex, 1);
-                  setVariants(updated);
-                }}
-              >
-                 🗑️ Eliminar
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="text-blue-600 mt-2"
-            onClick={() => {
-              setVariants([
-                ...variants,
-                { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0, stock: 0 }] },
-              ]);
-            }}
-          >
-            + Agregar variante
-          </button>
-        </div>
+      {variant.options.map((option, oIndex) => (
+        <div key={oIndex} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Valor</label>
+            <input
+              type="text"
+              className={UI.input}
+              placeholder="Ej: Joystick Original"
+              value={option.value}
+              onChange={(e) => {
+                const updated = [...variants];
+                updated[vIndex].options[oIndex].value = e.target.value;
+                setVariants(updated);
+              }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Precio</label>
+            <input
+              type="number"
+              step="0.01"
+              min={0}
+              className={UI.input}
+              value={option.priceUSD}
+              onChange={(e) => {
+                const updated = [...variants];
+                updated[vIndex].options[oIndex].priceUSD = parseFloat(e.target.value || "0");
+                setVariants(updated);
+              }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Stock</label>
+            <input
+              type="number"
+              min={0}
+              className={UI.input}
+              value={option.stock || 0}
+              onChange={(e) => {
+                const updated = [...variants];
+                updated[vIndex].options[oIndex].stock = parseInt(e.target.value || "0");
+                setVariants(updated);
+              }}
+            />
+          </div>
 
+          <div className="md:col-span-3 flex justify-end">
+            <button
+              type="button"
+              className="text-red-600 text-xs mt-1"
+              onClick={() => {
+                const updated = [...variants];
+                updated[vIndex].options.splice(oIndex, 1);
+                setVariants(updated);
+              }}
+            >
+              Eliminar esta opción
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <div className="flex items-center gap-4 mt-2">
+        <button
+          type="button"
+          className="text-[#FF2D55] text-sm"
+          onClick={() => {
+            const updated = [...variants];
+            updated[vIndex].options.push({ value: "", priceUSD: 0, stock: 0 });
+            setVariants(updated);
+          }}
+        >
+          + Agregar opción
+        </button>
+
+        <button
+          type="button"
+          className="text-red-600 text-sm"
+          onClick={() => {
+            const updated = [...variants];
+            updated.splice(vIndex, 1);
+            setVariants(updated);
+          }}
+        >
+          🗑️ Eliminar variante
+        </button>
+      </div>
+    </div>
+  ))}
+
+  <button
+    type="button"
+    className="text-[#FF2D55] mt-2"
+    onClick={() => {
+      setVariants([
+        ...variants,
+        { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0, stock: 0 }] },
+      ]);
+    }}
+  >
+    + Agregar variante
+  </button>
+</div>
         {/* Botón de envío */}
-        <div className="pt-4">
+        <div className="pt-4 hidden md:block">
           <button
             type="submit"
             disabled={loading || uploadingImages}
             className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
               loading || uploadingImages
                 ? "bg-gray-400 text-white cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-[#FF2D55] hover:bg-[#CC1E44] text-white"
             }`}
           >
             {loading ? (
@@ -788,6 +906,29 @@ useEffect(() => {
               "Crear publicación"
             )}
           </button>
+        </div>
+        {/* Sticky actions on mobile */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-white/95 backdrop-blur z-50 shadow-[0_-8px_14px_rgba(0,0,0,0.08)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="max-w-4xl mx-auto px-4 py-3 flex gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="flex-1 h-12 rounded-md border border-gray-300 text-gray-700"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading || uploadingImages}
+              className={`flex-1 h-12 rounded-md font-medium ${
+                loading || uploadingImages
+                  ? "bg-gray-400 text-white"
+                  : "bg-[#FF2D55] text-white hover:bg-[#CC1E44] shadow-sm"
+              }`}
+            >
+              {loading ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
         </div>
       </form>
     </>

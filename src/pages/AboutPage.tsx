@@ -8,7 +8,7 @@ const AboutPage = () => {
     <div className="bg-[#0F0F0F] text-white min-h-screen flex flex-col">
       <main className="flex-1">
         <section className="max-w-4xl mx-auto px-6 py-20 text-center">
-          <p className="text-[#FF2D55] uppercase tracking-widest">MUTTER GAMES · COLECCIONABLES</p>
+          <p className="text-[#FF2D55] uppercase tracking-widest">MUTTER GAMES & COLECCIONABLES</p>
           <h1 className="mt-4 text-4xl md:text-5xl font-extrabold">Nuestra historia</h1>
 
           <div className="mt-6 space-y-5 text-base md:text-lg text-white/85 leading-relaxed">

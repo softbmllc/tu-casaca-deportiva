@@ -1,6 +1,7 @@
 // src/components/admin/ProductList.tsx
 
 import { useEffect, useState } from "react";
+import { Pencil, Trash2, Power } from "lucide-react";
 import { Product, Category, Subcategory } from "../../data/types";
 import { fetchProducts, deleteProduct, fetchProductById, updateProduct } from "../../firebaseUtils";
 import EditProductModal from "./EditProductModal";
@@ -210,51 +211,63 @@ export default function ProductList() {
         <div className="text-center py-8 text-gray-500 italic">No hay productos.</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-auto">
             <thead>
               <tr className="border-b bg-gray-50 text-gray-700 font-semibold">
-                <th className="py-2 text-left">Título</th>
-                <th className="py-2 text-left">Marca</th>
-                <th className="py-2 text-left">Subcategoría</th>
-                <th className="py-2 text-left">Precio</th>
-                <th className="py-2 text-left">Stock</th>
-                <th className="py-2 text-left">Estado</th>
-                <th className="py-2 text-left">Acciones</th>
+                <th className="py-2 px-3 text-left">Título</th>
+                <th className="py-2 px-3 text-left whitespace-nowrap">Marca</th>
+                <th className="py-2 px-3 text-left whitespace-nowrap">Subcategoría</th>
+                <th className="py-2 px-3 text-right whitespace-nowrap min-w-[6rem]">Precio</th>
+                <th className="py-2 px-3 text-center whitespace-nowrap min-w-[3.5rem]">Stock</th>
+                <th className="py-2 px-3 text-left whitespace-nowrap min-w-[6rem]">Estado</th>
+                <th className="py-2 px-3 text-left whitespace-nowrap min-w-[13rem]">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {visibleProducts.map((product) => (
                 <tr key={product.id} className="border-b hover:bg-gray-50 transition-colors">
-                  <td className="py-2">{product.title.es}</td>
-                  <td className="py-2">
+                  <td className="py-2 px-3">{product.title.es}</td>
+                  <td className="py-2 px-3 whitespace-nowrap">
                     {typeof product.category === "object"
                       ? product.category?.name
                       : product.category || "Sin categoría"}
                   </td>
-                  <td className="py-2">
+                  <td className="py-2 px-3 whitespace-nowrap">
                     {typeof product.subcategory === "object"
                       ? product.subcategory?.name || "Sin subcategoría"
                       : "Sin subcategoría"}
                   </td>
-                  <td className="py-2">
+                  <td className="py-2 px-3 text-right whitespace-nowrap">
                     $ {product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD}
                   </td>
-                  <td className="py-2">{product.stockTotal ?? 0}</td>
-                  <td className="py-2">
+                  <td className="py-2 px-3 text-center whitespace-nowrap">{product.stockTotal ?? 0}</td>
+                  <td className="py-2 px-3 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                       {product.active ? "Activo" : "Inactivo"}
                     </span>
                   </td>
-                  <td className="py-2">
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <button onClick={() => handleEdit(product.id!)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border border-gray-300 text-gray-800 rounded hover:bg-gray-100 transition">
-                        ✏️ Editar
+                  <td className="py-2 px-3 whitespace-nowrap">
+                    <div className="flex gap-1.5 justify-start">
+                      <button
+                        onClick={() => handleEdit(product.id!)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm bg-white border border-gray-300 text-gray-800 rounded hover:bg-gray-100 transition"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        <span>Editar</span>
                       </button>
-                      <button onClick={() => toggleActive(product.id!)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-yellow-50 border border-yellow-200 text-yellow-800 rounded hover:bg-yellow-100 transition">
-                        🔄 {product.active ? "Desactivar" : "Activar"}
+                      <button
+                        onClick={() => toggleActive(product.id!)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm bg-yellow-50 border border-yellow-200 text-yellow-800 rounded hover:bg-yellow-100 transition"
+                      >
+                        <Power className="w-4 h-4" />
+                        <span>{product.active ? "Desactivar" : "Activar"}</span>
                       </button>
-                      <button onClick={() => handleDeleteClick(product.id!, product.title.es)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-50 border border-red-300 text-red-800 rounded hover:bg-red-100 transition">
-                        🗑️ Eliminar
+                      <button
+                        onClick={() => handleDeleteClick(product.id!, product.title.es)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm bg-red-50 border border-red-300 text-red-800 rounded hover:bg-red-100 transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Eliminar</span>
                       </button>
                     </div>
                   </td>

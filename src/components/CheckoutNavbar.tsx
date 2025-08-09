@@ -35,7 +35,7 @@ export default function ShopNavbar() {
           <Link to="/shop" className="flex items-center">
             <img
               src={logo}
-              alt="Bionova"
+              alt="Mutter Games"
               className="max-h-[2.25rem] w-auto object-contain"
             />
           </Link>
@@ -75,7 +75,7 @@ export default function ShopNavbar() {
         <Link to="/shop" className="flex items-center">
           <img
             src={logo}
-            alt="Bionova"
+            alt="Mutter Games"
             className="h-12 w-auto object-contain"
           />
         </Link>

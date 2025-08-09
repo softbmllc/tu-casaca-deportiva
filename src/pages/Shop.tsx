@@ -602,7 +602,7 @@ export default function Shop() {
           {/* (removido: Stock Express Banner) */}
 
           {/* MOBILE: Filtros y ordenar por botones (solo visible en mobile) */}
-          <div className="flex px-2 py-2 sm:hidden sticky top-[90px] z-40 bg-white">
+          <div className="flex px-2 py-2 sm:hidden sticky top-[90px] z-40 bg-[#f9f9f9]">
             <div className="w-1/2 px-1">
               <button
                 onClick={() => setShowMobileFilter(!showMobileFilter)}

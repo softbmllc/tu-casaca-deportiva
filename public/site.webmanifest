@@ -1,6 +1,6 @@
 {
-  "name": "Mutter Games & Coleccionables",
-  "short_name": "MutterGames",
+  "name": "Mutter Games",
+  "short_name": "Mutter Games",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -15,7 +15,7 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#0F0F0F",
-  "background_color": "#FFFFFF",
+  "theme_color": "#FF2D55",
+  "background_color": "#FF2D55",
   "display": "standalone"
 }

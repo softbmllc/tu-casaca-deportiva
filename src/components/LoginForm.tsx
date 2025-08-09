@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebaseConfig";
 import { useAuth } from "../context/AuthContext";
+import { getAdminUserByEmail } from "../firebaseUtils";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,12 @@ export default function LoginForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const adminUser = await getAdminUserByEmail(email);
+      if (!adminUser || !adminUser.activo) {
+        alert("Acceso denegado. No estás autorizado como administrador.");
+        return;
+      }
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       login({ id: user.uid, email: user.email || "", name: "", password });

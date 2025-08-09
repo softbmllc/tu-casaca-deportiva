@@ -23,8 +23,8 @@ export default function HeroSection() {
       image: "/images/Slide1.jpg",
       tagline: "Consolas, Juegos y Accesorios",
       headline1: "Todo para tu consola",
-      headline2: "Desde PS1 hasta Nintendo Switch",
-      description: "Explorá nuestra colección de juegos, consolas y accesorios: PS5, Xbox, Nintendo, portátiles y más.",
+      headline2: "Juegos de todos los tiempos",
+      description: "Explorá nuestra colección de juegos, consolas y accesorios: Playstation, Xbox, Nintendo, portátiles y más.",
       button: "Ver tienda",
     },
     {

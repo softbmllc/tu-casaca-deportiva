@@ -213,13 +213,26 @@ const isValidEmail = (email: string): boolean => {
   return (
     <>
       <CartNavbar />
-      <div className="pt-28">
-        <section className="bg-white text-black min-h-screen flex flex-col">
+      {/* Título principal del carrito, inmediatamente después del navbar */}
+      <div>
+        <section className="bg-white text-black min-h-screen flex flex-col pt-24">
           <main className="flex-grow">
-            <div className="max-w-5xl mx-auto px-6 py-10">
-              <h1 className="text-3xl font-bold mb-6">Tu carrito</h1>
+            <div className="max-w-5xl mx-auto px-6 pt-2 pb-10">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Tu carrito</h1>
 
-              {items.length === 0 ? <EmptyCart /> : (
+              {items.length === 0 ? (
+                <div>
+                  <EmptyCart />
+                  {/* Minimalist categories line */}
+                  <div className="mt-4 text-sm text-gray-600 text-center">
+                    Productos originales de gaming y coleccionables
+                  </div>
+                  {/* Minimalist trust/benefits line */}
+                  <div className="mt-3 text-sm text-gray-600 text-center">
+                    Pago protegido con Mercado Pago · Envío a todo el país
+                  </div>
+                </div>
+              ) : (
                 <>
                   {/* contenido actual del carrito cuando hay productos */}
                   {/* Formulario de envío */}
@@ -550,10 +563,14 @@ const isValidEmail = (email: string): boolean => {
                       </div>
                     </div>
 
+                    {/* Micro-confianza justo antes del botón de finalizar compra */}
+                    <p className="text-sm text-gray-500 mb-2">
+                      Compra segura con garantía de satisfacción y productos verificados.
+                    </p>
                     {/* Botón de checkout funcional Mercado Pago */}
                     <button
                       onClick={handlePay}
-                      className="bg-[#FF2D55] hover:bg-[#e0264a] text-white px-6 py-2 rounded transition font-semibold w-full mt-6"
+                      className="bg-[#FF2D55] hover:bg-[#e0264a] text-white px-6 py-2 rounded transition font-semibold w-full mt-2"
                     >
                       Finalizar compra
                     </button>
@@ -896,7 +913,7 @@ const isValidEmail = (email: string): boolean => {
 )}
           </div>
         </main>
-        <Footer />
+        <Footer variant="light" />
         <ToastContainer position="top-center" autoClose={3000} hideProgressBar />
       </section>
       </div>

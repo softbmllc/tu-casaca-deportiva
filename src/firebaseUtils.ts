@@ -822,3 +822,42 @@ export const discountStockByOrder = async (order: {
     });
   }
 };
+// 🔐 Obtener todos los usuarios administradores
+export async function fetchAdminUsers(): Promise<
+  { id: string; nombre: string; email: string; rol: string; activo: boolean }[]
+> {
+  const ref = collection(db, "adminUsers");
+  const snap = await getDocs(ref);
+
+  return snap.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      nombre: data.nombre || "",
+      email: data.email || "",
+      rol: data.rol || "admin",
+      activo: data.activo ?? true,
+    };
+  });
+}
+
+// 🔐 Obtener un usuario administrador por email (para login)
+export async function getAdminUserByEmail(email: string): Promise<{
+  id: string;
+  nombre: string;
+  email: string;
+  rol: string;
+  activo: boolean;
+} | null> {
+  const ref = doc(db, "adminUsers", email);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  return {
+    id: snap.id,
+    nombre: data.nombre || "",
+    email: data.email || "",
+    rol: data.rol || "admin",
+    activo: data.activo ?? true,
+  };
+}

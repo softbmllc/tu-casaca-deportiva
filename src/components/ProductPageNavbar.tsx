@@ -1,22 +1,31 @@
 // src/components/ProductPageNavbar.tsx
 
 import { Link } from "react-router-dom";
-import { ShoppingCart } from "lucide-react";
-import { FaSearch, FaWhatsapp } from "react-icons/fa";
-import { useCart } from "../context/CartContext";
+import { FaSearch, FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { useState } from "react";
-import logo from "/logo.png";
+import logo from "/logo2.png";
 
 export default function ProductPageNavbar() {
-  const { items } = useCart();
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const event = new CustomEvent("mobileSearch", { detail: e.target.value });
+    window.dispatchEvent(event);
+  };
 
   return (
-    <header className="bg-[#0F0F0F]/90 text-white fixed top-0 w-full z-50 shadow-md backdrop-blur-sm py-0.5">
-      {/* Mobile */}
-      <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
-        <div className="flex items-center gap-2">
+    <>
+      <header className="bg-white/95 backdrop-blur-md text-black border-b border-gray-200 fixed top-0 w-full z-50 shadow-md py-0.5">
+        {/* Mobile */}
+        <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
+          <button
+            className="text-[#FF2D55]"
+            onClick={() => setShowSearch(!showSearch)}
+            aria-label="Toggle Search"
+          >
+            <FaSearch className="w-5 h-5" />
+          </button>
           <Link to="/" className="flex items-center">
             <img
               src={logo}
@@ -24,89 +33,74 @@ export default function ProductPageNavbar() {
               className="max-h-[2.25rem] w-auto object-contain"
             />
           </Link>
-        </div>
-        <div className="flex items-center gap-3">
-          <a
-            href="https://wa.me/59899389140"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#FF2D55]"
-          >
-            <FaWhatsapp className="w-5 h-5" />
-          </a>
-          <Link to="/carrito" className="relative text-[#FF2D55] drop-shadow-sm hover:drop-shadow-md transition-all duration-200">
-            <ShoppingCart className="w-5 h-5" />
-            {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {totalItems}
-              </span>
-            )}
-          </Link>
           <button
-            className="text-[#FF2D55] drop-shadow-sm hover:drop-shadow-md transition-all duration-200"
+            className="text-[#FF2D55]"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle Menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         </div>
-      </div>
 
-      {/* Mobile Dropdown Menu */}
-      {isMenuOpen && (
-        <div className="sm:hidden px-4 pb-2">
-          <nav className="flex flex-col gap-2 text-sm items-center text-center">
-            <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
-              Inicio
-            </Link>
-            <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
-              Tienda
-            </Link>
-            <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
-              Nosotros
-            </Link>
-            <Link to="/contact" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
-              Contacto
-            </Link>
-          </nav>
-        </div>
-      )}
+        {/* Mobile Search Input */}
+        {showSearch && (
+          <div className="sm:hidden px-4 pb-2">
+            <input
+              type="text"
+              placeholder="Buscar..."
+              className="w-full rounded-md border border-gray-300 px-3 py-1 text-black focus:outline-none focus:ring-2 focus:ring-[#FF2D55]"
+              onChange={handleSearchChange}
+              autoFocus
+            />
+          </div>
+        )}
 
-      {/* Desktop */}
-      <div className="hidden sm:flex max-w-7xl mx-auto px-4 py-1 items-center justify-between">
-        <Link to="/" className="flex items-center">
-          <img
-            src={logo}
-            alt="Mutter Games"
-            className="h-12 w-auto object-contain"
-          />
-        </Link>
-        <nav className="flex items-center gap-6 text-base">
-          <Link to="/" className="text-[#FF2D55] hover:text-[#CC1E44] font-semibold">Inicio</Link>
-          <Link to="/shop" className="text-[#FF2D55] hover:text-[#CC1E44] font-semibold">Tienda</Link>
-          <Link to="/about" className="text-[#FF2D55] hover:text-[#CC1E44] font-semibold">Nosotros</Link>
-          <Link to="/contact" className="text-[#FF2D55] hover:text-[#CC1E44] font-semibold">Contacto</Link>
-        </nav>
-        <div className="flex items-center gap-4">
-          <a
-            href="https://wa.me/59899389140"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#FF2D55]"
-          >
-            <FaWhatsapp className="w-5 h-5" />
-          </a>
-          <Link to="/carrito" className="relative text-[#FF2D55] drop-shadow-sm hover:drop-shadow-md transition-all duration-200">
-            <ShoppingCart className="w-5 h-5" />
-            {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {totalItems}
-              </span>
-            )}
+        {/* Mobile Dropdown Menu */}
+        {isMenuOpen && (
+          <div className="sm:hidden px-4 pb-2">
+            <nav className="flex flex-col gap-2 text-sm items-center text-center">
+              <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
+                Tienda
+              </Link>
+            </nav>
+          </div>
+        )}
+
+        {/* Desktop */}
+        <div className="hidden sm:flex max-w-7xl mx-auto px-4 py-1 items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <img
+              src={logo}
+              alt="Mutter Games"
+              className="h-12 w-auto object-contain"
+            />
           </Link>
+          <nav className="flex items-center gap-6 text-base">
+            <Link to="/shop" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Tienda</Link>
+          </nav>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://wa.me/59899389140"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#FF2D55]"
+            >
+              <FaWhatsapp className="w-5 h-5" />
+            </a>
+            <a
+              href="https://www.instagram.com/muttergames/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#FF2D55]"
+              aria-label="Instagram Mutter Games"
+            >
+              <FaInstagram className="w-5 h-5" />
+            </a>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }

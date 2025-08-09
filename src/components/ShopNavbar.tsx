@@ -2,12 +2,12 @@
 
 import { Link } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
-import { FaSearch, FaWhatsapp } from "react-icons/fa";
+import { FaSearch, FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import i18n from "..";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import logo from "/logo.png";
+import logo from "/logo2.png";
 
 export default function ShopNavbar() {
   const { items } = useCart();
@@ -18,7 +18,7 @@ export default function ShopNavbar() {
   const [searchTerm, setSearchTerm] = useState("");
 
   return (
-    <header className="bg-[#0F0F0F]/90 text-white fixed top-0 w-full z-50 shadow-md backdrop-blur-sm py-0.5">
+    <header className="bg-white/95 backdrop-blur-md text-black fixed top-0 w-full z-50 shadow-md border-b border-gray-200 py-0.5">
       {/* Mobile */}
       <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
         <div className="flex items-center gap-2">
@@ -41,6 +41,15 @@ export default function ShopNavbar() {
             className="text-[#FF2D55]"
           >
             <FaWhatsapp className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.instagram.com/muttergames/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#FF2D55]"
+            aria-label="Instagram Mutter Games"
+          >
+            <FaInstagram className="w-5 h-5" />
           </a>
           <Link to="/carrito" className="relative text-[#FF2D55]">
             <ShoppingCart className="w-5 h-5" />
@@ -67,7 +76,7 @@ export default function ShopNavbar() {
           <input
             type="text"
             placeholder="Buscar productos..."
-            className="w-full border border-[#FF2D55] rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55] text-black placeholder-gray-400"
+            className="w-full border border-[#FF2D55] rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55]"
             autoFocus
             value={searchTerm}
             onChange={(e) => {
@@ -89,9 +98,6 @@ export default function ShopNavbar() {
             <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
               {t("nav.about", "Nosotros")}
             </Link>
-            <Link to="/contact" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
-              {t("nav.contact", "Contacto")}
-            </Link>
           </nav>
         </div>
       )}
@@ -108,9 +114,25 @@ export default function ShopNavbar() {
         <nav className="flex items-center gap-6 text-base">
           <Link to="/" className="text-[#FF2D55] hover:text-[#CC1E44] font-semibold">{t("nav.home", "Inicio")}</Link>
           <Link to="/about" className="text-[#FF2D55] hover:text-[#CC1E44] font-semibold">{t("nav.about", "Nosotros")}</Link>
-          <Link to="/contact" className="text-[#FF2D55] hover:text-[#CC1E44] font-semibold">{t("nav.contact", "Contacto")}</Link>
         </nav>
         <div className="flex items-center gap-4">
+          <a
+            href="https://wa.me/59899389140"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#FF2D55]"
+          >
+            <FaWhatsapp className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.instagram.com/muttergames/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#FF2D55]"
+            aria-label="Instagram Mutter Games"
+          >
+            <FaInstagram className="w-5 h-5" />
+          </a>
           <Link to="/carrito" className="relative text-[#FF2D55]">
             <ShoppingCart className="w-5 h-5" />
             {totalItems > 0 && (

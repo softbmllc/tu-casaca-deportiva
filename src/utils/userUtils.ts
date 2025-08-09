@@ -4,7 +4,7 @@ import CryptoJS from "crypto-js";
 
 // ⚠️ Este User es solo para manejo interno de login, no para productos ni cliente final
 export interface AuthUser {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   address: string;
@@ -28,7 +28,7 @@ export const saveUser = (user: AuthUser): boolean => {
   const emailExists = usuarios.some((u) => u.email === user.email);
   if (emailExists) return false;
 
-  const id = Date.now();
+  const id = Date.now().toString();
   const userToSave = {
     ...user,
     id,
@@ -85,7 +85,7 @@ if (existingUsers.length === 0) {
   const hashed = hashPassword(password);
 
   const admin: AuthUser = {
-    id: 9999,
+    id: "9999",
     name: "Admin Fefo",
     phone: "099999999",
     address: "Oficina",
@@ -100,3 +100,19 @@ if (existingUsers.length === 0) {
   console.log("✅ Usuario admin creado automáticamente");
   console.log("🔐 Hash de 'admin123':", hashed);
 }
+export const updateUser = (id: string, updatedData: Partial<AuthUser>): boolean => {
+  const usuarios = getUsers();
+  const index = usuarios.findIndex((u) => u.id === id);
+  if (index === -1) return false;
+
+  const updatedUser = {
+    ...usuarios[index],
+    ...updatedData,
+    // Si se incluye contraseña nueva, volver a encriptarla
+    ...(updatedData.password && { password: hashPassword(updatedData.password) }),
+  };
+
+  usuarios[index] = updatedUser;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
+  return true;
+};

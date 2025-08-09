@@ -1,5 +1,6 @@
 // src/components/admin/Sidebar.tsx
 import React from "react";
+import { useAuth } from "../../context/AuthContext";
 
 interface SidebarProps {
   activeView: string;
@@ -7,6 +8,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeView, onChangeView }: SidebarProps) {
+  const { logout } = useAuth();
+
   const menuItems = [
     { label: "Clientes", view: "clients" },
     { label: "Ver Publicaciones", view: "productList" },
@@ -35,6 +38,14 @@ export default function Sidebar({ activeView, onChangeView }: SidebarProps) {
           </button>
         ))}
       </nav>
+      <div className="mt-auto pt-6 w-full">
+        <button
+          onClick={logout}
+          className="w-full text-left px-4 py-2 rounded font-medium text-red-600 hover:bg-red-100 transition"
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </aside>
   );
 }

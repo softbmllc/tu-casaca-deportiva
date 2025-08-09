@@ -2,10 +2,10 @@
 
 import { Link } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
-import { FaWhatsapp, FaSearch } from "react-icons/fa";
+import { FaWhatsapp, FaSearch, FaInstagram } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { useState } from "react";
-import logo from "/logo.png";
+import logo from "/logo2.png";
 
 export default function ShopNavbar() {
   const { items } = useCart();
@@ -15,7 +15,7 @@ export default function ShopNavbar() {
   const [searchTerm, setSearchTerm] = useState("");
 
   return (
-    <header className="bg-[#0F0F0F]/90 backdrop-blur-md text-white fixed top-0 w-full z-50 shadow-md border-b border-white/10 py-0.5">
+    <header className="bg-white/95 backdrop-blur-md text-black fixed top-0 w-full z-50 shadow-md border-b border-gray-200 py-0.5">
       {/* Mobile */}
       <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
         <div className="flex items-center gap-2">
@@ -39,14 +39,15 @@ export default function ShopNavbar() {
           >
             <FaWhatsapp className="w-5 h-5" />
           </a>
-          <Link to="/carrito" className="relative text-[#FF2D55]">
-            <ShoppingCart className="w-5 h-5" />
-            {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                {totalItems}
-              </span>
-            )}
-          </Link>
+          <a
+            href="https://www.instagram.com/muttergames/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#FF2D55]"
+            aria-label="Instagram Mutter Games"
+          >
+            <FaInstagram className="w-5 h-5" />
+          </a>
           <button
             className="text-[#FF2D55]"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -107,6 +108,15 @@ export default function ShopNavbar() {
             className="text-[#FF2D55]"
           >
             <FaWhatsapp className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.instagram.com/muttergames/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#FF2D55]"
+            aria-label="Instagram Mutter Games"
+          >
+            <FaInstagram className="w-5 h-5" />
           </a>
         </div>
       </div>

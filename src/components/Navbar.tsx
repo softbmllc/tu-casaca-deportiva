@@ -2,7 +2,7 @@
 
 import { Link } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
-import { FaWhatsapp, FaSearch } from "react-icons/fa";
+import { FaWhatsapp, FaSearch, FaInstagram } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { useState } from "react";
 import logo from "/logo.png";
@@ -38,6 +38,15 @@ export default function ShopNavbar() {
             className="text-[#FF2D55]"
           >
             <FaWhatsapp className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.instagram.com/muttergames/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#FF2D55]"
+            aria-label="Instagram Mutter Games"
+          >
+            <FaInstagram className="w-5 h-5" />
           </a>
           <Link to="/carrito" className="relative text-[#FF2D55]">
             <ShoppingCart className="w-5 h-5" />
@@ -115,6 +124,15 @@ export default function ShopNavbar() {
             className="text-[#FF2D55]"
           >
             <FaWhatsapp className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.instagram.com/muttergames/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#FF2D55]"
+            aria-label="Instagram Mutter Games"
+          >
+            <FaInstagram className="w-5 h-5" />
           </a>
           <Link to="/carrito" className="relative text-[#FF2D55]">
             <ShoppingCart className="w-5 h-5" />

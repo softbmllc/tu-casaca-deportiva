@@ -17,7 +17,6 @@ import SuccessPage from "./pages/SuccessPage";
 // import PendingPage from "./pages/PendingPage";
 import AdminPanel from "./pages/AdminPanel";
 import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
 import LoginForm from "./components/LoginForm";
 import RequireAuth from "./components/RequireAuth";
 import AdminCategoryManager from "./components/admin/AdminCategoryManager"; // ✅ NUEVO componente oficial
@@ -63,7 +62,7 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <div className="bg-white min-h-screen flex flex-col">
+        <div className="bg-[#0F0F0F] min-h-screen flex flex-col">
           <Routes>
             {/* ✅ Login público */}
             <Route path="/login" element={<LoginForm />} />
@@ -103,7 +102,6 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/explore" element={<CategorySection />} />
               <Route path="/about" element={<AboutPage />} />
-              <Route path="/contact" element={<ContactPage />} />
               <Route path="/shop" element={<Shop />} />
             </Route>
 

@@ -380,24 +380,23 @@ export default function Shop() {
     <section className="bg-[#f9f9f9] text-black flex flex-col min-h-screen pt-[90px] md:pt-[110px]">
       <ShopNavbar />
       <Helmet>
-        <title>Bionova – Shop supplements by category</title>
+        <title>Mutter Games – Tienda de videojuegos y coleccionables</title>
         <meta
           name="description"
-          content="Browse premium supplements from Fuxion, Pure Encapsulations and Double Wood. Fast US shipping. Explore all categories."
+          content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay."
         />
-        <meta
-          name="keywords"
-          content="supplements, vitamins, Fuxion, Pure Encapsulations, Double Wood, shop supplements"
-        />
-        <link rel="canonical" href="https://getbionova.com/shop" />
-        <meta property="og:title" content="Bionova – Shop supplements by category" />
-        <meta property="og:description" content="Browse premium supplements from Fuxion, Pure Encapsulations and Double Wood. Fast US shipping. Explore all categories." />
+        <meta name="keywords" content="videojuegos, consolas, retro, coleccionables, PlayStation, Xbox, Nintendo, Uruguay" />
+        <link rel="canonical" href="/shop" />
+
+        <meta property="og:title" content="Mutter Games – Tienda de videojuegos y coleccionables" />
+        <meta property="og:description" content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay." />
         <meta property="og:image" content="/seo-image.jpg" />
-        <meta property="og:url" content="https://getbionova.com/shop" />
+        <meta property="og:url" content="/shop" />
         <meta property="og:type" content="website" />
+
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Bionova – Shop supplements by category" />
-        <meta name="twitter:description" content="Browse premium supplements from Fuxion, Pure Encapsulations and Double Wood. Fast US shipping. Explore all categories." />
+        <meta name="twitter:title" content="Mutter Games – Tienda de videojuegos y coleccionables" />
+        <meta name="twitter:description" content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay." />
         <meta name="twitter:image" content="/seo-image.jpg" />
       </Helmet>
 
@@ -421,7 +420,7 @@ export default function Shop() {
               id="search"
               type="text"
               placeholder={t("shop.searchPlaceholder", "Ej: GTA 5")}
-              className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400"
+              className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -449,8 +448,8 @@ export default function Shop() {
             </h3>
             <div className="flex flex-col gap-2">
               <button
-                className={`px-4 py-2 rounded-full text-sm font-medium border ${
-                  selectedType === '' ? 'bg-black text-white' : 'bg-white text-black'
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border border-gray-300 transition ${
+                  selectedType === '' ? 'bg-black text-white border-black' : 'bg-white text-black hover:bg-gray-50'
                 }`}
                 onClick={() => setSelectedType('')}
               >
@@ -459,8 +458,8 @@ export default function Shop() {
               {TIPOS.map((type) => (
                 <button
                   key={type}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border ${
-                    selectedType === type ? 'bg-black text-white' : 'bg-white text-black'
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border border-gray-300 transition ${
+                    selectedType === type ? 'bg-black text-white border-black' : 'bg-white text-black hover:bg-gray-50'
                   }`}
                   onClick={() => setSelectedType(type)}
                 >
@@ -476,54 +475,152 @@ export default function Shop() {
 
         {/* Contenido principal - Productos */}
         <main>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">
-              {searchTerm
-                ? t("shop.resultsFor", { search: searchTerm, defaultValue: 'Resultados para "{{search}}"', searchTerm })
-                : filterParam === "NBA"
-                ? t("shop.nba", "NBA")
-                : filterParam === "FUTBOL"
-                ? t("shop.soccer", "Fútbol")
-                : "Productos disponibles"}
-            </h1>
-            <p className="text-gray-600 mt-1 text-sm">
-              {productsToDisplay.length} productos encontrados
-            </p>
-            {(searchTerm) && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setSelectedCategory("");
-                  setSelectedSubcategory("");
-                  setSelectedType("");
-                  navigate(".", { replace: true });
-                }}
-                className="mt-2 text-sm font-semibold text-gray-700 hover:text-black underline"
-              >
-                Quitar filtros
-              </button>
-            )}
+          {/* Encabezado y ordenar por alineados horizontalmente */}
+          {/* Desktop view */}
+          <div className="flex items-center justify-between mb-4 hidden md:flex">
+            {/* Título y subtítulo alineados a la izquierda */}
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                {searchTerm
+                  ? t("shop.resultsFor", { search: searchTerm, defaultValue: 'Resultados para "{{search}}"', searchTerm })
+                  : filterParam === "NBA"
+                  ? t("shop.nba", "NBA")
+                  : filterParam === "FUTBOL"
+                  ? t("shop.soccer", "Fútbol")
+                  : "Productos disponibles"}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                {productsToDisplay.length} productos encontrados
+              </p>
+              {(searchTerm) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedCategory("");
+                    setSelectedSubcategory("");
+                    setSelectedType("");
+                    navigate(".", { replace: true });
+                  }}
+                  className="mt-2 text-sm font-semibold text-gray-700 hover:text-black underline"
+                >
+                  Quitar filtros
+                </button>
+              )}
+            </div>
+            {/* Dropdown de ordenar por alineado a la derecha (solo desktop) */}
+            <div className="flex justify-end items-center">
+              <Listbox value={sortOption} onChange={setSortOption}>
+                {({ open }) => (
+                  <div className="relative w-52">
+                    <Listbox.Button className="w-full cursor-pointer rounded-md border border-[#0F0F0F] bg-white py-2 pl-4 pr-10 text-left shadow-sm focus:outline-none focus:ring-1 text-sm flex justify-between items-center text-[#0F0F0F] focus:ring-[#FF2D55] focus:border-[#FF2D55]">
+                      <span>
+                        {{
+                          "": "Ordenar por",
+                          priceAsc: "Precio: Menor a Mayor",
+                          priceDesc: "Precio: Mayor a Menor",
+                          az: "Nombre: A-Z",
+                          za: "Nombre: Z-A",
+                        }[sortOption] || "Ordenar por"}
+                      </span>
+                      <ChevronDownIcon
+                        className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+                          open ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </Listbox.Button>
+                    <Listbox.Options className="absolute right-0 mt-1 max-w-[240px] w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 text-sm overflow-hidden whitespace-nowrap">
+                      {[
+                        { value: "", label: "Ordenar por" },
+                        { value: "priceAsc", label: "Precio: Menor a Mayor" },
+                        { value: "priceDesc", label: "Precio: Mayor a Menor" },
+                        { value: "az", label: "Nombre: A-Z" },
+                        { value: "za", label: "Nombre: Z-A" },
+                      ].map((option) => (
+                        <Listbox.Option
+                          key={option.value}
+                          className={({ active, selected }) =>
+                            `cursor-pointer select-none relative py-2 pl-10 pr-4
+                            ${selected ? 'bg-[#FF2D55] text-white font-bold' : ''}
+                            ${active && !selected ? 'hover:bg-[#FF2D55]/90 hover:text-white' : ''}
+                            ${!selected && !active ? 'text-[#0F0F0F]' : ''}`
+                          }
+                          value={option.value}
+                        >
+                          {({ selected }) => (
+                            <>
+                              <span className={`block truncate`}>
+                                {option.label}
+                              </span>
+                              {selected && (
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
+                                  <CheckIcon className="h-4 w-4" />
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </Listbox.Option>
+                      ))}
+                    </Listbox.Options>
+                  </div>
+                )}
+              </Listbox>
+            </div>
+          </div>
+
+          {/* Mobile view */}
+          <div className="block md:hidden mb-4">
+            <div>
+              <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight">
+                {searchTerm
+                  ? t("shop.resultsFor", { search: searchTerm, defaultValue: 'Resultados para "{{search}}"', searchTerm })
+                  : filterParam === "NBA"
+                  ? t("shop.nba", "NBA")
+                  : filterParam === "FUTBOL"
+                  ? t("shop.soccer", "Fútbol")
+                  : "Productos disponibles"}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                {productsToDisplay.length} productos encontrados
+              </p>
+              {(searchTerm) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedCategory("");
+                    setSelectedSubcategory("");
+                    setSelectedType("");
+                    navigate(".", { replace: true });
+                  }}
+                  className="mt-2 text-sm font-semibold text-gray-700 hover:text-black underline"
+                >
+                  Quitar filtros
+                </button>
+              )}
+            </div>
           </div>
 
           {/* (removido: Stock Express Banner) */}
 
           {/* MOBILE: Filtros y ordenar por botones (solo visible en mobile) */}
-          <div className="flex justify-between items-center px-4 py-2 sm:hidden">
-            <button
-              onClick={() => setShowMobileFilter(!showMobileFilter)}
-              className="border rounded px-2 py-1 text-sm"
-            >
-              Filtros
-            </button>
-            {isMobileView && (
-              <div className="relative z-40 mt-0">
-                <button
-                  onClick={() => setShowOrderMenuMobile(!showOrderMenuMobile)}
-                  className="w-full px-4 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-300 rounded-lg shadow-sm"
-                >
-                  Ordenar por: {selectedOrderMobile === "asc" ? "Precio ↑" : selectedOrderMobile === "desc" ? "Precio ↓" : selectedOrderMobile === "az" ? "A-Z" : selectedOrderMobile === "za" ? "Z-A" : "Ninguno"}
-                </button>
-                {showOrderMenuMobile && (
+          <div className="flex px-2 py-2 sm:hidden sticky top-[90px] z-40 bg-white">
+            <div className="w-1/2 px-1">
+              <button
+                onClick={() => setShowMobileFilter(!showMobileFilter)}
+                className="w-full border border-[#FF2D55] text-[#FF2D55] rounded-lg py-2 font-medium hover:bg-[#FF2D55] hover:text-white transition"
+              >
+                Filtros
+              </button>
+            </div>
+            <div className="w-1/2 px-1">
+              <button
+                onClick={() => setShowOrderMenuMobile(!showOrderMenuMobile)}
+                className="w-full border border-[#FF2D55] text-[#FF2D55] rounded-lg py-2 font-medium hover:bg-[#FF2D55] hover:text-white transition"
+              >
+                Ordenar
+              </button>
+              {isMobileView && showOrderMenuMobile && (
+                <>
+                  <div className="fixed inset-0 bg-black/10 z-40" onClick={() => setShowOrderMenuMobile(false)} />
                   <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
                     <button
                       onClick={() => handleOrderChangeMobile("asc")}
@@ -550,9 +647,9 @@ export default function Shop() {
                       Z-A
                     </button>
                   </div>
-                )}
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* MOBILE: SidebarFilter collapsible panel */}
@@ -607,64 +704,6 @@ export default function Shop() {
             </div>
           )}
 
-          {/* DESKTOP: Ordenar por (solo visible en desktop) */}
-          <div className="hidden md:flex justify-end items-center mt-4">
-            <Listbox value={sortOption} onChange={setSortOption}>
-              {({ open }) => (
-                <div className="relative w-52">
-                  <Listbox.Button className="w-full cursor-pointer rounded-md border border-[#0F0F0F] bg-white py-2 pl-4 pr-10 text-left shadow-sm focus:outline-none focus:ring-1 text-sm flex justify-between items-center text-[#0F0F0F] focus:ring-[#FF2D55] focus:border-[#FF2D55]">
-                    <span>
-                      {{
-                        "": "Ordenar por",
-                        priceAsc: "Precio: Menor a Mayor",
-                        priceDesc: "Precio: Mayor a Menor",
-                        az: "Nombre: A-Z",
-                        za: "Nombre: Z-A",
-                      }[sortOption] || "Ordenar por"}
-                    </span>
-                    <ChevronDownIcon
-                      className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-                        open ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </Listbox.Button>
-                  <Listbox.Options className="absolute right-0 mt-1 max-w-[240px] w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 text-sm overflow-hidden whitespace-nowrap">
-                    {[
-                      { value: "", label: "Ordenar por" },
-                      { value: "priceAsc", label: "Precio: Menor a Mayor" },
-                      { value: "priceDesc", label: "Precio: Mayor a Menor" },
-                      { value: "az", label: "Nombre: A-Z" },
-                      { value: "za", label: "Nombre: Z-A" },
-                    ].map((option) => (
-                      <Listbox.Option
-                        key={option.value}
-                        className={({ active, selected }) =>
-                          `cursor-pointer select-none relative py-2 pl-10 pr-4
-                          ${selected ? 'bg-[#FF2D55] text-white font-bold' : ''}
-                          ${active && !selected ? 'hover:bg-[#FF2D55]/90 hover:text-white' : ''}
-                          ${!selected && !active ? 'text-[#0F0F0F]' : ''}`
-                        }
-                        value={option.value}
-                      >
-                        {({ selected }) => (
-                          <>
-                            <span className={`block truncate`}>
-                              {option.label}
-                            </span>
-                            {selected && (
-                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
-                                <CheckIcon className="h-4 w-4" />
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </Listbox.Option>
-                    ))}
-                  </Listbox.Options>
-                </div>
-              )}
-            </Listbox>
-          </div>
           {/* Grid de productos */}
 <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-6">
   <Suspense
@@ -723,7 +762,7 @@ export default function Shop() {
       />
 
       {/* Footer */}
-      <Footer />
+      <Footer variant="light" />
     </section>
   );
 }

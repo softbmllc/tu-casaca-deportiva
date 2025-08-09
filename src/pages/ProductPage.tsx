@@ -34,6 +34,7 @@ export default function ProductPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [stockMessage, setStockMessage] = useState<string>('');
+  const [isAdding, setIsAdding] = useState(false);
 
   // keen-slider logic
   const [sliderRef, slider] = useKeenSlider<HTMLDivElement>({
@@ -122,7 +123,7 @@ export default function ProductPage() {
   if (!product) return (
     <div className="p-10 text-center">
       <h1 className="text-2xl font-bold mb-4">Producto no encontrado</h1>
-      <Link to="/futbol" className="text-blue-500 underline">Volver a la tienda</Link>
+      <Link to="/shop" className="text-[#FF2D55] underline">Volver a la tienda</Link>
     </div>
   );
 
@@ -137,38 +138,38 @@ export default function ProductPage() {
   const isOutOfStock = totalStock <= 0;
 
   return (
-    <div className="bg-gradient-to-b from-[#f7f7f7] to-white min-h-[100dvh] flex flex-col">
+    <div className="bg-gradient-to-b from-[#fafafa] to-white min-h-[100dvh] flex flex-col">
       <div className="w-full overflow-x-hidden text-black relative z-10 flex-grow">
         <Helmet>
-          <title>{`${product.title?.[lang] || product.title} | Bionova`}</title>
+          <title>{`${product.title?.[lang] || product.title} | Mutter Games`}</title>
           <meta
             name="description"
             content={
               typeof product.description === 'object'
-                ? product.description?.[lang] || 'Suplemento premium disponible en Bionova.'
-                : product.description || 'Suplemento premium disponible en Bionova.'
+                ? product.description?.[lang] || 'Producto original disponible en Mutter Games.'
+                : product.description || 'Producto original disponible en Mutter Games.'
             }
           />
-          <meta property="og:title" content={`${product.title?.[lang] || product.title} | Bionova`} />
+          <meta property="og:title" content={`${product.title?.[lang] || product.title} | Mutter Games`} />
           <meta
             property="og:description"
             content={
               typeof product.description === 'object'
-                ? product.description?.[lang] || 'Suplemento premium disponible en Bionova.'
-                : product.description || 'Suplemento premium disponible en Bionova.'
+                ? product.description?.[lang] || 'Producto original disponible en Mutter Games.'
+                : product.description || 'Producto original disponible en Mutter Games.'
             }
           />
           <meta property="og:type" content="product" />
           <meta property="og:image" content={product.images?.[0] || "/seo-image.jpg"} />
           <meta property="og:url" content={typeof window !== "undefined" ? window.location.href : ""} />
           <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content={`${product.title?.[lang] || product.title} | Bionova`} />
+          <meta name="twitter:title" content={`${product.title?.[lang] || product.title} | Mutter Games`} />
           <meta
             name="twitter:description"
             content={
               typeof product.description === 'object'
-                ? product.description?.[lang] || 'Suplemento premium disponible en Bionova.'
-                : product.description || 'Suplemento premium disponible en Bionova.'
+                ? product.description?.[lang] || 'Producto original disponible en Mutter Games.'
+                : product.description || 'Producto original disponible en Mutter Games.'
             }
           />
           <meta name="twitter:image" content={product.images?.[0] || "/seo-image.jpg"} />
@@ -178,7 +179,6 @@ export default function ProductPage() {
         <ProductPageNavbar />
 
         <div className="container mx-auto p-4 mt-20">
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           <div className="flex flex-col gap-4">
             {product.images?.length ? (
@@ -222,7 +222,7 @@ export default function ProductPage() {
                       <button
                         key={i}
                         onClick={() => slider.current?.moveToIdx(i)}
-                        className={`w-20 h-20 rounded-md border ${selectedImage === i ? "border-black border-2" : "border-gray-300"} hover:shadow-md`}
+                        className={`w-20 h-20 rounded-md border ${selectedImage === i ? "border-gray-900" : "border-gray-300"} hover:ring-1 hover:ring-gray-900/20`}
                       >
                         <img src={img} alt={`Miniatura ${i}`} className="object-cover w-full h-full" />
                       </button>
@@ -240,7 +240,11 @@ export default function ProductPage() {
 
           {/* Detalles producto */}
           <div className="flex flex-col">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight mb-6">
+            {/* Eyebrow categoría */}
+            <div className="text-xs uppercase tracking-[0.12em] text-gray-500 font-semibold mb-2">
+              {product.category?.name || "Categoría"}
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-[1.05] mb-4">
               {product.title?.[lang]}
             </h1>
             <div className="mt-2 sm:mt-4 mb-6">
@@ -255,7 +259,7 @@ export default function ProductPage() {
                     <span className="text-4xl font-extrabold leading-none">
                       ${formattedPrice.split(',')[0]}
                     </span>
-                    <sup className="text-sm font-semibold mt-1 ml-0.5">
+                    <sup className="text-sm font-semibold ml-0.5 align-[0.1em]">
                       {formattedPrice.split(',')[1]}
                     </sup>
                   </div>
@@ -304,8 +308,8 @@ export default function ProductPage() {
             {/* Cantidad */}
             <div className="flex flex-col space-y-2 mt-6">
               <label className="uppercase text-sm font-semibold text-gray-800">Cantidad</label>
-              <div className="flex w-fit border rounded-md overflow-hidden">
-                <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="px-3 bg-gray-100 hover:bg-gray-200">
+              <div className="flex w-fit border border-gray-200 rounded-lg overflow-hidden">
+                <button onClick={() => quantity > 1 && setQuantity(quantity - 1)} className="px-3 bg-white hover:bg-gray-50">
                   <FiMinus />
                 </button>
                 <div className="px-4 py-2">{quantity}</div>
@@ -324,11 +328,12 @@ export default function ProductPage() {
     )}
   </div>
 )}
-            <hr className="my-6 border-gray-200" />
+            <div className="mt-3 text-sm text-gray-600">Pago protegido con Mercado Pago · Envíos a todo el país</div>
+            <hr className="my-6 border-gray-100" />
 
             <div className="grid md:grid-cols-2 gap-6 mt-6 mb-8">
               <button
-                disabled={isOutOfStock}
+                disabled={isOutOfStock || isAdding}
                 onClick={() => {
                   if (isOutOfStock) {
                     // Mostrar toast claro cuando no hay stock
@@ -369,6 +374,8 @@ export default function ProductPage() {
                     return;
                   }
 
+                  setIsAdding(true);
+
                   // Construir el objeto cartItem según las propiedades requeridas por CartItem
                   const cartItem = {
                     id: product.id,
@@ -386,17 +393,25 @@ export default function ProductPage() {
                   };
                   addToCart(cartItem);
                   scrollToTop();
+                  setTimeout(() => setIsAdding(false), 800);
                 }}
-                className={`py-3 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 border font-semibold ${
+                className={`h-12 rounded-lg shadow hover:shadow-md tracking-wide transition flex items-center justify-center gap-2 border font-semibold ${
                   isOutOfStock
                     ? 'bg-gray-300 text-white cursor-not-allowed'
                     : 'bg-black text-white border-black hover:bg-white hover:text-black'
-                }`}
+                }${isAdding ? ' opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isOutOfStock ? (lang === 'en' ? 'OUT OF STOCK' : 'SIN STOCK') : (
-                  <>
-                    <Check size={18} /> {lang === 'en' ? 'Add to cart' : 'Agregar al carrito'}
-                  </>
+                  isAdding ? (
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                  ) : (
+                    <>
+                      <Check size={18} /> {lang === 'en' ? 'Add to cart' : 'Agregar al carrito'}
+                    </>
+                  )
                 )}
               </button>
             </div>
@@ -449,7 +464,7 @@ export default function ProductPage() {
         </div> {/* cierra container mx-auto */}
 
       </div>
-      <Footer />
+      <Footer variant="light" />
     </div>
   );
 }

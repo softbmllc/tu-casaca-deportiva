@@ -53,8 +53,6 @@ export default function ProductCard({ product, className, imgClassName }: Produc
 
   const productPriceUSD = getMinPrice();
 
-  console.log("🧩 DEBUG CARD —", product.slug, product.title);
-
   const categoryBorderColors: { [key: string]: string } = {
     PURE: "ring-[#1D4ED8]",          // azul
     FUXION: "ring-[#0ea5e9]",        // celeste
@@ -68,13 +66,13 @@ export default function ProductCard({ product, className, imgClassName }: Produc
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       key={`product-card-${product.id}-${safeSlug}`} // Key único para evitar problemas de renderizado
-      className={`relative ring-2 ring-offset-2 ${borderColor} rounded-2xl shadow-sm transition-transform duration-300 hover:scale-[1.015] ${className || ""}`}
+      className={`relative ring-2 ring-offset-2 ${borderColor} rounded-2xl shadow transition-transform duration-300 hover:translate-y-[1px] ${className || ""}`}
     >
       <Link
         to={productDetailUrl}
-        className="h-full flex flex-col justify-between group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition relative"
+        className="h-full flex flex-col justify-between group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow transition-shadow duration-300 relative"
       >
-        <div className="aspect-square overflow-hidden flex items-center justify-center">
+        <div className="aspect-[3/4] overflow-hidden flex items-center justify-center">
           <img
             src={productImage}
             alt={productName}
@@ -91,11 +89,11 @@ export default function ProductCard({ product, className, imgClassName }: Produc
             <div className="text-sm text-gray-600 mb-1">{productSubtitle}</div>
           )}
           <div className="h-[48px] overflow-hidden">
-            <h3 className="text-lg font-bold text-black leading-tight group-hover:text-black/80 transition line-clamp-2">
+            <h3 className="text-lg font-bold text-black leading-snug group-hover:text-black/80 transition line-clamp-2">
               {productName}
             </h3>
           </div>
-          <div className="mt-2.5 flex items-baseline text-[1.15rem] md:text-lg font-semibold tracking-tight">
+          <div className="mt-2.5 flex items-baseline text-[1.15rem] md:text-lg font-semibold tracking-tight whitespace-nowrap">
             <span className="text-base font-medium">$</span>
             <span className="ml-0.5 font-mono tabular-nums">
               {productPriceUSD.toLocaleString("en-US", {

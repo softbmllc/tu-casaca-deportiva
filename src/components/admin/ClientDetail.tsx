@@ -1,5 +1,6 @@
 // src/components/admin/ClientDetail.tsx
 import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
 
@@ -37,6 +38,8 @@ export default function ClientDetail({ clientId, onBack }: Props) {
   const [editing, setEditing] = useState(false);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [activeTab, setActiveTab] = useState("personal");
+
+  const { user, isLoading } = useAuth();
 
 useEffect(() => {
   async function fetchClient() {
@@ -129,6 +132,14 @@ useEffect(() => {
   return (
     <div className="p-6 bg-white rounded shadow max-w-5xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Perfil del Cliente</h2>
+      {/* Usuario logueado */}
+      {isLoading ? (
+        <p>Cargando usuario...</p>
+      ) : user ? (
+        <p className="text-sm text-gray-500">Usuario logueado: {user.email}</p>
+      ) : (
+        <p className="text-sm text-gray-500">Usuario logueado: No Logueado</p>
+      )}
   
       <div className="flex border-b mb-4">
         <button

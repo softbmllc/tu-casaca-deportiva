@@ -1,7 +1,7 @@
 // src/pages/Shop.tsx
 
 import React, { useState, useEffect, Suspense } from "react";
-import { useTranslation, Trans } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import ProductCard from "../components/ProductCard";
@@ -13,13 +13,13 @@ import { FiFilter } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall } from "react-icons/fa";
 import { IoGameControllerOutline } from "react-icons/io5";
 import { Gamepad } from "lucide-react";
-import { TIPOS } from '@/constants/tipos';
+import { TIPOS } from "@/constants/tipos";
 import { motion } from "framer-motion";
-import { ArrowUp, Bolt } from "lucide-react";
-import { Listbox, Transition } from "@headlessui/react";
+import { ArrowUp } from "lucide-react";
+import { Listbox } from "@headlessui/react";
 import { ChevronDownIcon, CheckIcon } from "@heroicons/react/20/solid";
-import { Fragment } from 'react';
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Fragment } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Rocket } from "lucide-react";
 import { fetchProducts, fetchSubcategories, fetchCategories } from "../firebaseUtils";
@@ -39,7 +39,7 @@ type LocalProduct = Product & {
     id: string;
     name: string;
   };
-  tipo?: string;
+  tipo?: string | string[];
   price?: number;
 };
 
@@ -48,19 +48,30 @@ export default function Shop() {
   const { t, i18n } = useTranslation();
   const [products, setProducts] = useState<LocalProduct[]>([]); // Estado para almacenar productos
   const [loading, setLoading] = useState(true);
+
   const location = useLocation();
   const navigate = useNavigate();
+  const [urlSearchParams, setSearchParams] = useSearchParams();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
+
   // Estado de ordenamiento
   const [sortOption, setSortOption] = useState("");
+
   // Estado de ordenamiento exclusivo para mobile
   const [selectedOrderMobile, setSelectedOrderMobile] = useState("");
   const [showOrderMenuMobile, setShowOrderMenuMobile] = useState(false);
   const handleOrderChangeMobile = (order: string) => {
     setSelectedOrderMobile(order);
+    // Sincroniza con sortOption para persistir en URL
+    if (order === "asc") setSortOption("priceAsc");
+    else if (order === "desc") setSortOption("priceDesc");
+    else if (order === "az" || order === "za") setSortOption(order);
+    else setSortOption("");
     setShowOrderMenuMobile(false);
   };
+
   // Determinar si es Mobile View (simple heurística)
   const [isMobileView, setIsMobileView] = useState(false);
   useEffect(() => {
@@ -69,6 +80,7 @@ export default function Shop() {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
   // Para el nuevo Listbox de mobile
   const sortOptions = [
     { value: "az", label: "Nombre: A-Z" },
@@ -76,14 +88,16 @@ export default function Shop() {
     { value: "priceAsc", label: "Precio: Menor a Mayor" },
     { value: "priceDesc", label: "Precio: Mayor a Menor" },
   ];
-  const selectedSort = sortOptions.find(o => o.value === sortOption) || sortOptions[0];
+  const selectedSort = sortOptions.find((o) => o.value === sortOption) || sortOptions[0];
+
   const handleSortChange = (option: { value: string; label: string }) => {
     setSortOption(option.value);
   };
+
   const handleOpenFilters = () => setIsFilterOpen(true);
-  // --- Filtro por parámetro en la URL ---
-  const searchParams = new URLSearchParams(location.search);
-  const filterParamRaw = searchParams.get("filter");
+
+  // --- Sincronización con query string (soporte legado de `filter` para banner/heading) ---
+  const filterParamRaw = urlSearchParams.get("filter") || "";
   const filterParam = filterParamRaw ? filterParamRaw.toUpperCase() : "";
 
   // Escuchar evento mobileSearch para actualizar searchTerm (sin afectar lógica desktop)
@@ -95,9 +109,6 @@ export default function Shop() {
     window.addEventListener("mobileSearch", handleMobileSearch);
     return () => window.removeEventListener("mobileSearch", handleMobileSearch);
   }, []);
-  
-// Estado para almacenar las ligas dinámicas
-// (removido: lógica de league)
 
   // Estado para almacenar subcategorías
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -115,23 +126,11 @@ export default function Shop() {
   const [selectedType, setSelectedType] = useState("Todos");
 
   // 🔧 1. Definir availableTypes arriba del return principal (fuera de JSX), justo donde definís los filtros:
-  const availableTypes = Array.from(new Set(products.map(p => p.tipo).filter(Boolean)));
+  const availableTypes = Array.from(new Set(products.map((p) => p.tipo).filter(Boolean))) as string[];
 
   // NUEVO: Handler para filtro por tipo
   const handleFilterByType = (tipo: string) => {
     setSelectedType(tipo);
-    // Lógica de filtrado por tipo
-    // Si tu lógica previa usaba selectedTipo, podés mapear los valores:
-    // "Todos" -> "", "Juegos" -> "Juego", "Consolas" -> "Consola", "Accesorios" -> "Accesorio", "Merchandising" -> "Merch"
-    const tipoMap: Record<string, string> = {
-      Todos: "",
-      Juegos: "Juego",
-      Consolas: "Consola",
-      Accesorios: "Accesorio",
-      Merchandising: "Merch",
-    };
-    setSelectedType(tipo); // Mantener el estado de tipo seleccionado (UI)
-    // Si necesitas mapear a otro valor para filtrado, podrías guardar ese valor aparte, pero aquí solo se usa selectedType
   };
 
   // 🔥 Cargar productos de Firebase al montar
@@ -144,8 +143,8 @@ export default function Shop() {
           .filter((product: Product) => product.active !== false)
           .map((product: Product) => ({
             ...product,
-            tipo: product.tipo || "",
-            priceUSD: Number(product.priceUSD) || 0,
+            tipo: (product as any).tipo || "",
+            priceUSD: Number((product as any).priceUSD) || 0,
           }));
 
         setProducts(footballProducts);
@@ -162,8 +161,6 @@ export default function Shop() {
     loadProducts();
   }, []);
 
-  // (removido: useEffect de ligas y lógica relacionada)
-
   // 🔥 Cargar categorías y subcategorías (nuevo useEffect)
   useEffect(() => {
     const loadData = async () => {
@@ -175,7 +172,7 @@ export default function Shop() {
           subcategories: cat.subcategories || [],
         }));
         setCategories(categoriesWithSubs);
-        const allSubs = categoriesWithSubs.flatMap(cat => cat.subcategories);
+        const allSubs = categoriesWithSubs.flatMap((cat) => cat.subcategories);
         setSubcategories(allSubs);
       } catch (error) {
         console.error("[Shop] Error al cargar categorías y subcategorías:", error);
@@ -184,23 +181,24 @@ export default function Shop() {
     };
     loadData();
   }, []);
+
   // Handlers para sidebar de categorías (nuevo)
   const handleCategoryClick = (categoryName: string) => {
-    if (categoryName === '') {
-      setSelectedCategory('');
-      setSelectedSubcategory('');
+    if (categoryName === "") {
+      setSelectedCategory("");
+      setSelectedSubcategory("");
       return;
     }
     const category = categories.find((cat) => cat.name === categoryName);
     if (category) {
       setSelectedCategory(category.id);
-      setSelectedSubcategory('');
+      setSelectedSubcategory("");
     }
   };
 
   const handleSubcategoryClick = (subcategoryName: string) => {
-    if (subcategoryName === '') {
-      setSelectedSubcategory('');
+    if (subcategoryName === "") {
+      setSelectedSubcategory("");
       return;
     }
     for (const category of categories) {
@@ -213,8 +211,6 @@ export default function Shop() {
     }
   };
 
-  // (removido: useEffect relacionado a selectedLeague y stock)
-
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
@@ -223,71 +219,93 @@ export default function Shop() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // (removido: useEffect que limpia selectedLeague al buscar)
-
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // (removido: handleLeagueClick y handleTeamClick)
+  // ✅ Lectura inicial desde la URL (al montar)
+  useEffect(() => {
+    const q = urlSearchParams.get("q") || "";
+    const cat = urlSearchParams.get("cat") || "";
+    const sub = urlSearchParams.get("sub") || "";
+    const type = urlSearchParams.get("type") || "";
+    const sort = urlSearchParams.get("sort") || "";
 
-  // Nuevo filtrado de productos usando useMemo, con lógica de subcategoría (versión robusta) y ordenamiento
-  // --- filteredProducts debe estar antes de cualquier useMemo que lo use ---
+    setSearchTerm(q);
+    setSelectedCategory(cat);
+    setSelectedSubcategory(sub);
+    setSelectedType(type || "Todos");
+    setSortOption(sort);
+
+    // Sincroniza el selector mobile de orden
+    if (sort === "priceAsc") setSelectedOrderMobile("asc");
+    else if (sort === "priceDesc") setSelectedOrderMobile("desc");
+    else if (sort === "az" || sort === "za") setSelectedOrderMobile(sort);
+    else setSelectedOrderMobile("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ✅ Escritura a la URL al cambiar búsqueda/filtros/orden
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    // Conserva "filter" legado sólo si ya estaba presente
+    if (filterParamRaw) params.set("filter", filterParamRaw);
+
+    if (searchTerm) params.set("q", searchTerm);
+    if (selectedCategory) params.set("cat", selectedCategory);
+    if (selectedSubcategory) params.set("sub", selectedSubcategory);
+    if (selectedType && selectedType !== "Todos") params.set("type", selectedType);
+    if (sortOption) params.set("sort", sortOption);
+
+    const next = params.toString();
+    const current = urlSearchParams.toString();
+    if (next !== current) {
+      setSearchParams(params, { replace: true });
+    }
+  }, [
+    searchTerm,
+    selectedCategory,
+    selectedSubcategory,
+    selectedType,
+    sortOption,
+    filterParamRaw,
+    urlSearchParams,
+    setSearchParams,
+  ]);
+
+  // Nuevo filtrado de productos usando useMemo
   const filteredProducts = useMemo(() => {
-    // Usar directamente selectedType como valor de filtro (sin tipoMap)
     const selectedTipo = selectedType;
     // Normalizador para tildes/mayúsculas
-    const normalizeTexto = (text: string) =>
-      text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const normalizeTexto = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
     const filtered = products.filter((product) => {
       const categoryMatch = selectedCategory ? product.category?.id === selectedCategory : true;
       const subcategoryMatch = selectedSubcategory ? product.subcategory?.id === selectedSubcategory : true;
-      // Cambiar la lógica de tipoMatch para que "Todos" muestre todos los productos
       const tipoMatch =
         selectedTipo === "Todos"
           ? true
-          : (selectedTipo
-              ? (Array.isArray(product.tipo)
-                  ? product.tipo.some(t => normalizeTexto(t) === normalizeTexto(selectedTipo))
-                  : normalizeTexto(product.tipo || "") === normalizeTexto(selectedTipo))
-              : true);
+          : selectedTipo
+          ? Array.isArray(product.tipo)
+            ? (product.tipo as string[]).some((t) => normalizeTexto(t) === normalizeTexto(selectedTipo))
+            : normalizeTexto((product.tipo as string) || "") === normalizeTexto(selectedTipo)
+          : true;
+
       const searchMatch = searchTerm
         ? product.title?.[i18n.language as "en" | "es"]?.toLowerCase().includes(searchTerm.toLowerCase())
         : true;
+
       return categoryMatch && subcategoryMatch && tipoMatch && searchMatch;
     });
 
-    // --- DEBUG: Mostrar por consola los valores del filtro y productos resultantes ---
-    console.log("Selected category:", selectedCategory);
-    console.log("Selected subcategory:", selectedSubcategory);
-    // Debug detallado del filtro por tipo (usando el normalizador de filteredProducts)
-    filtered.forEach(p => {
-      const tipoMatchDebug =
-        selectedTipo === "Todos" ||
-        (Array.isArray(p.tipo)
-          ? p.tipo.some(t => normalizeTexto(t) === normalizeTexto(selectedTipo))
-          : normalizeTexto(p.tipo || "") === normalizeTexto(selectedTipo));
-
-      console.log(
-        "🧪",
-        p.title?.[i18n.language as "en" | "es"],
-        "| tipo:", p.tipo,
-        "| selectedType:", selectedType,
-        "| selectedTipo:", selectedTipo,
-        "| tipoMatch:", tipoMatchDebug
-      );
-    });
-    // -----------------------------------------
-
-    // No ordenamiento aquí, solo filtrado; sorting se hace aparte
     return filtered;
   }, [products, selectedCategory, selectedSubcategory, selectedType, searchTerm, sortOption, i18n.language]);
 
   // --- Ordenamiento de productos (usando precio de variantes si priceUSD principal es 0) ---
-  // --- PATCH: Agregar tipo Language y lang para ordenar por idioma ---
-  type Language = 'en' | 'es';
+  type Language = "en" | "es";
   const lang = i18n.language as Language;
-  // Auxiliar para obtener el precio consistente
+
   const getPrice = (p: LocalProduct) => {
     if (Array.isArray(p.variants) && p.variants.length > 0) {
       const firstVariant = p.variants[0];
@@ -297,34 +315,27 @@ export default function Shop() {
     }
     return p.price ?? 0;
   };
+
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts].sort((a, b) => {
       if (sortOption === "price-asc" || sortOption === "priceAsc") return getPrice(a) - getPrice(b);
       if (sortOption === "price-desc" || sortOption === "priceDesc") return getPrice(b) - getPrice(a);
       if (sortOption === "az") {
-        return (a.title?.[lang] || "").localeCompare(
-          b.title?.[lang] || ""
-        );
+        return (a.title?.[lang] || "").localeCompare(b.title?.[lang] || "");
       }
       if (sortOption === "za") {
-        return (b.title?.[lang] || "").localeCompare(
-          a.title?.[lang] || ""
-        );
+        return (b.title?.[lang] || "").localeCompare(a.title?.[lang] || "");
       }
       return 0;
     });
     console.log("🔍 Orden actual y precios:");
     sorted.forEach((p) => {
-      console.log(
-        `→ ${p.title?.es} | price: ${getPrice(p)}`
-      );
+      console.log(`→ ${p.title?.es} | price: ${getPrice(p)}`);
     });
     return sorted;
   }, [filteredProducts, sortOption, i18n.language]);
 
-  // --- Ordenamiento MOBILE por selectedOrderMobile, después de filteredProducts ---
-  // --- PATCH: Usar lang en vez de i18n.language en sort ---
-  // Ordenamiento MOBILE custom menu: sortedProductsMobile depende de selectedOrderMobile
+  // --- Ordenamiento MOBILE por selectedOrderMobile ---
   const sortedProductsMobile = useMemo(() => {
     let sorted = [...filteredProducts];
     switch (selectedOrderMobile) {
@@ -346,17 +357,18 @@ export default function Shop() {
     return sorted;
   }, [filteredProducts, selectedOrderMobile, i18n.language]);
 
-  // (removido: isStockExpress, currentLeague, currentLeagueSubcategories y getLeagueId)
   const productsToDisplay = sortedProducts;
   console.log("[Shop] Productos a mostrar:", productsToDisplay);
+
   // Banner dinámico según filtro (normalizando a mayúsculas)
   const normalizedFilter = filterParam.toUpperCase();
-  const bannerImage = {
-    NBA: "/images/banner-nba.jpg",
-    FUTBOL: "/images/futbol-banner.jpg",
-    TODO: "/images/banner-general.jpg",
-  }[normalizedFilter] || "/images/banner-general.jpg";
-  
+  const bannerImage =
+    {
+      NBA: "/images/banner-nba.jpg",
+      FUTBOL: "/images/futbol-banner.jpg",
+      TODO: "/images/banner-general.jpg",
+    }[normalizedFilter] || "/images/banner-general.jpg";
+
   if (loading) {
     return (
       <section className="bg-[#f9f9f9] text-black min-h-screen flex flex-col">
@@ -389,21 +401,23 @@ export default function Shop() {
         <link rel="canonical" href="/shop" />
 
         <meta property="og:title" content="Mutter Games – Tienda de videojuegos y coleccionables" />
-        <meta property="og:description" content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay." />
+        <meta
+          property="og:description"
+          content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay."
+        />
         <meta property="og:image" content="/seo-image.jpg" />
         <meta property="og:url" content="/shop" />
         <meta property="og:type" content="website" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Mutter Games – Tienda de videojuegos y coleccionables" />
-        <meta name="twitter:description" content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay." />
+        <meta
+          name="twitter:description"
+          content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay."
+        />
         <meta name="twitter:image" content="/seo-image.jpg" />
       </Helmet>
 
-  
-  
-      {/* NAV MOBILE SOLO VISIBLE EN MOBILE */}
-      {/* Botón "Volver al inicio", botón "Filtros" (desktop) y CartIcon eliminados según requerimiento */}
       <div className="md:grid md:grid-cols-[250px_1fr] max-w-7xl mx-auto px-4 md:px-6 gap-8 overflow-x-hidden">
         {/* Sidebar */}
         <motion.aside
@@ -426,7 +440,6 @@ export default function Shop() {
             />
           </div>
 
-
           {/* SidebarFilter con props para filtro de categoría y subcategoría */}
           <SidebarFilter
             categories={categories}
@@ -435,9 +448,7 @@ export default function Shop() {
             selectedSubcategory={selectedSubcategory}
             setSelectedSubcategory={setSelectedSubcategory}
             // --- PATCH: resaltar nombre de categoría principal en SidebarFilter ---
-            renderCategoryName={(category: Category) => (
-              <p className="font-bold">{category.name}</p>
-            )}
+            renderCategoryName={(category: Category) => <p className="font-bold">{category.name}</p>}
           />
 
           {/* Filtro por tipo (diseño estilizado) */}
@@ -449,9 +460,9 @@ export default function Shop() {
             <div className="flex flex-col gap-2">
               <button
                 className={`px-3 py-1.5 rounded-full text-sm font-medium border border-gray-300 transition ${
-                  selectedType === '' ? 'bg-black text-white border-black' : 'bg-white text-black hover:bg-gray-50'
+                  selectedType === "" || selectedType === "Todos" ? "bg-black text-white border-black" : "bg-white text-black hover:bg-gray-50"
                 }`}
-                onClick={() => setSelectedType('')}
+                onClick={() => setSelectedType("Todos")}
               >
                 Todos
               </button>
@@ -459,7 +470,7 @@ export default function Shop() {
                 <button
                   key={type}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium border border-gray-300 transition ${
-                    selectedType === type ? 'bg-black text-white border-black' : 'bg-white text-black hover:bg-gray-50'
+                    selectedType === type ? "bg-black text-white border-black" : "bg-white text-black hover:bg-gray-50"
                   }`}
                   onClick={() => setSelectedType(type)}
                 >
@@ -468,17 +479,12 @@ export default function Shop() {
               ))}
             </div>
           </div>
-
-      {/* Para móviles: sidebar en modal */}
-      {/* (removido: bloque de ligas móvil y lógica asociada) */}
         </motion.aside>
 
         {/* Contenido principal - Productos */}
         <main>
-          {/* Encabezado y ordenar por alineados horizontalmente */}
           {/* Desktop view */}
           <div className="flex items-center justify-between mb-4 hidden md:flex">
-            {/* Título y subtítulo alineados a la izquierda */}
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
                 {searchTerm
@@ -489,17 +495,16 @@ export default function Shop() {
                   ? t("shop.soccer", "Fútbol")
                   : "Productos disponibles"}
               </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {productsToDisplay.length} productos encontrados
-              </p>
-              {(searchTerm) && (
+              <p className="text-sm text-gray-500 mt-1">{productsToDisplay.length} productos encontrados</p>
+              {searchTerm && (
                 <button
                   onClick={() => {
                     setSearchTerm("");
                     setSelectedCategory("");
                     setSelectedSubcategory("");
-                    setSelectedType("");
-                    navigate(".", { replace: true });
+                    setSelectedType("Todos");
+                    setSortOption("");
+                    setSearchParams({}, { replace: true });
                   }}
                   className="mt-2 text-sm font-semibold text-gray-700 hover:text-black underline"
                 >
@@ -507,7 +512,8 @@ export default function Shop() {
                 </button>
               )}
             </div>
-            {/* Dropdown de ordenar por alineado a la derecha (solo desktop) */}
+
+            {/* Dropdown ordenar (desktop) */}
             <div className="flex justify-end items-center">
               <Listbox value={sortOption} onChange={setSortOption}>
                 {({ open }) => (
@@ -522,11 +528,7 @@ export default function Shop() {
                           za: "Nombre: Z-A",
                         }[sortOption] || "Ordenar por"}
                       </span>
-                      <ChevronDownIcon
-                        className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-                          open ? 'rotate-180' : ''
-                        }`}
-                      />
+                      <ChevronDownIcon className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
                     </Listbox.Button>
                     <Listbox.Options className="absolute right-0 mt-1 max-w-[240px] w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 text-sm overflow-hidden whitespace-nowrap">
                       {[
@@ -540,17 +542,15 @@ export default function Shop() {
                           key={option.value}
                           className={({ active, selected }) =>
                             `cursor-pointer select-none relative py-2 pl-10 pr-4
-                            ${selected ? 'bg-[#FF2D55] text-white font-bold' : ''}
-                            ${active && !selected ? 'hover:bg-[#FF2D55]/90 hover:text-white' : ''}
-                            ${!selected && !active ? 'text-[#0F0F0F]' : ''}`
+                            ${selected ? "bg-[#FF2D55] text-white font-bold" : ""}
+                            ${active && !selected ? "hover:bg-[#FF2D55]/90 hover:text-white" : ""}
+                            ${!selected && !active ? "text-[#0F0F0F]" : ""}`
                           }
                           value={option.value}
                         >
                           {({ selected }) => (
                             <>
-                              <span className={`block truncate`}>
-                                {option.label}
-                              </span>
+                              <span className={`block truncate`}>{option.label}</span>
                               {selected && (
                                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-white">
                                   <CheckIcon className="h-4 w-4" />
@@ -579,17 +579,16 @@ export default function Shop() {
                   ? t("shop.soccer", "Fútbol")
                   : "Productos disponibles"}
               </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {productsToDisplay.length} productos encontrados
-              </p>
-              {(searchTerm) && (
+              <p className="text-sm text-gray-500 mt-1">{productsToDisplay.length} productos encontrados</p>
+              {searchTerm && (
                 <button
                   onClick={() => {
                     setSearchTerm("");
                     setSelectedCategory("");
                     setSelectedSubcategory("");
-                    setSelectedType("");
-                    navigate(".", { replace: true });
+                    setSelectedType("Todos");
+                    setSortOption("");
+                    setSearchParams({}, { replace: true });
                   }}
                   className="mt-2 text-sm font-semibold text-gray-700 hover:text-black underline"
                 >
@@ -599,9 +598,7 @@ export default function Shop() {
             </div>
           </div>
 
-          {/* (removido: Stock Express Banner) */}
-
-          {/* MOBILE: Filtros y ordenar por botones (solo visible en mobile) */}
+          {/* MOBILE: Filtros y ordenar */}
           <div className="flex px-2 py-2 sm:hidden sticky top-[90px] z-40 bg-[#f9f9f9]">
             <div className="w-1/2 px-1">
               <button
@@ -622,28 +619,16 @@ export default function Shop() {
                 <>
                   <div className="fixed inset-0 bg-black/10 z-40" onClick={() => setShowOrderMenuMobile(false)} />
                   <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
-                    <button
-                      onClick={() => handleOrderChangeMobile("asc")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
+                    <button onClick={() => handleOrderChangeMobile("asc")} className="w-full text-left px-4 py-2 hover:bg-gray-100">
                       Precio: menor a mayor
                     </button>
-                    <button
-                      onClick={() => handleOrderChangeMobile("desc")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
+                    <button onClick={() => handleOrderChangeMobile("desc")} className="w-full text-left px-4 py-2 hover:bg-gray-100">
                       Precio: mayor a menor
                     </button>
-                    <button
-                      onClick={() => handleOrderChangeMobile("az")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
+                    <button onClick={() => handleOrderChangeMobile("az")} className="w-full text-left px-4 py-2 hover:bg-gray-100">
                       A-Z
                     </button>
-                    <button
-                      onClick={() => handleOrderChangeMobile("za")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
+                    <button onClick={() => handleOrderChangeMobile("za")} className="w-full text-left px-4 py-2 hover:bg-gray-100">
                       Z-A
                     </button>
                   </div>
@@ -661,12 +646,9 @@ export default function Shop() {
                 setSelectedCategory={setSelectedCategory}
                 selectedSubcategory={selectedSubcategory}
                 setSelectedSubcategory={setSelectedSubcategory}
-                renderCategoryName={(category: Category) => (
-                  <p className="font-bold">{category.name}</p>
-                )}
+                renderCategoryName={(category: Category) => <p className="font-bold">{category.name}</p>}
               />
-              {/* Bloque de "Tipo de Producto" para mobile, al final del SidebarFilter */}
-              {/* 🔧 2. Bloque corregido: solo usa selectedType y setSelectedType */}
+              {/* Bloque de "Tipo de Producto" para mobile */}
               {availableTypes.length > 0 && (
                 <div className="mt-4">
                   <h3 className="text-lg font-bold mb-2">Tipo de Producto</h3>
@@ -705,38 +687,39 @@ export default function Shop() {
           )}
 
           {/* Grid de productos */}
-<div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-6">
-  <Suspense
-    fallback={Array.from({ length: 8 }).map((_, index) => (
-      <ProductSkeleton key={index} />
-    ))}
-  >
-    {(isMobileView ? sortedProductsMobile : sortedProducts).length > 0 ? (
-      (isMobileView ? sortedProductsMobile : sortedProducts).map((product: LocalProduct) => (
-        <ProductCard key={product.slug ?? product.id} product={product} />
-      ))
-    ) : (
-      <div className="col-span-full py-16 min-h-[300px] text-center space-y-4">
-        <p className="text-gray-500 font-medium max-w-xl mx-auto text-center">
-          No se encontraron productos con los filtros seleccionados.
-          <br />
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedCategory('');
-              setSelectedSubcategory('');
-              setSelectedType('');
-              navigate('.', { replace: true });
-            }}
-            className="text-red-600 hover:underline font-semibold mt-2 inline-block"
-          >
-            Mostrar todos los productos
-          </button>
-        </p>
-      </div>
-    )}
-  </Suspense>
-</div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-6">
+            <Suspense
+              fallback={Array.from({ length: 8 }).map((_, index) => (
+                <ProductSkeleton key={index} />
+              ))}
+            >
+              {(isMobileView ? sortedProductsMobile : sortedProducts).length > 0 ? (
+                (isMobileView ? sortedProductsMobile : sortedProducts).map((product: LocalProduct) => (
+                  <ProductCard key={product.slug ?? product.id} product={product} />
+                ))
+              ) : (
+                <div className="col-span-full py-16 min-h-[300px] text-center space-y-4">
+                  <p className="text-gray-500 font-medium max-w-xl mx-auto text-center">
+                    No se encontraron productos con los filtros seleccionados.
+                    <br />
+                    <button
+                      onClick={() => {
+                        setSearchTerm("");
+                        setSelectedCategory("");
+                        setSelectedSubcategory("");
+                        setSelectedType("Todos");
+                        setSortOption("");
+                        setSearchParams({}, { replace: true });
+                      }}
+                      className="text-red-600 hover:underline font-semibold mt-2 inline-block"
+                    >
+                      Mostrar todos los productos
+                    </button>
+                  </p>
+                </div>
+              )}
+            </Suspense>
+          </div>
         </main>
       </div>
 
@@ -778,4 +761,4 @@ export default function Shop() {
 //   <>
 //     {/* name and number fields */}
 //   </>
-// )} 
+// )}

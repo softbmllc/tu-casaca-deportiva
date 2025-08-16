@@ -30,6 +30,7 @@ export default function HeroSection() {
     {
       key: "coleccionables",
       image: "/images/Slide2.jpg",
+      mobileImage: "/images/Slide2-mobile.jpg",
       tagline: "Películas, música y nostalgia",
       headline1: "Coleccionables originales",
       headline2: "DVDs, vinilos, muñecos y más",
@@ -154,36 +155,68 @@ export default function HeroSection() {
                 </div>
               </>
             ) : (
-              <div
-                className="relative w-screen h-screen bg-cover bg-center"
-                style={{ backgroundImage: `url(${slide.image})` }}
-              >
-                <motion.div
-                  className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 bg-black/40 h-full"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 1 }}
+              <>
+                <div
+                  className="relative w-screen h-screen bg-cover bg-center hidden md:block"
+                  style={{ backgroundImage: `url(${slide.image})` }}
                 >
-                  <span className="uppercase text-base sm:text-lg tracking-widest font-semibold text-white mb-4">
-                    {slide.tagline}
-                  </span>
-                  <h1 className="text-4xl sm:text-5xl md:text-[2.5rem] lg:text-6xl font-extrabold text-white mb-2 leading-tight">
-                    <span>{slide.headline1}</span><br />
-                    <span>{slide.headline2}</span>
-                  </h1>
-                  <p className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-6 max-w-2xl">
-                    {slide.description}
-                  </p>
-                  <div className="flex justify-center">
-                    <div
-                      onClick={() => window.location.href = "/shop"}
-                      className="bg-[#FF2D55] hover:bg-[#cc2444] text-white font-semibold px-6 py-3 rounded-full hover:shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none appearance-none cursor-pointer"
-                    >
-                      {slide.button}
+                  <motion.div
+                    className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 bg-black/40 h-full"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 1 }}
+                  >
+                    <span className="uppercase text-base sm:text-lg tracking-widest font-semibold text-white mb-4">
+                      {slide.tagline}
+                    </span>
+                    <h1 className="text-4xl sm:text-5xl md:text-[2.5rem] lg:text-6xl font-extrabold text-white mb-2 leading-tight">
+                      <span>{slide.headline1}</span><br />
+                      <span>{slide.headline2}</span>
+                    </h1>
+                    <p className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-6 max-w-2xl">
+                      {slide.description}
+                    </p>
+                    <div className="flex justify-center">
+                      <div
+                        onClick={() => window.location.href = "/shop"}
+                        className="bg-[#FF2D55] hover:bg-[#cc2444] text-white font-semibold px-6 py-3 rounded-full hover:shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none appearance-none cursor-pointer"
+                      >
+                        {slide.button}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              </div>
+                  </motion.div>
+                </div>
+                <div
+                  className="relative w-screen h-screen bg-cover bg-center block md:hidden"
+                  style={{ backgroundImage: `url(${slide.mobileImage || slide.image})` }}
+                >
+                  <motion.div
+                    className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 bg-black/40 h-full"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 1 }}
+                  >
+                    <span className="uppercase text-base sm:text-lg tracking-widest font-semibold text-white mb-4">
+                      {slide.tagline}
+                    </span>
+                    <h1 className="text-4xl sm:text-5xl md:text-[2.5rem] lg:text-6xl font-extrabold text-white mb-2 leading-tight">
+                      <span>{slide.headline1}</span><br />
+                      <span>{slide.headline2}</span>
+                    </h1>
+                    <p className="text-lg sm:text-xl md:text-2xl font-medium text-white mb-6 max-w-2xl">
+                      {slide.description}
+                    </p>
+                    <div className="flex justify-center">
+                      <div
+                        onClick={() => window.location.href = "/shop"}
+                        className="bg-[#FF2D55] hover:bg-[#cc2444] text-white font-semibold px-6 py-3 rounded-full hover:shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none appearance-none cursor-pointer"
+                      >
+                        {slide.button}
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </>
             )}
           </SwiperSlide>
         ))}

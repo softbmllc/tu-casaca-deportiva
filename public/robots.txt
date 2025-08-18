@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://getbionova.com/sitemap.xml
+Sitemap: https://muttergames.com/sitemap.xml

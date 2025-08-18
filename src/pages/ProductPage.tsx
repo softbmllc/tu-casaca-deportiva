@@ -6,7 +6,7 @@ import { Helmet } from "react-helmet-async";
 import ProductPageNavbar from "../components/ProductPageNavbar";
 import { fetchProductById, fetchProducts } from "../firebaseClientUtils";
 import { useCart } from "../context/CartContext";
-import { Check, ChevronLeft, ArrowUp } from "lucide-react";
+import { Check, ChevronLeft, ArrowUp, CreditCard, Truck, Store, MessageSquare, Lock } from "lucide-react";
 import { FiMinus, FiPlus } from "react-icons/fi";
 import "keen-slider/keen-slider.min.css";
 import { useKeenSlider } from "keen-slider/react";
@@ -14,7 +14,7 @@ import RelatedProducts from "../components/RelatedProducts";
 import Footer from "../components/Footer";
 import { useTranslation } from "react-i18next";
 import { HiExclamation, HiExclamationCircle } from "react-icons/hi";
-import { Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 
 
 // Improved mobile toast for stock limit error
@@ -35,6 +35,7 @@ export default function ProductPage() {
   const [showToast, setShowToast] = useState(false);
   const [stockMessage, setStockMessage] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
+  const [showStickyCTA, setShowStickyCTA] = useState(true);
 
   // keen-slider logic
   const [sliderRef, slider] = useKeenSlider<HTMLDivElement>({
@@ -118,6 +119,80 @@ export default function ProductPage() {
   }, []);
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const scrollToBuyBlock = () => {
+    const el = document.getElementById('buy-block');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleQuickBuy = () => {
+    if (isOutOfStock) {
+      setStockMessage('Sin stock disponible de esta opción');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+      return;
+    }
+    // Requiere selección si existen variantes
+    if (Array.isArray(product.variants) && product.variants.length > 0 && !selectedOption) {
+      setStockMessage('Debes seleccionar una opción antes de continuar.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+      scrollToBuyBlock();
+      return;
+    }
+    const availableStock = selectedOption?.stock ?? product.stockTotal ?? 0;
+    const existingItem = items.find(
+      (item) =>
+        item.id === String(product.id) &&
+        item.variantId === (selectedOption?.variantId || '')
+    );
+    const currentQuantityInCart = existingItem?.quantity || 0;
+    const requestedTotal = currentQuantityInCart + quantity;
+    if (requestedTotal > availableStock) {
+      if (availableStock === 0) {
+        setStockMessage('Sin stock disponible de esta opción');
+      } else {
+        setStockMessage(`Solo hay ${availableStock} unidades disponibles`);
+      }
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+      return;
+    }
+    setIsAdding(true);
+    const cartItem = {
+      id: product.id,
+      slug: product.slug,
+      name: product.title,
+      title: product.title,
+      image: product.images?.[0] || '',
+      quantity: quantity,
+      priceUSD: selectedOption?.priceUSD ?? product.priceUSD,
+      price: selectedOption?.priceUSD ?? product.priceUSD,
+      variantLabel: selectedOption?.variantLabel,
+      variantId: selectedOption?.variantId,
+      stock: selectedOption?.stock,
+      color: '',
+    };
+    addToCart(cartItem);
+    toast.success(lang === 'en' ? 'Added to cart' : 'Agregado al carrito');
+    scrollToTop();
+    setTimeout(() => setIsAdding(false), 800);
+  };
+  useEffect(() => {
+    const target = document.getElementById('buy-block');
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        // Hide sticky CTA when buy block is clearly visible
+        setShowStickyCTA(!entry.isIntersecting || entry.intersectionRatio < 0.3);
+      },
+      { threshold: [0, 0.3, 1] }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [product, selectedOption]);
 
   if (loading) return <div className="p-10">Cargando producto...</div>;
   if (!product) return (
@@ -173,6 +248,27 @@ export default function ProductPage() {
             }
           />
           <meta name="twitter:image" content={product.images?.[0] || "/seo-image.jpg"} />
+          {/* JSON-LD: Product schema for SEO */}
+          <script type="application/ld+json">{JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": (product.title?.[lang] || product.title) || "",
+            "description": typeof product.description === 'object'
+              ? (product.description?.[lang] || "Producto original disponible en Mutter Games.")
+              : (product.description || "Producto original disponible en Mutter Games."),
+            "image": Array.isArray(product.images) && product.images.length ? product.images : ["/seo-image.jpg"],
+            "sku": String(product.id || product.slug || ""),
+            "brand": { "@type": "Brand", "name": "Mutter Games" },
+            "category": product.category?.name || "Coleccionables",
+            "url": typeof window !== "undefined" ? window.location.href : "",
+            "offers": {
+              "@type": "Offer",
+              "priceCurrency": "UYU",
+              "price": (selectedOption?.priceUSD ?? product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD) || 0,
+              "availability": totalStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+              "url": typeof window !== "undefined" ? window.location.href : ""
+            }
+          })}</script>
         </Helmet>
 
         {/* Top-level floating controls */}
@@ -266,6 +362,31 @@ export default function ProductPage() {
                 );
               })()}
             </div>
+            <div className="mb-4">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center justify-center w-7 h-7 text-[11px] font-extrabold rounded bg-white text-[#323271] border border-[#323271]">ML</span>
+                  <div className="text-gray-900">
+                    <p className="text-sm font-semibold leading-snug">Somos los de MercadoLibre</p>
+                    <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                      <p className="text-xs text-gray-600 leading-snug">4.9⭐ +3.000 ventas</p>
+                      <p className="text-xs text-gray-600 leading-snug flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5" />
+                        Compra protegida con Mercado Pago
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <a
+                  href="https://www.mercadolibre.com.uy/pagina/lilipres?utm_source=web_mutter&amp;utm_medium=referral&amp;utm_campaign=badge_ml_pdp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold underline underline-offset-2 hover:opacity-80"
+                >
+                  Ver perfil ↗
+                </a>
+              </div>
+            </div>
             {product.subtitle && <p className="text-gray-600 mb-4">{product.subtitle}</p>}
 
             {/* Cápsulas */}
@@ -328,10 +449,37 @@ export default function ProductPage() {
     )}
   </div>
 )}
-            <div className="mt-3 text-sm text-gray-600">Pago protegido con Mercado Pago · Envíos a todo el país</div>
             <hr className="my-6 border-gray-100" />
+            {/* Trust row (beneficios clave) */}
+            <div className="mt-3 mb-2 text-sm text-gray-900 flex flex-wrap items-center justify-start gap-3 md:gap-6">
+              <div className="inline-flex items-center gap-2">
+                <CreditCard className="w-4 h-4 opacity-80" />
+                <span className="font-medium">Cuotas con Mercado Pago</span>
+              </div>
+              <span className="hidden md:block h-4 w-px bg-gray-300/80" />
+              <div className="inline-flex items-center gap-2">
+                <Truck className="w-4 h-4 opacity-80" />
+                <span className="font-medium">Envío 24–48 h</span>
+              </div>
+              <span className="hidden md:block h-4 w-px bg-gray-300/80" />
+              <div className="inline-flex items-center gap-2">
+                <Store className="w-4 h-4 opacity-80" />
+                <span className="font-medium">Retiro hoy</span>
+              </div>
+              <span className="hidden md:block h-4 w-px bg-gray-300/80" />
+              <div className="inline-flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 opacity-80" />
+                <span className="font-medium">WhatsApp 1–3 min</span>
+              </div>
+            </div>
 
-            <div className="grid md:grid-cols-2 gap-6 mt-6 mb-8">
+            {/* Info de envíos (estática) */}
+            <div className="mt-2 text-sm text-gray-800 flex items-center gap-2">
+              <Truck className="w-4 h-4" />
+              <span><strong>Entregas en Montevideo $169</strong> · Envíos al interior por DAC</span>
+            </div>
+
+            <div id="buy-block" className="grid md:grid-cols-2 gap-6 mt-6 mb-8">
               <button
                 disabled={isOutOfStock || isAdding}
                 onClick={() => {
@@ -392,6 +540,7 @@ export default function ProductPage() {
                     color: '',
                   };
                   addToCart(cartItem);
+                  toast.success(lang === 'en' ? 'Added to cart' : 'Agregado al carrito');
                   scrollToTop();
                   setTimeout(() => setIsAdding(false), 800);
                 }}
@@ -452,15 +601,37 @@ export default function ProductPage() {
           </div>
         )}
 
-        {/* Toaster (for general toast notifications) */}
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: {
-              marginTop: '80px', // ajustable si el navbar es más alto
-            },
-          }}
-        />
+        
+        {/* Sticky CTA (mobile) */}
+        {showStickyCTA && !isOutOfStock && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 shadow-[0_-6px_20px_rgba(0,0,0,0.08)]">
+            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3" style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}>
+              {(() => {
+                const precio = selectedOption?.priceUSD ?? product.variants?.[0]?.options?.[0]?.priceUSD ?? product.priceUSD;
+                const entero = Math.floor(precio).toLocaleString("es-AR");
+                const decimal = precio.toFixed(2).split(".")[1];
+                const formattedPrice = `${entero},${decimal}`;
+                return (
+                  <div className="flex flex-col leading-tight">
+                    <div className="flex items-end gap-1">
+                      <span className="text-xl font-extrabold leading-none">${formattedPrice.split(',')[0]}</span>
+                      <sup className="text-xs font-semibold align-[0.1em]">{formattedPrice.split(',')[1]}</sup>
+                    </div>
+                    <span className="text-[11px] text-gray-600 mt-0.5">Cuotas con MP</span>
+                  </div>
+                );
+              })()}
+              <button
+                onClick={handleQuickBuy}
+                className="flex-1 h-11 rounded-lg bg-black text-white font-semibold tracking-wide shadow hover:bg-white hover:text-black border border-black transition"
+              >
+                {lang === 'en' ? 'Buy now' : 'Comprar ahora'}
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Spacer para no tapar contenido con la Sticky CTA en mobile */}
+        <div className="h-16 md:hidden" />
         </div> {/* cierra container mx-auto */}
 
       </div>

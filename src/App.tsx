@@ -64,6 +64,21 @@ export default function App() {
     <AuthProvider>
       <CartProvider>
         <div className="bg-[#0F0F0F] min-h-screen flex flex-col">
+          <Helmet>
+            <title>Mutter Games — Consolas, videojuegos y coleccionables</title>
+            <meta name="description" content="Mutter Games es tu tienda online de confianza para consolas, videojuegos, accesorios y artículos coleccionables en Uruguay." />
+            <meta property="og:site_name" content="Mutter Games" />
+            <meta property="og:type" content="website" />
+            <meta property="og:title" content="Mutter Games — Consolas, videojuegos y coleccionables" />
+            <meta property="og:description" content="Explorá juegos, consolas, accesorios y figuras. Stock real y atención personalizada." />
+            <meta property="og:image" content="/seo-image.jpg" />
+            <meta property="og:url" content="https://muttergames.com/" />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content="Mutter Games — Consolas, videojuegos y coleccionables" />
+            <meta name="twitter:description" content="Mutter Games es tu tienda online de confianza para consolas, videojuegos, accesorios y artículos coleccionables en Uruguay." />
+            <meta name="twitter:image" content="/seo-image.jpg" />
+            <link rel="canonical" href="https://muttergames.com/" />
+          </Helmet>
           <Routes>
             {/* ✅ Login público */}
             <Route path="/login" element={<LoginForm />} />

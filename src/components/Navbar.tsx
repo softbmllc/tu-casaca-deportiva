@@ -19,9 +19,6 @@ export default function ShopNavbar() {
       {/* Mobile */}
       <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowSearch(!showSearch)}>
-            <FaSearch className="text-[#FF2D55] w-5 h-5" />
-          </button>
           <Link to="/" className="flex items-center">
             <img
               src={logo}

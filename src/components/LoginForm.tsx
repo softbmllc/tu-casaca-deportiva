@@ -1,10 +1,8 @@
 // src/components/LoginForm.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebaseConfig";
+import { signInAdmin, auth } from "../firebaseUtils";
 import { useAuth } from "../context/AuthContext";
-import { getAdminUserByEmail } from "../firebaseUtils";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -15,19 +13,26 @@ export default function LoginForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const adminUser = await getAdminUserByEmail(email);
-      if (!adminUser || !adminUser.activo) {
-        alert("Acceso denegado. No estás autorizado como administrador.");
-        return;
-      }
-
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      login({ id: user.uid, email: user.email || "", name: "", password });
+      const user = await signInAdmin(email, password);
+      const resolvedEmail = auth.currentUser?.email || email;
+      const resolvedName = resolvedEmail ? resolvedEmail.split("@")[0] : "admin";
+      login({ id: user.uid, email: resolvedEmail, name: resolvedName });
       alert("Inicio de sesión exitoso");
       navigate("/admin", { replace: true });
-    } catch (error) {
-      alert("Usuario o contraseña incorrectos");
+    } catch (error: any) {
+      const code = error?.code || "auth/unknown";
+      console.error("❌ Login error:", code, error?.message);
+      if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        alert("Contraseña incorrecta.");
+      } else if (code === "auth/user-not-found") {
+        alert("No existe un usuario con ese email.");
+      } else if (code === "auth/too-many-requests") {
+        alert("Demasiados intentos. Intenta más tarde o restablece tu contraseña.");
+      } else if (code === "auth/network-request-failed") {
+        alert("Error de red. Verifica tu conexión y reintenta.");
+      } else {
+        alert("No se pudo iniciar sesión: " + code);
+      }
     }
   };
 
@@ -59,6 +64,7 @@ export default function LoginForm() {
             type="email"
             value={email}
             required
+            autoComplete="email"
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
           />
@@ -72,6 +78,7 @@ export default function LoginForm() {
             type="password"
             value={password}
             required
+            autoComplete="current-password"
             onChange={(e) => setPassword(e.target.value)}
             className="w-full border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
           />
@@ -87,7 +94,7 @@ export default function LoginForm() {
 
       {/* Footer */}
       <p className="text-gray-400 text-xs mt-6">
-        &copy; {new Date().getFullYear()} Bionova. All rights reserved.
+        &copy; {new Date().getFullYear()} MutterGames. All rights reserved.
       </p>
     </div>
   );

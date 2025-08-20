@@ -1,7 +1,7 @@
 //src/hooks/useCategories.ts
 
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 
 interface Category {
@@ -22,8 +22,17 @@ export function useCategories() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const snapshot = await getDocs(collection(db, "categories"));
-        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as Category[];
+        const baseRef = collection(db, "categories");
+        let snap;
+        try {
+          snap = await getDocs(query(baseRef, where("enabled", "==", true), orderBy("order", "asc")));
+        } catch (err) {
+          console.warn("Falling back to plain getDocs for categories", err);
+          snap = await getDocs(baseRef);
+        }
+        const data = snap.docs
+          .map((doc) => ({ id: doc.id, ...(doc.data() as any) }))
+          .filter((c) => !!c.name) as Category[];
         setCategories(data);
       } catch (error) {
         console.error("Error fetching categories:", error);

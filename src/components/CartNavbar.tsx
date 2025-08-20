@@ -2,7 +2,7 @@
 
 import { Link } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
-import { FaWhatsapp, FaSearch, FaInstagram } from "react-icons/fa";
+import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { useState } from "react";
 import logo from "/logo2.png";
@@ -11,17 +11,12 @@ export default function ShopNavbar() {
   const { items } = useCart();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
 
   return (
     <header className="bg-white/95 backdrop-blur-md text-black fixed top-0 w-full z-50 shadow-md border-b border-gray-200 py-0.5">
       {/* Mobile */}
       <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowSearch(!showSearch)}>
-            <FaSearch className="text-[#FF2D55] w-5 h-5" />
-          </button>
           <Link to="/" className="flex items-center">
             <img
               src={logo}
@@ -58,24 +53,6 @@ export default function ShopNavbar() {
           </button>
         </div>
       </div>
-
-      {/* Search Input in Mobile */}
-      {showSearch && (
-        <div className="sm:hidden px-4 pb-1">
-          <input
-            type="text"
-            placeholder="Buscar productos..."
-            className="w-full border border-[#FF2D55] rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55]"
-            autoFocus
-            value={searchTerm}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSearchTerm(value);
-              window.dispatchEvent(new CustomEvent("mobileSearch", { detail: value }));
-            }}
-          />
-        </div>
-      )}
 
       {/* Mobile Dropdown Menu */}
       {isMenuOpen && (

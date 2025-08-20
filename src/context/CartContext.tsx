@@ -1,13 +1,22 @@
 // src/context/CartContext.tsx
 
-// Utilidad para obtener un UID anónimo persistente en localStorage
-function getAnonymousUID(): string {
-  const localUID = localStorage.getItem("anonymousUID");
-  if (localUID) return localUID;
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
+// import { useAuth } from "./AuthContext";
+import { loadCartFromFirebase as loadCartFromFirebaseUtils, saveCartToFirebase, loadCartFromFirebaseAndSync } from "../utils/cartFirebase";
+import { enrichCartItems } from "../utils/cartUtils";
+import { CartItem } from "../data/types";
+import { isSameItem, mergeCartItems } from "../utils/cartUtils";
+// import { auth } from "../firebaseUtils"; // make sure this is imported
 
-  const newUID = crypto.randomUUID();
-  localStorage.setItem("anonymousUID", newUID);
-  return newUID;
+async function ensureAuthUID(): Promise<string> {
+  const authInstance = getAuth();
+  if (authInstance.currentUser?.uid) {
+    return authInstance.currentUser.uid;
+  }
+  const cred = await signInAnonymously(authInstance);
+  localStorage.setItem("anonymousUID", cred.user.uid);
+  return cred.user.uid;
 }
 
 // --- ShippingInfo type for createPreference and other uses ---
@@ -21,13 +30,6 @@ export interface ShippingInfo {
   email: string;
   shippingCost?: number;
 }
-
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
-import { useAuth } from "./AuthContext";
-import { loadCartFromFirebase as loadCartFromFirebaseUtils, saveCartToFirebase, loadCartFromFirebaseAndSync } from "../utils/cartFirebase";
-import { enrichCartItems } from "../utils/cartUtils";
-import { CartItem } from "../data/types";
-import { isSameItem, mergeCartItems } from "../utils/cartUtils";
 
 export type ShippingData = {
   name: string;
@@ -68,11 +70,32 @@ type CartContextType = {
 export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  // const { user } = useAuth();
+
+  const [currentUid, setCurrentUid] = useState<string | null>(null);
+
+  // Asegura sesión anónima y guarda el UID actual (anónimo o logueado)
+  useEffect(() => {
+    const authInstance = getAuth();
+    const unsub = onAuthStateChanged(authInstance, async (fbUser) => {
+      if (fbUser) {
+        setCurrentUid(fbUser.uid);
+      } else {
+        try {
+          const cred = await signInAnonymously(authInstance);
+          setCurrentUid(cred.user.uid);
+        } catch (e) {
+          console.error("No se pudo iniciar sesión anónima:", e);
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
+
   const hasInitialized = useRef(false);
 
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    const savedCart = localStorage.getItem("cart");
+    const savedCart = localStorage.getItem("cartItems");
     return savedCart ? JSON.parse(savedCart) : [];
   });
 
@@ -151,54 +174,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [shippingData]);
 
   useEffect(() => {
-    const uid = getAnonymousUID();
-    const local = localStorage.getItem("cartItems");
-    const localItems: CartItem[] = local ? JSON.parse(local) : [];
+    console.log("🟨 useEffect: carga carrito desde Firebase según usuario/UID actual");
+    if (!currentUid) return;
 
-    (async () => {
-      const firebaseItems: CartItem[] = await loadCartFromFirebase(uid);
-      if (firebaseItems && firebaseItems.length > 0) {
-        console.log("🛒 Cargando carrito desde Firebase:", firebaseItems);
-        setCartItems(firebaseItems);
-      } else if (localItems.length > 0) {
-        console.log("🛒 Firebase vacío, usando localStorage:", localItems);
-        setCartItems(localItems);
-        saveCartToFirebase(uid, localItems);
-      } else {
-        console.warn("⚠️ setCartItems([]) ejecutado, posible limpieza del carrito");
-        setCartItems([]);
+    const stopAny: unknown = loadCartFromFirebaseAndSync(currentUid, async (itemsFromRealtime) => {
+      const incoming = Array.isArray(itemsFromRealtime) ? itemsFromRealtime : [];
+      // 🚧 Guardar: si lo que llega de Firebase está vacío pero tengo carrito local, NO piso el local
+      if (!incoming || incoming.length === 0) {
+        try {
+          const local = JSON.parse(localStorage.getItem("cartItems") || "[]");
+          if (Array.isArray(local) && local.length > 0) {
+            console.warn("⏭️ Ignorando carrito remoto vacío para no pisar el local existente");
+            return; // salimos del callback sin tocar state/localStorage
+          }
+        } catch {}
       }
-      setCartLoaded(true);
-    })();
-  }, []);
+      const resolvedItems = await enrichCartItems(incoming || []);
+      const safeItems = Array.isArray(resolvedItems) ? resolvedItems : [];
+      console.log("🟩 Items recibidos desde Firebase:", safeItems);
+      setCartItems(safeItems);
+      localStorage.setItem("cartItems", JSON.stringify(safeItems));
+    });
 
-  useEffect(() => {
-    console.log("🟨 useEffect: leyendo carrito desde localStorage al montar");
-    const storedItems = localStorage.getItem("cartItems");
-    if (storedItems) {
-      try {
-        setCartItems(JSON.parse(storedItems));
-      } catch (error) {
-        console.error("Error parsing cartItems from localStorage", error);
+    return () => {
+      if (stopAny && typeof stopAny === "function") {
+        stopAny();
       }
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (!cartLoaded) return;
-    console.log("🟨 useEffect: guardando carrito en Firebase y localStorage");
-    const uid = getAnonymousUID();
-    saveCartToFirebase(uid, cartItems);
-    localStorage.setItem("cartItems", JSON.stringify(cartItems));
-  }, [cartItems, cartLoaded]);
-
-  // Persistencia de carrito: guardar en Firebase cuando hay usuario logueado
-  useEffect(() => {
-    if (user?.uid) {
-      saveCartToFirebase(user.uid, cartItems);
-    }
-  }, [cartItems, user]);
+    };
+  }, [currentUid]);
 
   const addToCart = (newItem: CartItem) => {
     if (!newItem || !newItem.id) {
@@ -281,17 +284,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeItem = (id: string | number, variantLabel: string) => {
-    setCartItems((prevItems) =>
-      prevItems.filter(
+    setCartItems((prevItems) => {
+      const next = prevItems.filter(
         (item) => !(item.id?.toString() === id.toString() && item.variantLabel === variantLabel)
-      )
-    );
+      );
+      // Persistimos inmediatamente para evitar que reaparezca al recargar
+      if (currentUid) { try { saveCartToFirebase(currentUid, next); } catch {} }
+      localStorage.setItem("cartItems", JSON.stringify(next));
+      return next;
+    });
   };
 
   const clearCart = () => {
     console.warn("⚠️ setCartItems([]) ejecutado, posible limpieza del carrito");
     setCartItems([]);
-    localStorage.removeItem("cartItems");
+    localStorage.setItem("cartItems", JSON.stringify([]));
+    // también vaciamos el carrito remoto para que no reaparezca al recargar
+    if (currentUid) {
+      try { saveCartToFirebase(currentUid, []); } catch (e) { console.warn("No se pudo vaciar carrito remoto:", e); }
+    }
   };
 
   // Wrapper to sync shippingInfo and shippingData
@@ -323,68 +334,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Sincronización optimizada y escalable con localStorage para cartItems
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // Nueva lógica de carga de carrito combinando localStorage y Firebase
-  // Carga y enriquece los items del carrito desde localStorage
-  const load = async () => {
-    const rawItems = localStorage.getItem("cartItems");
-    const parsedItems: CartItem[] = rawItems ? JSON.parse(rawItems) : [];
-    const enrichedItems = await enrichCartItems(parsedItems);
-    setCartItems(enrichedItems);
-  };
-
-  useEffect(() => {
-    load();
-  }, [user]);
-
-  // Persistencia de carrito: carga desde Firebase según usuario
-  useEffect(() => {
-    console.log("🟨 useEffect: carga carrito desde Firebase según usuario");
-    if (user?.uid) {
-      loadCartFromFirebaseAndSync(user.uid, (itemsFromRealtime) => {
-        setCartItems(itemsFromRealtime);
-      }).then(async (items: CartItem[]) => {
-        const enrichedItems = enrichCartItems(items);
-        const resolvedItems = await enrichedItems;
-        setCartItems(resolvedItems);
-      });
-      loadCartFromFirebase(user.uid).then(async (items) => {
-        const enrichedItems = await enrichCartItems(items);
-        setCartItems(enrichedItems);
-      });
-    }
-  }, [user]);
-
+  /*
   // Nueva función loadCartFromFirebase con validación y retorno
   const loadCartFromFirebase = async (uid: string): Promise<CartItem[]> => {
     if (!uid) return [];
     try {
       const { doc, getDoc } = await import("firebase/firestore");
       const { db } = await import("../firebaseUtils");
-      const docRef = doc(db, 'carts', uid);
+      const docRef = doc(db, "carts", uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        const items: CartItem[] = docSnap.data().items || [];
-        setCartItems(items);
-        localStorage.setItem('cartItems', JSON.stringify(items));
+        const items: CartItem[] = (docSnap.data() as any).items || [];
+        // no forzamos setCartItems aquí; dejamos que el caller decida
         return items;
       }
       return [];
     } catch (error) {
-      console.error('Error loading cart from Firebase:', error);
+      console.error("Error loading cart from Firebase:", error);
       return [];
     }
   };
+  */
 
   // Efecto para recalcular total cuando cambian cartItems o shippingInfo
   const [total, setTotal] = useState<number>(() => calculateCartTotal());
   useEffect(() => {
     setTotal(calculateCartTotal());
   }, [cartItems, shippingInfo]);
-
-  if (loading) return null;
 
   return (
     <CartContext.Provider

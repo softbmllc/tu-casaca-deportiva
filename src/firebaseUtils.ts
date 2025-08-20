@@ -1,11 +1,55 @@
 // src/firebaseUtils.ts
 
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { getFirestore, doc as firestoreDoc, setDoc, getDoc as firestoreGetDoc, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, doc as firestoreDoc, setDoc, getDoc as firestoreGetDoc, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, getDoc, query, orderBy, serverTimestamp, where } from "firebase/firestore";
 import app from "./firebase";
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+// 🔎 Debug info del proyecto Firebase
+import { getApp } from "firebase/app";
+const firebaseProjectInfo = getApp().options;
+console.log("🔥 Firebase Project Info:", firebaseProjectInfo);
+// Normaliza emails para usarlos como ID de documento
+const normalizeEmail = (e: string) => e.trim().toLowerCase();
+
+// 🔎 Helper para depurar: obtener el UID actual (anónimo o logueado)
+export async function getCurrentUid(): Promise<string> {
+  return ensureAuthedUid();
+}
+
+// ✅ Garantiza que haya un usuario autenticado (anónimo si es necesario)
+export async function ensureAuthedUid(): Promise<string> {
+  const a = auth || getAuth(app);
+  if (a.currentUser) return a.currentUser.uid;
+
+  await signInAnonymously(a);
+
+  // Esperar a que onAuthStateChanged nos devuelva el usuario
+  const uid = await new Promise<string>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Timeout esperando uid anónimo")), 5000);
+    const unsub = onAuthStateChanged(a, (user) => {
+      if (user) {
+        clearTimeout(timeout);
+        unsub();
+        resolve(user.uid);
+      }
+    }, (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+  });
+
+  return uid;
+}
+
+// ✅ Devuelve una referencia al doc del carrito del usuario actual (uid = doc id)
+async function getCurrentCartRef() {
+  const uid = await ensureAuthedUid();
+  return { uid, ref: doc(db, "carts", uid) };
+}
 
 import { Product, Category, ClientWithId } from "./data/types";
+import type { Order } from "./data/types";
 import type { CartItem } from "./data/types";
 
 // 🔥 Función para traer un producto específico por ID
@@ -67,17 +111,28 @@ export async function fetchProducts(): Promise<Product[]> {
       extraDescriptionBottom: data.extraDescriptionBottom || "",
       descriptionPosition: data.descriptionPosition || "bottom",
       active: data.active ?? true,
-      // stock and sizes fields related to talles removed
       customName: data.customName || "",
       customNumber: data.customNumber || "",
       allowCustomization: data.allowCustomization ?? false,
       stockTotal: data.stockTotal ?? 0,
       variants: Array.isArray(data.variants) ? data.variants : [],
-    };
-  }) as Product[];
+      orden: typeof data.orden === "number" ? data.orden : 0,
+    } as Product & { orden?: number };
+  }) as (Product & { orden?: number })[];
 
-  console.log("🔥 DEBUG desde firebaseUtils – productos cargados:", productsList);
-  return productsList;
+  // ✅ Orden determinista: primero por 'orden' si existe, luego por título ES
+  productsList.sort((a, b) => {
+    const ao = typeof (a as any).orden === "number" ? (a as any).orden : 0;
+    const bo = typeof (b as any).orden === "number" ? (b as any).orden : 0;
+    if (ao !== bo) return ao - bo;
+    const an = (a.title?.es || a.name || "").toString();
+    const bn = (b.title?.es || b.name || "").toString();
+    return an.localeCompare(bn, "es");
+  });
+
+  console.log("🔥 DEBUG desde firebaseUtils – productos cargados (ordenados):", productsList);
+  // Quitar el campo auxiliar 'orden' en el tipo devuelto
+  return productsList.map(({ orden, ...rest }) => rest);
 }
 
 // 🔥 Función para traer un producto específico por Slug
@@ -88,9 +143,12 @@ export async function fetchProductBySlug(productId: string): Promise<Product | n
 
     for (const productDoc of productsSnapshot.docs) {
       const data = productDoc.data() as any;
-      const rawTitle = typeof data.title === "string" ? data.title : data.title?.es || data.name || "producto";
-      const slug = data.slug || `${productDoc.id}-${rawTitle.toLowerCase().replace(/\s+/g, "-")}`;
-      if (slug === productId) {
+      const baseTitle =
+        typeof data.title === "string"
+          ? data.title
+          : data?.title?.es || data?.name || "producto";
+      const computedSlug = data.slug || `${productDoc.id}-${String(baseTitle).toLowerCase().replace(/\s+/g, "-")}`;
+      if (computedSlug === productId) {
         return mapProductData(productDoc.id, data);
       }
     }
@@ -304,20 +362,24 @@ export async function deleteSubcategory(categoryId: string, subcategoryId: strin
 
 export async function fetchClientsFromFirebase(): Promise<ClientWithId[]> {
   const clientsRef = collection(db, "clients");
-  const snap = await getDocs(clientsRef);
-  return snap.docs.map((doc) => {
-    const data = doc.data() as any;
+  const q = query(clientsRef, orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((docSnap) => {
+    const x = docSnap.data() as any;
     return {
-      id: doc.id,
-      name: data.name || "",
-      email: data.email || "",
-      phone: data.phone || "",
-      address: data.address || "",
-      city: data.city || "",
-      state: data.state || "",
-      zip: data.zip || "",
-      country: data.country || "",
-    };
+      id: docSnap.id,
+      name: x.name || x.fullName || "-",
+      email: (x.email || "").toLowerCase(),
+      phone: x.phone || x.phoneNumber || "",
+      address: x.address || x.addressLine1 || "",
+      city: x.city || "",
+      state: x.state || x.department || "",
+      zip: x.zip || x.postalCode || "",
+      country: x.country || "",
+      // opcionales (no rompen si el tipo no los define)
+      createdAt: x.createdAt,
+      updatedAt: x.updatedAt,
+    } as any;
   });
 }
 
@@ -421,7 +483,15 @@ export async function fetchCategories(): Promise<Category[]> {
       const subRef = collection(db, `categories/${doc.id}/subcategories`);
       const subSnap = await getDocs(subRef);
       const subcategories = subSnap.docs.map((subDoc) => {
-        const subName = subDoc.data().name;
+        const raw = subDoc.data().name;
+        const subName =
+          typeof raw === "string"
+            ? raw
+            : typeof raw?.es === "string"
+            ? raw.es
+            : typeof raw?.en === "string"
+            ? raw.en
+            : "";
         return {
           id: subDoc.id,
           name: subName,
@@ -445,6 +515,7 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 // 🔥 Función para guardar un pedido completo en Firebase
+// 🔥 Función para guardar un pedido completo en Firebase (compatible con reglas)
 export async function saveOrderToFirebase(order: {
   cartItems: any[];
   client: {
@@ -463,12 +534,34 @@ export async function saveOrderToFirebase(order: {
   estado: "En proceso" | "Confirmado" | "Cancelado" | "Entregado";
 }) {
   try {
+    const uid = await ensureAuthedUid();
     const ordersRef = collection(db, "orders");
-    await addDoc(ordersRef, order);
-    console.log("✅ Pedido guardado en Firebase:", order);
-    console.log("🧾 Detalles de la orden:", JSON.stringify(order, null, 2));
+    // Campos mínimos exigidos por reglas + el resto de tu payload
+    const payload = {
+      uid,
+      createdAt: Date.now(), // las reglas aceptan timestamp o number
+      items: order.cartItems || [],
+      shipping: {
+        cost: Number(order.shippingCost ?? 0),
+        address: order.client?.address ?? "",
+        country: order.client?.country ?? "",
+      },
+      total: Number(order.totalAmount ?? 0),
 
-    // Nueva lógica: actualizar stock usando updateStockAfterOrder
+      // Extras de tu app (se conservan)
+      client: order.client,
+      paymentIntentId: order.paymentIntentId,
+      paymentStatus: order.paymentStatus,
+      paymentMethod: order.paymentMethod,
+      date: order.date,
+      estado: order.estado,
+    };
+
+    await addDoc(ordersRef, payload);
+    console.log("✅ Pedido guardado en Firebase:", payload);
+    console.log("🧾 Detalles de la orden:", JSON.stringify(payload, null, 2));
+
+    // Actualizar stock
     await updateStockAfterOrder(order.cartItems);
   } catch (error) {
     console.error("❌ Error al guardar el pedido:", error);
@@ -519,27 +612,67 @@ export const registerClient = async ({
   }
 };
 
+// 🔎 Mapper robusto: traduce cualquier forma de orden guardada en Firestore
+function mapOrderForAdmin(id: string, data: any) {
+  // createdAt puede ser Timestamp (toMillis), number o string (date ISO)
+  const createdMs =
+    (data?.createdAt && typeof data.createdAt?.toMillis === "function"
+      ? data.createdAt.toMillis()
+      : typeof data?.createdAt === "number"
+      ? data.createdAt
+      : data?.date
+      ? Date.parse(data.date)
+      : Date.now());
+
+  const clientRaw = data?.client || {};
+  const shippingInfo = data?.shipping || data?.shippingInfo || {};
+
+  const client = {
+    name: clientRaw.name || data?.name || "",
+    email: clientRaw.email || data?.email || "",
+    phone: clientRaw.phone || data?.phone || "",
+    address:
+      clientRaw.address ||
+      shippingInfo.address ||
+      clientRaw.address1 ||
+      "",
+    city: clientRaw.city || shippingInfo.city || "",
+    state: clientRaw.state || shippingInfo.state || "",
+    zip:
+      clientRaw.zip ||
+      shippingInfo.zip ||
+      shippingInfo.postalCode ||
+      "",
+    country: clientRaw.country || shippingInfo.country || "",
+  };
+
+  const items = data?.items || data?.cartItems || [];
+  const totalAmount = Number(data?.total ?? data?.totalAmount ?? 0);
+  const shippingCost = Number(shippingInfo?.cost ?? data?.shippingCost ?? 0);
+  const estado = data?.estado || data?.status || "Pendiente";
+
+  return {
+    id,
+    cartItems: items,
+    client,
+    totalAmount,
+    paymentIntentId: data?.paymentIntentId || "",
+    paymentStatus: data?.paymentStatus || "",
+    paymentMethod: data?.paymentMethod || "",
+    date: data?.date || new Date(createdMs).toISOString(),
+    estado,
+    createdAt: createdMs,
+    shippingCost,
+    clientEmail: client.email,
+  };
+}
 // 🔥 Función para obtener los pedidos reales desde Firebase
 export async function fetchOrdersFromFirebase() {
   try {
     const ordersRef = collection(db, "orders");
     const snapshot = await getDocs(ordersRef);
 
-    const orders = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        cartItems: data.cartItems || [],
-        client: data.client || {},
-        totalAmount: data.totalAmount || 0,
-        paymentIntentId: data.paymentIntentId || "",
-        paymentStatus: data.paymentStatus || "",
-        paymentMethod: data.paymentMethod || "",
-        date: data.date || "",
-        estado: data.estado || "En proceso",
-      };
-    });
-
+    const orders = snapshot.docs.map((d) => mapOrderForAdmin(d.id, d.data()));
     return orders;
   } catch (error) {
     console.error("❌ Error al traer pedidos desde Firebase:", error);
@@ -548,11 +681,13 @@ export async function fetchOrdersFromFirebase() {
 }
 
 // 🔥 Función para guardar el carrito en Firebase
-export async function saveCartToFirebase(email: string, items: CartItem[]): Promise<void> {
+export async function saveCartToFirebase(uid: string, items: CartItem[]): Promise<void> {
   try {
-    const cartRef = doc(db, "carts", email);
+    // always ensure auth and force the real uid for security-rules compatibility
+    const realUid = await ensureAuthedUid();
+    const cartRef = doc(db, "carts", realUid);
     await setDoc(cartRef, { items });
-    console.log("🛒 Carrito guardado en Firebase:", items);
+    console.log("🛒 Carrito guardado en Firebase (uid):", realUid, items);
   } catch (error) {
     console.error("❌ Error al guardar carrito:", error);
     throw error;
@@ -560,10 +695,28 @@ export async function saveCartToFirebase(email: string, items: CartItem[]): Prom
 }
 
 // 🔥 Función para obtener el carrito de Firebase por email
-export async function getCartFromFirebase(email: string): Promise<CartItem[]> {
-  const docRef = doc(db, "carts", email);
+export async function getCartFromFirebase(uid: string): Promise<CartItem[]> {
+  const realUid = await ensureAuthedUid();
+  const docRef = doc(db, "carts", realUid);
   const docSnap = await getDoc(docRef);
   return docSnap.exists() ? docSnap.data().items || [] : [];
+}
+
+
+// 🆕 Versión AUTO: usa el uid del usuario actual (anónimo o logueado)
+export async function saveCartAuto(items: CartItem[]): Promise<void> {
+  const { uid, ref } = await getCurrentCartRef();
+  await setDoc(ref, { items });
+  console.log("🛒 [AUTO] Carrito guardado en Firebase (uid):", uid, items);
+}
+
+// 🆕 Versión AUTO: lee el carrito del usuario actual (anónimo o logueado)
+export async function loadCartAuto(): Promise<CartItem[]> {
+  const { uid, ref } = await getCurrentCartRef();
+  const snap = await getDoc(ref);
+  const items = snap.exists() ? snap.data().items || [] : [];
+  console.log("🛒 [AUTO] Carrito cargado desde Firebase (uid):", uid, items);
+  return items;
 }
 
 
@@ -571,21 +724,74 @@ export async function getCartFromFirebase(email: string): Promise<CartItem[]> {
 export async function saveClientToFirebase(client: Client): Promise<void> {
   try {
     const dbFirestore = getFirestore();
-    const clientDocRef = firestoreDoc(dbFirestore, "clients", client.email);
+    const id = (client as any)?.uid ? String((client as any).uid) : client.email.toLowerCase();
+    const clientDocRef = firestoreDoc(dbFirestore, "clients", id);
 
     const existingDoc = await firestoreGetDoc(clientDocRef);
 
-    await setDoc(clientDocRef, {
-      ...client,
-      updatedAt: new Date().toISOString(),
-      uid: existingDoc.exists() ? existingDoc.data()?.uid || "" : "",
-    });
+    await setDoc(
+      clientDocRef,
+      {
+        ...client,
+        email: (client.email || "").toLowerCase(),
+        updatedAt: serverTimestamp(),
+        // si ya existe, preserva el createdAt original
+        ...(existingDoc.exists() ? {} : { createdAt: serverTimestamp() }),
+        uid: (client as any)?.uid || (existingDoc.exists() ? existingDoc.data()?.uid || "" : ""),
+        active: true,
+        source: (client as any)?.source || "manual",
+      },
+      { merge: true }
+    );
 
-    console.log("✅ Cliente guardado correctamente en Firebase:", client.email);
+    console.log("✅ Cliente guardado/actualizado en Firebase:", id);
   } catch (error) {
     console.error("❌ Error al guardar cliente en Firebase:", error);
     throw error;
   }
+}
+
+export async function upsertClientFromCheckout(input: {
+  uid?: string | null;
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  address2?: string;
+  city?: string;
+  department?: string;
+  postalCode?: string;
+  country?: string;
+  source?: "checkout";
+}) {
+  const dbFirestore = getFirestore();
+  const emailKey = (input.email ?? "").trim().toLowerCase();
+  const id = (input.uid && String(input.uid)) || emailKey;
+  if (!id) return;
+
+  const ref = firestoreDoc(dbFirestore, "clients", id);
+  const prev = await firestoreGetDoc(ref);
+
+  await setDoc(
+    ref,
+    {
+      name: input.name ?? "",
+      email: emailKey,
+      phone: input.phone ?? "",
+      address: input.address ?? "",
+      address2: input.address2 ?? "",
+      city: input.city ?? "",
+      state: input.department ?? "",
+      postalCode: input.postalCode ?? "",
+      country: input.country ?? "",
+      source: input.source ?? "checkout",
+      active: true,
+      updatedAt: serverTimestamp(),
+      ...(prev.exists() ? {} : { createdAt: serverTimestamp() }),
+      uid: input.uid ?? (prev.exists() ? prev.data()?.uid || "" : ""),
+    },
+    { merge: true }
+  );
 }
 
 
@@ -849,15 +1055,71 @@ export async function getAdminUserByEmail(email: string): Promise<{
   rol: string;
   activo: boolean;
 } | null> {
-  const ref = doc(db, "adminUsers", email);
+  const key = normalizeEmail(email);
+  const ref = doc(db, "adminUsers", key);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
-  const data = snap.data();
+  const data = snap.data() as any;
   return {
     id: snap.id,
     nombre: data.nombre || "",
-    email: data.email || "",
+    email: data.email || key,
     rol: data.rol || "admin",
     activo: data.activo ?? true,
   };
+}
+// 🔐 Login de administrador: autentica con Auth y garantiza que exista su doc en adminUsers
+export async function signInAdmin(email: string, password: string): Promise<{
+  uid: string;
+  adminDocCreated: boolean;
+}> {
+  const authInst = getAuth(app);
+  const cred = await signInWithEmailAndPassword(authInst, email, password);
+  const uid = cred.user.uid;
+
+  const dbFs = getFirestore(app);
+  const key = normalizeEmail(email);
+  const adminRef = firestoreDoc(dbFs, "adminUsers", key);
+  const adminSnap = await firestoreGetDoc(adminRef);
+
+  let adminDocCreated = false;
+  if (!adminSnap.exists()) {
+    await setDoc(adminRef, {
+      nombre: "",
+      email: key,
+      rol: "admin",
+      activo: true,
+      uid,
+      createdAt: new Date().toISOString(),
+    });
+    adminDocCreated = true;
+  }
+
+  return { uid, adminDocCreated };
+}
+
+// 🔐 Enviar email de reseteo de contraseña para admins
+export async function sendAdminPasswordReset(email: string): Promise<void> {
+  const authInst = getAuth(app);
+  await sendPasswordResetEmail(authInst, email);
+}
+// 🔥 Obtener pedidos por email (usado en perfil de cliente) - versión robusta
+export async function getOrdersByEmail(email: string): Promise<Order[]> {
+  try {
+    const q = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    );
+    const snap = await getDocs(q);
+    return snap.docs
+      .map((doc) => mapOrderForAdmin(doc.id, doc.data()))
+      .filter((order) => order.clientEmail?.toLowerCase() === email.toLowerCase());
+  } catch (error) {
+    console.error("❌ Error al obtener pedidos por email:", error);
+    return [];
+  }
+}
+// Utilidad: devuelve true si el usuario actual está autenticado
+export function isAuthed(): boolean {
+  return !!auth.currentUser;
 }

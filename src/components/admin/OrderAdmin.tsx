@@ -11,18 +11,18 @@ const getClienteInfo = (pedido: Order) => {
     : {};
 
   return {
-    nombre: cliente.nombre || cliente.name || "-",
-    telefono: cliente.telefono || cliente.phone || "-",
+    nombre: cliente.nombre || cliente.name || pedido.shippingInfo?.name || (pedido.shippingInfo as any)?.fullName || "-",
+    telefono: cliente.telefono || cliente.phone || pedido.shippingInfo?.phone || (pedido.shippingInfo as any)?.phoneNumber || "-",
     direccion: cliente.direccion || cliente.address || pedido.address || pedido.shippingInfo?.address || "-",
     address: cliente.address || pedido.address || pedido.shippingInfo?.address || "-",
-    address2: cliente.address2 || (cliente as any)?.apto || (cliente as any)?.address_line2 || (pedido.shippingInfo?.address2 || "-"),
-    email: cliente.email || "-"
+    address2: cliente.address2 || (cliente as any)?.apto || (cliente as any)?.address_line2 || (pedido.shippingInfo?.address2 || (pedido.shippingInfo as any)?.addressLine2 || "-"),
+    email: cliente.email || pedido.shippingInfo?.email || (pedido.shippingInfo as any)?.contactEmail || "-"
   };
 };
 
 import { useState, useEffect } from "react";
 import { CartItem } from "@/data/types";
-import { discountStockByOrder } from "@/firebaseUtils";
+import { discountStockByOrder, auth } from "@/firebaseUtils";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import {
@@ -33,7 +33,14 @@ import {
   updateDoc,
   Timestamp,
   deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  getDoc,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { db } from "@/firebase"; // asumimos que ya existe tu instancia db
 
 interface ClientInfo {
@@ -108,40 +115,102 @@ export default function OrderAdmin() {
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      const snapshot = await getDocs(collection(db, "orders"));
-      const docs = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data();
-        const cliente = data.cliente || {};
-        const clientRaw = data.clientInfo || data.client || {};
-        const shippingRaw = data.shippingInfo || {};
+    let unsubOrders: (() => void) | null = null;
 
-        return {
-          id: docSnap.id,
-          client: {
-            name: clientRaw.name || clientRaw.nombre || cliente.nombre || "-",
-            email: clientRaw.email || cliente.email || "-",
-            phone: clientRaw.phone || clientRaw.telefono || cliente.telefono || "-",
-          },
-          address: shippingRaw.address || cliente.direccion || data.address || "-",
-          city: shippingRaw.city || cliente.ciudad || data.city || "-",
-          department: shippingRaw.state || cliente.departamento || data.department || "-",
-          postalCode: shippingRaw.postalCode || cliente.codigoPostal || data.postalCode || shippingRaw.zip || shippingRaw.zipCode || "-",
-          items: data.items || [],
-          total: data.total || 0,
-          amountPaid: data.amountPaid || data.total || 0,
-          status: data.status || "En proceso",
-          createdAt: data.createdAt?.toDate?.() ?? new Date(),
-          shippingInfo: shippingRaw,
-          totalAmount: data.totalAmount || data.total || 0,
-          shippingCost: data.shippingCost || 0,
-        } as Order;
-      });
-      setOrders(docs);
+    const detachOrders = () => {
+      if (unsubOrders) {
+        unsubOrders();
+        unsubOrders = null;
+      }
     };
 
-    fetchOrders();
-  }, []);
+    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      try {
+        if (!user) {
+          // No autenticado: limpiar lista y soltar listener de orders
+          detachOrders();
+          setOrders([]);
+          return;
+        }
+
+        const emailKey = (user.email || "").toLowerCase();
+        const adminByUidRef = doc(db, "adminUsers", user.uid);
+        const adminByEmailRef = emailKey ? doc(db, "adminUsers", emailKey) : null;
+        const [snapUid, snapEmail] = await Promise.all([
+          getDoc(adminByUidRef),
+          adminByEmailRef ? getDoc(adminByEmailRef) : Promise.resolve(null as any)
+        ]);
+        const esAdmin = (snapUid?.exists() && (snapUid.data() as any)?.activo !== false)
+          || (snapEmail?.exists() && (snapEmail!.data() as any)?.activo !== false);
+
+        // Construir query según permisos + filtro estado
+        const baseCol = collection(db, "orders");
+        let q;
+        if (esAdmin) {
+          q = (filtroEstado === "Todos")
+            ? query(baseCol, orderBy("createdAt", "desc"), limit(300))
+            : query(baseCol, where("status", "==", filtroEstado), orderBy("createdAt", "desc"), limit(300));
+        } else {
+          q = (filtroEstado === "Todos")
+            ? query(baseCol, where("uid", "==", user.uid), orderBy("createdAt", "desc"), limit(300))
+            : query(baseCol, where("uid", "==", user.uid), where("status", "==", filtroEstado), orderBy("createdAt", "desc"), limit(300));
+        }
+
+        // Re‑adjuntar listener de orders (evita duplicados)
+        detachOrders();
+        unsubOrders = onSnapshot(q, (snapshot) => {
+          const docs = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            const cliente = data.cliente || {};
+            const clientRaw = data.clientInfo || data.client || {};
+            const shippingRaw = data.shippingInfo || data.shipping || {};
+
+            const createdAtVal = (() => {
+              if (data.createdAt?.toDate) return data.createdAt.toDate();
+              if (typeof data.createdAt === "number") return new Date(data.createdAt);
+              return new Date();
+            })();
+
+            return {
+              id: docSnap.id,
+              client: {
+                name: clientRaw.name || clientRaw.nombre || shippingRaw.name || shippingRaw.fullName || cliente.nombre || "-",
+                email: clientRaw.email || shippingRaw.email || shippingRaw.contactEmail || cliente.email || "-",
+                phone: clientRaw.phone || clientRaw.telefono || shippingRaw.phone || shippingRaw.phoneNumber || cliente.telefono || "-",
+              },
+              address: shippingRaw.address || shippingRaw.addressLine1 || cliente.direccion || data.address || "-",
+              city: shippingRaw.city || cliente.ciudad || data.city || "-",
+              department: shippingRaw.state || cliente.departamento || data.department || "-",
+              postalCode: shippingRaw.postalCode || shippingRaw.zip || shippingRaw.zipCode || shippingRaw.postCode || cliente.codigoPostal || data.postalCode || "-",
+              items: data.items || [],
+              total: data.total || 0,
+              amountPaid: data.amountPaid || data.total || 0,
+              status: data.status || "Pendiente",
+              createdAt: createdAtVal,
+              shippingInfo: shippingRaw,
+              totalAmount: data.totalAmount || data.total || 0,
+              shippingCost: data.shippingCost || 0,
+            } as Order;
+          });
+          setOrders(docs);
+        }, (err) => {
+          console.error("[Orders] snapshot error:", err);
+          if ((err?.code || "").includes("permission-denied")) {
+            setOrders([]);
+          }
+        });
+      } catch (e: any) {
+        console.error("[Orders] fetch error:", e);
+        setOrders([]);
+      }
+    });
+
+    // Limpieza
+    return () => {
+      detachOrders();
+      unsubAuth();
+    };
+  }, [filtroEstado]);
 
   const cycleStatus = (status: Order["status"]): Order["status"] => {
     const order = ["En proceso", "Cancelado", "Confirmado", "Entregado", "Enviado"];
@@ -299,11 +368,8 @@ export default function OrderAdmin() {
           className="border border-gray-300 rounded px-3 py-2"
         >
           <option value="Todos">Todos</option>
-          <option value="En proceso">En proceso</option>
+          <option value="Pendiente">Pendiente</option>
           <option value="Confirmado">Confirmado</option>
-          <option value="Entregado">Entregado</option>
-          <option value="Cancelado">Cancelado</option>
-          <option value="Enviado">Enviado</option>
         </select>
 
         {/* Buscador */}
@@ -336,9 +402,9 @@ export default function OrderAdmin() {
               return (
                 <tr key={pedido.id}>
                   <td className="px-4 py-2 text-sm text-gray-800">{formatDate(pedido.createdAt)}</td>
-                  <td className="px-4 py-2 border">{pedido.shippingInfo?.name || 'No disponible'}</td>
-                  <td className="px-4 py-2 border">{pedido.shippingInfo?.email || 'No disponible'}</td>
-                  <td className="px-4 py-2 border">{pedido.shippingInfo?.phone || 'No disponible'}</td>
+                  <td className="px-4 py-2 border">{clienteInfo.nombre || 'No disponible'}</td>
+                  <td className="px-4 py-2 border">{clienteInfo.email || 'No disponible'}</td>
+                  <td className="px-4 py-2 border">{clienteInfo.telefono || 'No disponible'}</td>
                   <td className="px-4 py-2 text-sm text-gray-800">
                     {(() => {
                       const subtotal = Array.isArray(pedido.items)
@@ -347,7 +413,7 @@ export default function OrderAdmin() {
                             const price =
                               item?.price !== undefined
                                 ? item.price
-                                : (item as any)?.priceUSD ?? 0;
+                                : ((item as any)?.priceUSD ?? 0);
                             const quantity = item?.quantity ?? 0;
                             return sum + price * quantity;
                           }, 0)
@@ -419,12 +485,12 @@ export default function OrderAdmin() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white p-6 rounded shadow-lg max-w-2xl w-full">
               <h2 className="text-xl font-bold mb-4">Detalle del Pedido</h2>
-              {/* Datos del cliente por shippingInfo */}
+              {/* Datos del cliente */}
               <div className="mb-4">
                 <h3 className="text-lg font-semibold mb-1">Datos del cliente</h3>
-                <p><strong>Nombre:</strong> {selectedOrder?.shippingInfo?.name || 'No disponible'}</p>
-                <p><strong>Email:</strong> {selectedOrder?.shippingInfo?.email || 'No disponible'}</p>
-                <p><strong>Teléfono:</strong> {selectedOrder?.shippingInfo?.phone || 'No disponible'}</p>
+                <p><strong>Nombre:</strong> {clienteInfo.nombre || 'No disponible'}</p>
+                <p><strong>Email:</strong> {clienteInfo.email || 'No disponible'}</p>
+                <p><strong>Teléfono:</strong> {clienteInfo.telefono || 'No disponible'}</p>
               </div>
               <div className="mb-4">
                 <p><strong>ID:</strong> {selectedOrder.id}</p>
@@ -460,7 +526,7 @@ export default function OrderAdmin() {
                         const title = item.title?.es || item.name?.es || "Producto";
                         const variant = item.variantLabel || item.options || "-";
                         const quantity = item.quantity ?? 0;
-                        const price = item.price ?? 0;
+                        const price = (item.price !== undefined ? item.price : (item as any).priceUSD ?? 0);
                         const subtotal = (price * quantity).toFixed(2);
 
                         return (

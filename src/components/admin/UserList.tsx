@@ -4,14 +4,15 @@ import { useState, useEffect } from "react";
 import EditUserModal from "./EditUserModal";
 import { fetchAdminUsers } from "./../../firebaseUtils";
 import { getFirestore, collection, getDocs, deleteDoc, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { getAuth, deleteUser } from "firebase/auth";
+import { getAuth as getAuthSecondary, createUserWithEmailAndPassword as createUserSecondary } from "firebase/auth";
 import { auth } from "../../firebaseConfig";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { getUsers, updateUser } from "../../utils/userUtils";
 import { AuthUser } from "../../data/types";
 import { useAuth } from "../../context/AuthContext";
 import ModalConfirm from './ModalConfirm';
 import { toast } from 'react-hot-toast';
+import { getApps, initializeApp, getApp } from "firebase/app";
+// Usamos una instancia secundaria de Firebase Auth para crear cuentas sin cerrar la sesión actual
 
 export default function UserList() {
   const { user, isLoading } = useAuth();
@@ -40,6 +41,24 @@ export default function UserList() {
 
   const firestore = getFirestore();
 
+  const [isSuperAdminFlag, setIsSuperAdminFlag] = useState(false);
+  useEffect(() => {
+    const checkRole = async () => {
+      if (!user?.id) return;
+      try {
+        // lectura directa del doc adminUsers/{uid}
+        const snap = await getDoc(doc(firestore, "adminUsers", user.id));
+        const role = snap.exists() ? (snap.data() as any)?.rol || (snap.data() as any)?.role : null;
+        const activo = snap.exists() ? (snap.data() as any)?.activo !== false : false;
+        setIsSuperAdminFlag(Boolean(activo && (role === "superadmin")));
+      } catch (e) {
+        console.warn("No se pudo verificar rol:", e);
+        setIsSuperAdminFlag(false);
+      }
+    };
+    checkRole();
+  }, [user?.id]);
+
   useEffect(() => {
     const fetchUsers = async () => {
       const userList = await getUsers();
@@ -67,7 +86,10 @@ export default function UserList() {
   const fetchUsers = async () => {
     try {
       const users = await fetchAdminUsers();
-      setUserList(users);
+      setUserList(users.map((u: any) => ({
+        ...u,
+        id: u.id || u.uid || u.email, // prefer UID
+      })));
     } catch (error) {
       console.error("Error al cargar usuarios admin:", error);
     }
@@ -81,60 +103,54 @@ export default function UserList() {
 
   const handleAddUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) return;
-
+    if (!isSuperAdminFlag) {
+      toast.error("Solo el superadmin puede crear usuarios.");
+      return;
+    }
     try {
-      // 1. Crear en Firebase Auth
-      await createUserWithEmailAndPassword(auth, newUser.email, newUser.password);
+      // 1) Instancia secundaria para no cerrar la sesión actual
+      const apps = getApps();
+      const primary = getApp();
+      const secondary = apps.find(a => a.name === "secondary") || initializeApp(primary.options as any, "secondary");
+      const secondaryAuth = getAuthSecondary(secondary);
 
-      // 2. Crear en Firestore
-      const db = getFirestore();
-      await setDoc(doc(db, "adminUsers", newUser.email), {
+      // 2) Crear usuario en Auth SIN afectar la sesión actual
+      const cred = await createUserSecondary(secondaryAuth, newUser.email.trim(), newUser.password);
+      const newUid = cred.user.uid;
+
+      // 3) Crear doc en adminUsers con ID = UID (rol admin por defecto)
+      await setDoc(doc(firestore, "adminUsers", newUid), {
         nombre: newUser.name,
-        email: newUser.email,
+        email: newUser.email.trim().toLowerCase(),
         rol: "admin",
         activo: true,
         creadoEn: serverTimestamp(),
       });
 
-      alert("✅ Administrador creado correctamente.");
+      toast.success("✅ Administrador creado.");
       setNewUser({ name: "", email: "", password: "" });
       fetchUsers();
     } catch (error: any) {
-      alert("❌ Error al crear administrador: " + error.message);
+      console.error("Error al crear admin:", error);
+      toast.error("❌ No se pudo crear el usuario: " + (error?.code || error?.message || "error"));
     }
   };
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
+    if (!isSuperAdminFlag) {
+      toast.error("Solo el superadmin puede eliminar usuarios.");
+      return;
+    }
     setIsDeleting(true);
     try {
-      const db = getFirestore();
-
-      // Leer UID del usuario
-      const userDocRef = doc(db, "usuarios", selectedUser.email);
-      const userDocSnap = await getDoc(userDocRef);
-      const userData = userDocSnap.data();
-      const uid = userData?.uid;
-
-      // Eliminar de Firestore
-      await deleteDoc(userDocRef);
-
-      // (Intento) Eliminar de Firebase Auth - esto fallará en frontend sin privilegios
-      try {
-        const auth = getAuth();
-        if (uid) {
-          await deleteUser(uid);
-        }
-      } catch (authErr) {
-        console.warn("⚠️ No se pudo eliminar de Firebase Auth (se necesita entorno seguro):", authErr);
-      }
-
-      toast.success("✅ Usuario eliminado correctamente.");
+      await deleteDoc(doc(firestore, "adminUsers", selectedUser.id));
+      toast.success("✅ Usuario eliminado.");
       setShowConfirmModal(false);
       fetchUsers();
     } catch (error) {
-      toast.error("❌ Error al eliminar usuario.");
       console.error(error);
+      toast.error("❌ Error al eliminar usuario.");
     } finally {
       setIsDeleting(false);
     }
@@ -199,36 +215,40 @@ export default function UserList() {
       <h2 className="text-xl font-bold mb-6">Administradores</h2>
 
       {/* Formulario de creación */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Nombre"
-          value={newUser.name}
-          onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-          className="border px-3 py-2 rounded text-sm"
-        />
-        <input
-          type="email"
-          placeholder="Correo electrónico"
-          value={newUser.email}
-          onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-          className="border px-3 py-2 rounded text-sm"
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={newUser.password}
-          onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-          className="border px-3 py-2 rounded text-sm"
-        />
-      </div>
+      {isSuperAdminFlag && (
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="Nombre"
+            value={newUser.name}
+            onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+            className="border px-3 py-2 rounded text-sm"
+          />
+          <input
+            type="email"
+            placeholder="Correo electrónico"
+            value={newUser.email}
+            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+            className="border px-3 py-2 rounded text-sm"
+          />
+          <input
+            type="password"
+            placeholder="Contraseña"
+            value={newUser.password}
+            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+            className="border px-3 py-2 rounded text-sm"
+          />
+        </div>
 
-      <button
-        onClick={handleAddUser}
-        className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
-      >
-        Crear Administrador
-      </button>
+        <button
+          onClick={handleAddUser}
+          className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
+        >
+          Crear Administrador
+        </button>
+      </>
+      )}
 
       <hr className="my-6" />
       <table className="w-full text-sm">
@@ -253,29 +273,19 @@ export default function UserList() {
               </td>
               <td className="px-4 py-2 border">{admin.id}</td>
               <td className="py-2">
-                {/* Nueva lógica: solo el superadmin puede editar su propio perfil */}
-                {admin.email === 'lilianpresa@hotmail.com' ? (
-                  user?.email === 'lilianpresa@hotmail.com' ? (
-                    <button
-                      onClick={() => handleEdit(admin)}
-                      className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                    >
-                      Editar
-                    </button>
-                  ) : (
-                    <span className="text-gray-400">No editable</span>
-                  )
-                ) : (
+                {(isSuperAdminFlag || (admin.rol === "admin" && user?.id === admin.id)) ? (
                   <button
                     onClick={() => handleEdit(admin)}
                     className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
                   >
                     Editar
                   </button>
+                ) : (
+                  <span className="text-gray-400">No editable</span>
                 )}
               </td>
               <td className="py-2">
-                {admin.rol !== "superadmin" && admin.id !== "lilianpresa@hotmail.com" && (
+                {isSuperAdminFlag && admin.rol !== "superadmin" && (
                   <button
                     onClick={() => handleDelete(admin.id)}
                     className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"

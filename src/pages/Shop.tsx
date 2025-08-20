@@ -161,26 +161,53 @@ export default function Shop() {
     loadProducts();
   }, []);
 
-  // 🔥 Cargar categorías y subcategorías (nuevo useEffect)
+  // 🔥 Cargar categorías y subcategorías (normalizando nombre por idioma)
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Ensure each category has 'subcategories' property (even if empty)
         const rawCategories: any[] = await fetchCategories();
-        const categoriesWithSubs = rawCategories.map((cat) => ({
-          ...cat,
-          subcategories: cat.subcategories || [],
-        }));
-        setCategories(categoriesWithSubs);
-        const allSubs = categoriesWithSubs.flatMap((cat) => cat.subcategories);
-        setSubcategories(allSubs);
+
+        // Elegí el idioma a mostrar (fallback a "es")
+        const lang = ["es", "en"].includes(i18n.language) ? i18n.language : "es";
+
+        // Aseguramos shape: { id, name: string, subcategories: { id, name: string }[], order?: number }
+        const normalized = rawCategories.map((cat: any) => {
+          const catName =
+            typeof cat.name === "string"
+              ? cat.name
+              : cat?.name?.[lang] ?? cat?.name?.es ?? cat?.name?.en ?? "";
+
+          const subs = (cat.subcategories || []).map((s: any) => ({
+            ...s,
+            name:
+              typeof s.name === "string"
+                ? s.name
+                : s?.name?.[lang] ?? s?.name?.es ?? s?.name?.en ?? "",
+          }));
+
+          return {
+            id: cat.id,
+            name: catName,
+            subcategories: subs,
+            order: cat.order ?? 0,
+          };
+        });
+
+        // Orden opcional por "order"
+        normalized.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+
+        setCategories(normalized);
+        setSubcategories(normalized.flatMap((c: any) => c.subcategories));
+
+        console.log("[Shop] Categorías cargadas:", normalized);
       } catch (error) {
         console.error("[Shop] Error al cargar categorías y subcategorías:", error);
         setCategories([]);
       }
     };
+
     loadData();
-  }, []);
+  }, [i18n.language]);
 
   // Handlers para sidebar de categorías (nuevo)
   const handleCategoryClick = (categoryName: string) => {

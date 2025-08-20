@@ -20,18 +20,17 @@ import { ShippingInfo } from "../data/types";
 import { Trash2, Minus, Plus } from "lucide-react";
 import AuthChoice from "../components/AuthChoice";
 import Footer from "../components/Footer";
-import { db } from "../firebase";
-import { collection, doc, setDoc, Timestamp } from "firebase/firestore";
+import { db, auth } from "../firebaseUtils";
 
-// Importaciones para guardar orden en Firebase antes de Mercado Pago
-import { addDoc, serverTimestamp } from 'firebase/firestore';
+import { addDoc, serverTimestamp, collection } from "firebase/firestore";
+
 import { useLanguage } from '../hooks/useLanguage';
 import CartNavbar from "../components/CartNavbar";
 import { toast } from "react-hot-toast";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { validateCartForm } from "../utils/formValidation";
-import { registerClient, saveOrderToFirebase, saveCartToFirebase, saveClientToFirebase } from "../firebaseUtils";
+import { registerClient, saveOrderToFirebase, saveCartToFirebase, saveClientToFirebase, upsertClientFromCheckout } from "../firebaseUtils";
 import { extractStateFromAddress, extractAddressComponents } from "@/utils/locationUtils";
 import { prepareInitialOrderData } from '../utils/orderUtils';
 import { calculateTotal, calculateCartBreakdown, getShippingInfoByDepartment } from '../utils/cartUtils';
@@ -58,6 +57,7 @@ export default function CartPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetConfirm, setResetConfirm] = useState("");
+  const [pickup, setPickup] = useState(false);
 
 
   // Estado de errores por campo y error de dirección base
@@ -159,54 +159,122 @@ const isValidEmail = (email: string): boolean => {
 
   // Agregá la función handlePay justo antes del return
   const handlePay = async () => {
-    // Crear orden en Firebase antes de redirigir
     try {
-      const orderData = {
-        items,
-        shippingInfo,
-        createdAt: serverTimestamp(),
-        status: 'pendiente',
-        shippingCost,
+      // Asegurar que haya un usuario autenticado (anónimo o normal)
+      const uid = auth.currentUser?.uid;
+      if (!uid) {
+        toast.error("Inicializando sesión segura... intentá de nuevo en unos segundos.");
+        return;
+      }
+
+      // Calcular totales en USD (como usa el sitio)
+      const subtotal = items.reduce((sum, item) => sum + Number(item.priceUSD || 0) * Number(item.quantity || 0), 0);
+      const shippingCostNumber = typeof shippingCost === "number" ? shippingCost : 0;
+      const totalNumber = Number((subtotal + shippingCostNumber).toFixed(2));
+
+      // Preparar estructura de envío según reglas
+      const shipping = {
+        name: shippingInfo?.name || "",
+        address: [shippingInfo?.address, shippingInfo?.address2].filter(Boolean).join(", "),
+        city: shippingInfo?.city || "",
+        state: shippingInfo?.state || "",
+        postalCode: shippingInfo?.postalCode || "",
+        phone: shippingInfo?.phone || "",
+        email: shippingInfo?.email || "",
+        cost: pickup ? 0 : shippingCostNumber,
       };
-      const docRef = await addDoc(collection(db, 'orders'), orderData);
-      // Guardamos ID en localStorage para actualizar luego
-      localStorage.setItem('lastOrderId', docRef.id);
+
+      // Reducir items a lo esencial (multilenguaje seguro)
+      const orderItems = items.map((it) => {
+        // Normalizar nombre del producto (acepta string u objeto multilenguaje)
+        const normalizedTitle = (() => {
+          if (typeof it.title === "object" && it.title) {
+            const t = it.title as Record<string, string>;
+            return t[language] ?? Object.values(t)[0] ?? "Producto";
+          }
+          return (it as any).title || (it as any).name || "Producto";
+        })();
+
+        // Normalizar customName (string u objeto multilenguaje)
+        const normalizedCustomName = (() => {
+          const cn: unknown = (it as any).customName;
+          if (cn && typeof cn === "object") {
+            const t = cn as Record<string, string>;
+            return t[language] ?? Object.values(t)[0] ?? "";
+          }
+          return (typeof cn === "string" ? cn : "");
+        })();
+
+        return {
+          id: it.id,
+          slug: it.slug,
+          name: normalizedTitle,
+          priceUSD: Number((it as any).priceUSD ?? (it as any).price ?? 0),
+          quantity: Number((it as any).quantity ?? 1),
+          variantLabel: (it as any).variantLabel ?? null,
+          variantId: (it as any).variantId ?? null,
+          customName: normalizedCustomName,
+          customNumber: (it as any).customNumber ?? "",
+        };
+      });
+
+      // **Cumplir reglas de Firestore /orders**:
+      // Debe contener: uid, createdAt, items, shipping, total
+      const orderPayload = {
+        uid,
+        createdAt: serverTimestamp(),
+        items: orderItems,
+        shipping,
+        total: totalNumber,
+      };
+
+      // Guardar orden en Firestore antes de ir a Mercado Pago
+      const ref = await addDoc(collection(db, "orders"), orderPayload);
+      localStorage.setItem("lastOrderId", ref.id);
+
+      // Log para diagnosticar
+      console.log("🧾 Orden creada en Firestore:", { id: ref.id, ...orderPayload });
+
+      // Si el usuario eligió registrarse, crear/actualizar la ficha de cliente
+      try {
+        if (shippingInfo?.wantsToRegister) {
+          await upsertClientFromCheckout({
+            uid: auth.currentUser?.uid ?? null,
+            name: shippingInfo?.name || "",
+            email: shippingInfo?.email || "",
+            phone: shippingInfo?.phone || "",
+            address: shippingInfo?.address || "",
+            address2: shippingInfo?.address2 || "",
+            city: shippingInfo?.city || "",
+            department: shippingInfo?.state || "",
+            postalCode: shippingInfo?.postalCode || "",
+            country: "UY",
+            source: "checkout",
+          });
+          console.log("👤 Cliente upserted desde checkout");
+        }
+      } catch (e) {
+        console.warn("[clientes] no se pudo registrar el cliente:", e);
+      }
+
+      // Luego crear preferencia de Mercado Pago y redirigir
+      const url = await createPreference(items, {
+        ...shippingInfo,
+        department: shippingInfo.state || "",
+        wantsToRegister: shippingInfo.wantsToRegister ?? false,
+        password: shippingInfo.password || "",
+        confirmPassword: shippingInfo.confirmPassword || "",
+        shippingCost: shippingCostNumber,
+      });
+
+      if (url) {
+        window.location.href = url;
+      } else {
+        toast.error("No se pudo generar la orden de pago.");
+      }
     } catch (error) {
-      toast.error("No se pudo guardar la orden en Firebase.");
-      return;
-    }
-    // 🧾 Loguear el payload que se enviará a Mercado Pago
-    console.log("🧾 Payload enviado a MP:", {
-      items: items.map((item: CartItem) => ({
-        title: item.name || item.title || "Producto",
-        quantity: item.quantity,
-        unit_price: Number(item.price),
-        currency_id: "UYU",
-      })),
-      payer: {
-        name: shippingData?.name,
-        email: shippingData?.email,
-      },
-      back_urls: {
-        success: "https://mutter-games.vercel.app/success",
-        failure: "https://mutter-games.vercel.app/failure",
-        pending: "https://mutter-games.vercel.app/pending",
-      },
-      auto_return: "approved",
-    });
-    // Luego redirigimos a Mercado Pago
-    const url = await createPreference(items, {
-      ...shippingInfo,
-      department: shippingInfo.state || "",
-      wantsToRegister: shippingInfo.wantsToRegister ?? false,
-      password: shippingInfo.password || "",
-      confirmPassword: shippingInfo.confirmPassword || "",
-      shippingCost: shippingCost,
-    });
-    if (url) {
-      window.location.href = url;
-    } else {
-      toast.error("No se pudo generar la orden de pago.");
+      console.error("❌ Error creando la orden:", error);
+      toast.error("No se pudo guardar la orden. Revisá los datos e intentá de nuevo.");
     }
   };
 
@@ -399,6 +467,19 @@ const isValidEmail = (email: string): boolean => {
                       />
                     </div>
 
+{/* Checkbox Retiro en Zona La Teja */}
+<div className="flex items-center gap-2 mt-2">
+  <input
+    type="checkbox"
+    id="pickup"
+    checked={pickup}
+    onChange={(e) => setPickup(e.target.checked)}
+  />
+  <label htmlFor="pickup" className="text-sm text-gray-700">
+    Retirar en Zona La Teja (coordinar por WhatsApp, sin costo de envío)
+  </label>
+</div>
+
                     {/* Checkbox Registrarme */}
                     <div className="flex items-center gap-2 mt-2">
                       <input
@@ -550,9 +631,9 @@ const isValidEmail = (email: string): boolean => {
                         <span>{`$${breakdown.subtotal.toFixed(2)}`}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Envío</span>
-                        <span>{shippingText}</span>
-                      </div>
+  <span>Envío</span>
+  <span>{pickup ? "Retiro en Zona La Teja (sin costo)" : shippingText}</span>
+</div>
                       <div className="flex justify-between text-lg font-semibold border-t pt-2">
                         <span>Total</span>
                         <span>

@@ -1,5 +1,5 @@
 {
-  "name": "mutter-games",
+  "name": "tu-casaca-deportiva",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -92,7 +92,7 @@
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0"
   },
-  "description": "Mutter Games - Consolas, videojuegos y coleccionables en Uruguay",
+  "description": "Tu Casaca Deportiva — Camisetas de fútbol y básquet en Uruguay",
   "main": "eslint.config.js",
   "keywords": [],
   "author": "",

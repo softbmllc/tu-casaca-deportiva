@@ -15,7 +15,7 @@ export default function Footer({ variant = "dark" }: FooterProps) {
           : "bg-white border-gray-200 text-gray-600"
       }`}
     >
-      <span>© 2025 Mutter Games & Coleccionables</span>
+      <span>© 2025 Tu Casaca Deportiva UY</span>
       <span>
         Made with 💻 by{" "}
         <a

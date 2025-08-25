@@ -293,7 +293,7 @@ const isValidEmail = (email: string): boolean => {
                   <EmptyCart />
                   {/* Minimalist categories line */}
                   <div className="mt-4 text-sm text-gray-600 text-center">
-                    Productos originales de gaming y coleccionables
+                    Camisetas de Fútbol y NBA · 25/26 y Retro
                   </div>
                   {/* Minimalist trust/benefits line */}
                   <div className="mt-3 text-sm text-gray-600 text-center">
@@ -401,7 +401,7 @@ const isValidEmail = (email: string): boolean => {
                       <div className="relative">
                         <Listbox value={shippingInfo.state} onChange={(value) => setShippingInfo({ ...shippingInfo, state: value })}>
                           <div className="relative">
-                            <Listbox.Button className="w-full border border-gray-300 px-4 py-2 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#FF2D55] focus:border-[#FF2D55]">
+                            <Listbox.Button className="w-full border border-gray-300 px-4 py-2 rounded-md bg-white text-left focus:outline-none focus:ring-2 focus:ring-black focus:border-black">
                               <span className="block truncate">{shippingInfo.state || "Seleccioná un departamento"}</span>
                               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                                 <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -419,7 +419,7 @@ const isValidEmail = (email: string): boolean => {
                                     key={dep}
                                     className={({ active }) =>
                                       `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                                        active ? 'bg-[#FF2D55]/10 text-[#FF2D55]' : 'text-gray-900'
+                                        active ? 'bg-black/10 text-black' : 'text-gray-900'
                                       }`
                                     }
                                     value={dep}
@@ -430,7 +430,7 @@ const isValidEmail = (email: string): boolean => {
                                           {dep}
                                         </span>
                                         {selected ? (
-                                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#FF2D55]">
+                                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                                             <CheckIcon className="h-5 w-5" aria-hidden="true" />
                                           </span>
                                         ) : null}
@@ -467,7 +467,7 @@ const isValidEmail = (email: string): boolean => {
                       />
                     </div>
 
-{/* Checkbox Retiro en Zona La Teja */}
+{/* Checkbox Retiro en Zona Paso Molino */}
 <div className="flex items-center gap-2 mt-2">
   <input
     type="checkbox"
@@ -476,7 +476,7 @@ const isValidEmail = (email: string): boolean => {
     onChange={(e) => setPickup(e.target.checked)}
   />
   <label htmlFor="pickup" className="text-sm text-gray-700">
-    Retirar en Zona La Teja (coordinar por WhatsApp, sin costo de envío)
+    Retirar en Zona Paso Molino (coordinar por WhatsApp, sin costo de envío)
   </label>
 </div>
 
@@ -651,7 +651,7 @@ const isValidEmail = (email: string): boolean => {
                     {/* Botón de checkout funcional Mercado Pago */}
                     <button
                       onClick={handlePay}
-                      className="bg-[#FF2D55] hover:bg-[#e0264a] text-white px-6 py-2 rounded transition font-semibold w-full mt-2"
+                      className="bg-black text-white border border-black px-6 py-2 rounded transition font-semibold w-full mt-2 hover:bg-white hover:text-black"
                     >
                       Finalizar compra
                     </button>

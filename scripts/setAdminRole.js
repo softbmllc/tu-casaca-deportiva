@@ -74,5 +74,5 @@ var setCustomUserClaim = function (email) { return __awaiter(void 0, void 0, voi
     });
 }); };
 // 📌 Reemplazar con el email del admin (John)
-var emailDelAdmin = 'lilianpresa@hotmail.com';
+var emailDelAdmin = 'fefo157@mail.com';
 setCustomUserClaim(emailDelAdmin);

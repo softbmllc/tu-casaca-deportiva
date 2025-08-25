@@ -8,10 +8,8 @@ export default {
   theme: {
   	extend: {
   		fontFamily: {
-  			oswald: [
-  				'Oswald',
-  				'sans-serif'
-  			]
+  			display: ["Oswald", "ui-sans-serif", "system-ui"],
+  			sans: ["Inter", "ui-sans-serif", "system-ui"],
   		},
   		scrollSnapType: {
   			xMandatory: 'x mandatory'
@@ -60,6 +58,12 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			brand: {
+  				black: "#0F0F0F",
+  				white: "#F9FAFB",
+  				accent: "#22D3EE", // celeste
+  				accent2: "#22C55E", // verde
   			}
   		}
   	}

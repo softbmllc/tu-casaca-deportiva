@@ -21,29 +21,29 @@ export default function ProductPageNavbar() {
           <Link to="/" className="flex items-center">
             <img
               src={logo}
-              alt="Mutter Games"
+              alt="Tu Casaca Deportiva"
               className="max-h-[2.25rem] w-auto object-contain"
             />
           </Link>
           <div className="flex items-center gap-3">
             <a
-              href="https://wa.me/59899389140"
+              href="https://wa.me/59891219083"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#FF2D55]"
+              className="text-black hover:opacity-70"
             >
               <FaWhatsapp className="w-5 h-5" />
             </a>
             <a
-              href="https://www.instagram.com/muttergames/"
+              href="https://www.instagram.com/tucasacadeportiva.uy/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#FF2D55]"
-              aria-label="Instagram Mutter Games"
+              className="text-black hover:opacity-70"
+              aria-label="Instagram Tu Casaca Deportiva"
             >
               <FaInstagram className="w-5 h-5" />
             </a>
-            <Link to="/carrito" className="relative text-[#FF2D55]">
+            <Link to="/carrito" className="relative text-black hover:opacity-70">
               <ShoppingCart className="w-5 h-5" />
               {totalItems > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
@@ -52,7 +52,7 @@ export default function ProductPageNavbar() {
               )}
             </Link>
             <button
-              className="text-[#FF2D55]"
+              className="text-black hover:opacity-70"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label="Toggle Menu"
             >
@@ -67,7 +67,7 @@ export default function ProductPageNavbar() {
         {isMenuOpen && (
           <div className="sm:hidden px-4 pb-2">
             <nav className="flex flex-col gap-2 text-sm items-center text-center">
-              <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
+              <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-black hover:opacity-70 font-semibold">
                 Tienda
               </Link>
             </nav>
@@ -79,32 +79,32 @@ export default function ProductPageNavbar() {
           <Link to="/" className="flex items-center">
             <img
               src={logo}
-              alt="Mutter Games"
+              alt="Tu Casaca Deportiva"
               className="h-12 w-auto object-contain"
             />
           </Link>
           <nav className="flex items-center gap-6 text-base">
-            <Link to="/shop" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Tienda</Link>
+            <Link to="/shop" className="text-black hover:opacity-70 font-semibold">Tienda</Link>
           </nav>
           <div className="flex items-center gap-4">
             <a
-              href="https://wa.me/59899389140"
+              href="https://wa.me/59891219083"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#FF2D55]"
+              className="text-black hover:opacity-70"
             >
               <FaWhatsapp className="w-5 h-5" />
             </a>
             <a
-              href="https://www.instagram.com/muttergames/"
+              href="https://www.instagram.com/tucasacadeportiva.uy/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#FF2D55]"
-              aria-label="Instagram Mutter Games"
+              className="text-black hover:opacity-70"
+              aria-label="Instagram Tu Casaca Deportiva"
             >
               <FaInstagram className="w-5 h-5" />
             </a>
-            <Link to="/carrito" className="relative text-[#FF2D55]">
+            <Link to="/carrito" className="relative text-black hover:opacity-70">
               <ShoppingCart className="w-5 h-5" />
               {totalItems > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">

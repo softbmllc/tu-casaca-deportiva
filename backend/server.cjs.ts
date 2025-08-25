@@ -31,12 +31,12 @@ app.post("/api/create_preference", async (req, res) => {
         items,
         payer,
         back_urls: {
-          success: "https://muttergames.com/success",
-          failure: "https://muttergames.com/failure",
-          pending: "https://muttergames.com/pending",
+          success: "https://tucasacadeportiva.com/success",
+          failure: "https://tucasacadeportiva.com/failure",
+          pending: "https://tucasacadeportiva.com/pending",
         },
         auto_return: "approved",
-        notification_url: "https://muttergames.com/api/webhook"
+        notification_url: "https://tucasacadeportiva.com/api/webhook"
       },
     });
 

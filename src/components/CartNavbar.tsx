@@ -7,44 +7,44 @@ import { useCart } from "../context/CartContext";
 import { useState } from "react";
 import logo from "/logo2.png";
 
-export default function ShopNavbar() {
+export default function CartNavbar() {
   const { items } = useCart();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="bg-white/95 backdrop-blur-md text-black fixed top-0 w-full z-50 shadow-md border-b border-gray-200 py-0.5">
+    <header className="bg-white text-black fixed top-0 w-full z-50 shadow-md border-b border-gray-200 py-0.5 backdrop-blur">
       {/* Mobile */}
       <div className="flex sm:hidden items-center justify-between px-4 py-0.5">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center">
             <img
               src={logo}
-              alt="Mutter Games"
+              alt="Tu Casaca Deportiva"
               className="max-h-[2.25rem] w-auto object-contain"
             />
           </Link>
         </div>
         <div className="flex items-center gap-3">
           <a
-            href="https://wa.me/59899389140"
+            href="https://wa.me/59891219083"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#FF2D55]"
+            className="text-black hover:opacity-80"
           >
             <FaWhatsapp className="w-5 h-5" />
           </a>
           <a
-            href="https://www.instagram.com/muttergames/"
+            href="https://www.instagram.com/tucasacadeportiva.uy/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#FF2D55]"
-            aria-label="Instagram Mutter Games"
+            className="text-black hover:opacity-80"
+            aria-label="Instagram Tu Casaca Deportiva"
           >
             <FaInstagram className="w-5 h-5" />
           </a>
           <button
-            className="text-[#FF2D55]"
+            className="text-black hover:opacity-80"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -58,7 +58,7 @@ export default function ShopNavbar() {
       {isMenuOpen && (
         <div className="sm:hidden px-4 pb-2">
           <nav className="flex flex-col gap-2 text-sm items-center text-center">
-            <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
+            <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-black hover:opacity-80 font-semibold">
               Tienda
             </Link>
           </nav>
@@ -70,28 +70,28 @@ export default function ShopNavbar() {
         <Link to="/" className="flex items-center">
           <img
             src={logo}
-            alt="Mutter Games"
+            alt="Tu Casaca Deportiva"
             className="h-12 w-auto object-contain"
           />
         </Link>
         <nav className="flex items-center gap-6 text-base">
-          <Link to="/shop" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Tienda</Link>
+          <Link to="/shop" className="text-black hover:opacity-80 font-semibold">Tienda</Link>
         </nav>
         <div className="flex items-center gap-4">
           <a
-            href="https://wa.me/59899389140"
+            href="https://wa.me/59891219083"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#FF2D55]"
+            className="text-black hover:opacity-80"
           >
             <FaWhatsapp className="w-5 h-5" />
           </a>
           <a
-            href="https://www.instagram.com/muttergames/"
+            href="https://www.instagram.com/tucasacadeportiva.uy/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#FF2D55]"
-            aria-label="Instagram Mutter Games"
+            className="text-black hover:opacity-80"
+            aria-label="Instagram Tu Casaca Deportiva"
           >
             <FaInstagram className="w-5 h-5" />
           </a>

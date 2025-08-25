@@ -3,81 +3,67 @@
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useTranslation } from "react-i18next";
-import { LuGamepad2, LuMonitorPlay, LuPackageSearch } from "react-icons/lu";
 
 export default function CategorySection() {
   const navigate = useNavigate();
 
   const categories = [
-    { name: 'PlayStation', image: '/images/logos/playstation.png', href: '/shop?category=PlayStation' },
-    { name: 'Xbox', image: '/images/logos/xbox.png', href: '/shop?category=Xbox' },
-    { name: 'Nintendo', image: '/images/logos/nintendo.png', href: '/shop?category=Nintendo' },
-    { name: 'Portátiles', image: '/images/logos/portatiles.png', href: '/shop?category=Portátiles' },
-    { name: 'Retro / Otros', image: '/images/logos/retro.png', href: '/shop?category=Retro' },
-    { name: 'Coleccionables', image: '/images/logos/coleccionables.png', href: '/shop?category=Coleccionables' },
+    { name: "Fútbol", image: "/images/categories/futbol.jpg", href: "/shop?filter=futbol" },
+    { name: "NBA", image: "/images/categories/nba.jpg", href: "/shop?filter=nba" },
+    { name: "Niños", image: "/images/categories/kids.jpg", href: "/shop?filter=kids" },
   ];
 
-  return (  
+  return (
     <section
-      id="catalogo"
-      className="pt-10 pb-16 sm:pt-12 sm:pb-20 text-center scroll-mt-16 bg-[#0F0F0F]"
->
+      id="categorias"
+      className="pt-12 pb-20 text-center scroll-mt-16 bg-[#0F0F0F] text-white"
+    >
       <Helmet>
-        <title>Categorías | Mutter Games</title>
-        <meta name="keywords" content="juegos, consolas, coleccionables, PlayStation, Xbox, Nintendo, retro" />
-        <meta name="description" content="Explorá nuestras categorías de consolas y coleccionables. PlayStation, Xbox, Nintendo, retro y más en Mutter Games." />
+        <title>Categorías | Tu Casaca Deportiva</title>
+        <meta
+          name="description"
+          content="Explorá camisetas por categoría: Fútbol, NBA y Niños. Temporada 25/26 y retro en Tu Casaca Deportiva."
+        />
+        <meta name="keywords" content="camisetas, futbol, nba, niños, retro, 25/26" />
       </Helmet>
 
       <motion.p
-        className="text-sm uppercase text-[#FF2D55] tracking-widest mb-6"
+        className="text-sm uppercase text-[#22D3EE] tracking-widest mb-4"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        transition={{ duration: 0.6 }}
       >
-        explorá tu universo gamer
+        explorá la tienda
       </motion.p>
 
-      <h2 className="text-4xl sm:text-6xl font-extrabold text-center mb-10 tracking-tight text-[#FF2D55] drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] leading-tight transition-all duration-700">
+      <h2 className="text-3xl sm:text-5xl font-extrabold mb-10 leading-tight">
         Explorar por categoría
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 max-w-6xl mx-auto px-6">
-        {categories.map(({ name, image, href }, idx) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-6">
+        {categories.map(({ name, image, href }) => (
           <motion.div
             key={name}
             whileInView={{ opacity: 1, scale: 1 }}
             initial={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.5 }}
             onClick={() => navigate(href)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === "Enter" && navigate(href)}
-            className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg ring-1 ring-white/10 transition-transform duration-500 hover:scale-105 active:scale-95 cursor-pointer h-72 bg-white group-hover:ring-2 group-hover:ring-[#FF2D55]"
+            className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg ring-1 ring-white/10 transition-transform duration-500 hover:scale-105 active:scale-95 cursor-pointer h-72 bg-white"
           >
-            <div className="absolute inset-0">
-              <img
-                src={image}
-                alt={name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 group-hover:brightness-110"
-              />
+            <img
+              src={image}
+              alt={name}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/35" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-2xl sm:text-3xl font-extrabold drop-shadow-[0_2px_4px_rgba(0,0,0,0.65)]">
+                {name}
+              </p>
             </div>
-            {idx >= 3 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 text-center">
-                <p className="text-white text-4xl font-extrabold drop-shadow-[0_2px_4px_rgba(0,0,0,0.75)] mb-2 leading-tight flex items-center gap-4 justify-center">
-                  {idx === 3 && <LuGamepad2 className="text-4xl" />}
-                  {idx === 4 && <LuMonitorPlay className="text-4xl" />}
-                  {idx === 5 && <LuPackageSearch className="text-4xl" />}
-                  {idx === 5 ? (
-                    <>
-                      Coleccionables<br />y más
-                    </>
-                  ) : (
-                    name
-                  )}
-                </p>
-              </div>
-            )}
           </motion.div>
         ))}
       </div>

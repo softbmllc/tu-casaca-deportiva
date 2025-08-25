@@ -31,6 +31,6 @@ const setCustomUserClaim = async (email: string) => {
 };
 
 // 📌 Reemplazar con el email del admin (John)
-const emailDelAdmin = 'lilianpresa@hotmail.com';
+const emailDelAdmin = 'fefo157@gmail.com';
 
 setCustomUserClaim(emailDelAdmin);

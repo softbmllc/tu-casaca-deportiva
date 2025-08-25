@@ -94,7 +94,7 @@ export default function LoginForm() {
 
       {/* Footer */}
       <p className="text-gray-400 text-xs mt-6">
-        &copy; {new Date().getFullYear()} MutterGames. All rights reserved.
+        &copy; {new Date().getFullYear()} Tu Casaca Deportiva UY. All rights reserved.
       </p>
     </div>
   );

@@ -1028,6 +1028,18 @@ export const discountStockByOrder = async (order: {
     });
   }
 };
+// 🔐 Obtener doc de admin por UID (colección nueva: /admins/{uid})
+export async function getAdminByUid(uid: string): Promise<{ id: string; [k: string]: any } | null> {
+  try {
+    const ref = doc(db, "admins", uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...(snap.data() as any) };
+  } catch (e) {
+    console.error("getAdminByUid error", e);
+    return null;
+  }
+}
 // 🔐 Obtener todos los usuarios administradores
 export async function fetchAdminUsers(): Promise<
   { id: string; nombre: string; email: string; rol: string; activo: boolean }[]

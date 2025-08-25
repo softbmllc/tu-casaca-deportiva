@@ -22,30 +22,30 @@ export default function ShopNavbar() {
           <Link to="/" className="flex items-center">
             <img
               src={logo}
-              alt="Mutter Games"
+              alt="Tu Casaca Deportiva"
               className="max-h-[2.25rem] w-auto object-contain"
             />
           </Link>
         </div>
         <div className="flex items-center gap-3">
           <a
-            href="https://wa.me/59899389140"
+            href="https://wa.me/59891219083"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#FF2D55]"
+            className="text-white hover:opacity-80"
           >
             <FaWhatsapp className="w-5 h-5" />
           </a>
           <a
-            href="https://www.instagram.com/muttergames/"
+            href="https://www.instagram.com/tucasacadeportiva.uy/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#FF2D55]"
-            aria-label="Instagram Mutter Games"
+            className="text-white hover:opacity-80"
+            aria-label="Instagram Tu Casaca Deportiva"
           >
             <FaInstagram className="w-5 h-5" />
           </a>
-          <Link to="/carrito" className="relative text-[#FF2D55]">
+          <Link to="/carrito" className="relative text-white hover:opacity-80">
             <ShoppingCart className="w-5 h-5" />
             {totalItems > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
@@ -54,7 +54,7 @@ export default function ShopNavbar() {
             )}
           </Link>
           <button
-            className="text-[#FF2D55]"
+            className="text-white hover:opacity-80"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -70,7 +70,7 @@ export default function ShopNavbar() {
           <input
             type="text"
             placeholder="Buscar productos..."
-            className="w-full border border-[#FF2D55] rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55]"
+            className="w-full border border-white/60 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#22C55E]"
             autoFocus
             value={searchTerm}
             onChange={(e) => {
@@ -86,13 +86,13 @@ export default function ShopNavbar() {
       {isMenuOpen && (
         <div className="sm:hidden px-4 pb-2">
           <nav className="flex flex-col gap-2 text-sm items-center text-center">
-            <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
+            <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-white hover:opacity-80 font-semibold">
               Inicio
             </Link>
-            <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
+            <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-white hover:opacity-80 font-semibold">
               Tienda
             </Link>
-            <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-[#FF2D55] font-semibold">
+            <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-white hover:opacity-80 font-semibold">
               Nosotros
             </Link>
           </nav>
@@ -104,34 +104,34 @@ export default function ShopNavbar() {
         <Link to="/" className="flex items-center">
           <img
             src={logo}
-            alt="Mutter Games"
+            alt="Tu Casaca Deportiva"
             className="h-12 w-auto object-contain"
           />
         </Link>
         <nav className="flex items-center gap-6 text-base">
-          <Link to="/" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Inicio</Link>
-          <Link to="/shop" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Tienda</Link>
-          <Link to="/about" className="text-[#FF2D55] hover:text-[#cc2444] font-semibold">Nosotros</Link>
+          <Link to="/" className="text-white hover:opacity-80 font-semibold">Inicio</Link>
+          <Link to="/shop" className="text-white hover:opacity-80 font-semibold">Tienda</Link>
+          <Link to="/about" className="text-white hover:opacity-80 font-semibold">Nosotros</Link>
         </nav>
         <div className="flex items-center gap-4">
           <a
-            href="https://wa.me/59899389140"
+            href="https://wa.me/59891219083"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#FF2D55]"
+            className="text-white hover:opacity-80"
           >
             <FaWhatsapp className="w-5 h-5" />
           </a>
           <a
-            href="https://www.instagram.com/muttergames/"
+            href="https://www.instagram.com/tucasacadeportiva.uy/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#FF2D55]"
-            aria-label="Instagram Mutter Games"
+            className="text-white hover:opacity-80"
+            aria-label="Instagram Tu Casaca Deportiva"
           >
             <FaInstagram className="w-5 h-5" />
           </a>
-          <Link to="/carrito" className="relative text-[#FF2D55]">
+          <Link to="/carrito" className="relative text-white hover:opacity-80">
             <ShoppingCart className="w-5 h-5" />
             {totalItems > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">

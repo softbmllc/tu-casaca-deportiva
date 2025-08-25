@@ -2,7 +2,7 @@
   
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { getLoggedInUser, loginUser as utilsLoginUser, logoutUser as utilsLogoutUser } from "../utils/userUtils";
-import { getAdminUserByEmail } from "../firebaseUtils";
+import { getAdminByUid } from "../firebaseUtils";
 import { User } from "../data/types";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
@@ -34,21 +34,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const auth = getAuth();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser && firebaseUser.email) {
-        const adminUser = await getAdminUserByEmail(firebaseUser.email);
-        if (adminUser && adminUser.activo) {
+      if (firebaseUser) {
+        const adminDoc = await getAdminByUid(firebaseUser.uid);
+        const allowedRoles = ['superadmin','admin','editor','viewer'];
+        if (adminDoc && allowedRoles.includes(adminDoc.role)) {
+          const adminEmail = adminDoc.email ?? firebaseUser.email ?? '';
+          const adminName = adminDoc.nombre ?? adminDoc.name ?? firebaseUser.displayName ?? 'Admin';
           setUser({
-            id: adminUser.id || firebaseUser.uid,
+            id: firebaseUser.uid,
             uid: firebaseUser.uid,
-            name: adminUser.nombre,
-            email: adminUser.email,
+            name: adminName,
+            email: adminEmail,
             password: "",
           });
-          localStorage.setItem("userEmail", adminUser.email);
+          localStorage.setItem("userEmail", adminEmail);
           utilsLoginUser({
-            id: adminUser.id || firebaseUser.uid,
-            name: adminUser.nombre,
-            email: adminUser.email,
+            id: firebaseUser.uid,
+            name: adminName,
+            email: adminEmail,
           });
         } else {
           utilsLogoutUser();

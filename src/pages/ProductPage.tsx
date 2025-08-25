@@ -362,31 +362,6 @@ export default function ProductPage() {
                 );
               })()}
             </div>
-            <div className="mb-4">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex items-center justify-center w-7 h-7 text-[11px] font-extrabold rounded bg-white text-[#323271] border border-[#323271]">ML</span>
-                  <div className="text-gray-900">
-                    <p className="text-sm font-semibold leading-snug">Somos los de MercadoLibre</p>
-                    <div className="flex flex-col md:flex-row md:items-center md:gap-2">
-                      <p className="text-xs text-gray-600 leading-snug">4.9⭐ +3.000 ventas</p>
-                      <p className="text-xs text-gray-600 leading-snug flex items-center gap-1">
-                        <Lock className="w-3.5 h-3.5" />
-                        Compra protegida con Mercado Pago
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <a
-                  href="https://www.mercadolibre.com.uy/pagina/lilipres?utm_source=web_mutter&amp;utm_medium=referral&amp;utm_campaign=badge_ml_pdp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-semibold underline underline-offset-2 hover:opacity-80"
-                >
-                  Ver perfil ↗
-                </a>
-              </div>
-            </div>
             {product.subtitle && <p className="text-gray-600 mb-4">{product.subtitle}</p>}
 
             {/* Cápsulas */}
@@ -564,6 +539,12 @@ export default function ProductPage() {
                 )}
               </button>
             </div>
+
+            {/* Disclaimer legal/importación: TCD style */}
+            <p className="mt-3 text-sm text-gray-500 italic leading-relaxed">
+              <span className="block">Todos nuestros productos importados de China cumplen con las normativas legales locales.</span>
+              <span className="block">Garantizamos una compra segura y transparente, gestionando los impuestos y aranceles conforme a la ley de cada país.</span>
+            </p>
 
 
           </div>

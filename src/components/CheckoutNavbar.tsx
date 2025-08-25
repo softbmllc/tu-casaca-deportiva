@@ -35,7 +35,7 @@ export default function ShopNavbar() {
           <Link to="/shop" className="flex items-center">
             <img
               src={logo}
-              alt="Mutter Games"
+              alt="Tu Casaca Deportiva"
               className="max-h-[2.25rem] w-auto object-contain"
             />
           </Link>
@@ -43,7 +43,7 @@ export default function ShopNavbar() {
         <div className="absolute left-1/2 transform -translate-x-1/2 text-center" ref={infoRef}>
           <button
             onClick={() => setShowInfo(!showInfo)}
-            className="text-sm text-[#004AAD] font-semibold"
+            className="text-sm text-black font-semibold"
           >
             {t("checkoutNavbar.securePayment")}<span className="ml-1 text-xs">{showInfo ? "▲" : "▼"}</span>
           </button>
@@ -55,11 +55,11 @@ export default function ShopNavbar() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <FaGlobe className="text-[#004AAD] w-4 h-4" />
-            <button onClick={() => i18n.changeLanguage('es')} className={`text-xs px-1 py-0.5 ${i18n.language === 'es' ? 'font-semibold text-[#004AAD]' : 'text-[#004AAD]'}`}>ES</button>
-            <button onClick={() => i18n.changeLanguage('en')} className={`text-xs px-1 py-0.5 ${i18n.language === 'en' ? 'font-semibold text-[#004AAD]' : 'text-[#004AAD]'}`}>EN</button>
+            <FaGlobe className="text-black hover:opacity-70 w-4 h-4" />
+            <button onClick={() => i18n.changeLanguage('es')} className={`text-xs px-1 py-0.5 ${i18n.language === 'es' ? 'font-semibold text-black' : 'text-black hover:opacity-70'}`}>ES</button>
+            <button onClick={() => i18n.changeLanguage('en')} className={`text-xs px-1 py-0.5 ${i18n.language === 'en' ? 'font-semibold text-black' : 'text-black hover:opacity-70'}`}>EN</button>
           </div>
-          <Link to="/carrito" className="relative text-[#004AAD]">
+          <Link to="/carrito" className="relative text-black hover:opacity-70">
             <ShoppingCart className="w-5 h-5" />
             {totalItems > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
@@ -75,14 +75,14 @@ export default function ShopNavbar() {
         <Link to="/shop" className="flex items-center">
           <img
             src={logo}
-            alt="Mutter Games"
+            alt="Tu Casaca Deportiva"
             className="h-12 w-auto object-contain"
           />
         </Link>
         <div className="absolute left-1/2 transform -translate-x-1/2 text-center" ref={infoRef}>
           <button
             onClick={() => setShowInfo(!showInfo)}
-            className="text-base text-[#004AAD] font-semibold"
+            className="text-base text-black font-semibold"
           >
             {t("checkoutNavbar.securePayment")}<span className="ml-1 text-xs">{showInfo ? "▲" : "▼"}</span>
           </button>
@@ -94,11 +94,11 @@ export default function ShopNavbar() {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
-            <FaGlobe className="text-[#004AAD] w-4 h-4" />
-            <button onClick={() => i18n.changeLanguage('es')} className={`text-sm px-2 py-0.5 ${i18n.language === 'es' ? 'font-semibold text-[#004AAD]' : 'text-[#004AAD]'}`}>ES</button>
-            <button onClick={() => i18n.changeLanguage('en')} className={`text-sm px-2 py-0.5 ${i18n.language === 'en' ? 'font-semibold text-[#004AAD]' : 'text-[#004AAD]'}`}>EN</button>
+            <FaGlobe className="text-black hover:opacity-70 w-4 h-4" />
+            <button onClick={() => i18n.changeLanguage('es')} className={`text-sm px-2 py-0.5 ${i18n.language === 'es' ? 'font-semibold text-black' : 'text-black hover:opacity-70'}`}>ES</button>
+            <button onClick={() => i18n.changeLanguage('en')} className={`text-sm px-2 py-0.5 ${i18n.language === 'en' ? 'font-semibold text-black' : 'text-black hover:opacity-70'}`}>EN</button>
           </div>
-          <Link to="/carrito" className="relative text-[#004AAD]">
+          <Link to="/carrito" className="relative text-black hover:opacity-70">
             <ShoppingCart className="w-5 h-5" />
             {totalItems > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">

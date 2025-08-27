@@ -1,38 +1,41 @@
 // src/components/LoginForm.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInAdmin, auth } from "../firebaseUtils";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signIn } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const user = await signInAdmin(email, password);
-      const resolvedEmail = auth.currentUser?.email || email;
-      const resolvedName = resolvedEmail ? resolvedEmail.split("@")[0] : "admin";
-      login({ id: user.uid, email: resolvedEmail, name: resolvedName });
-      alert("Inicio de sesión exitoso");
+      setLoading(true);
+      setError(null);
+      await signIn(email, password); // AuthContext validará /admins/{uid}
       navigate("/admin", { replace: true });
     } catch (error: any) {
       const code = error?.code || "auth/unknown";
       console.error("❌ Login error:", code, error?.message);
       if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
-        alert("Contraseña incorrecta.");
+        setError("Contraseña incorrecta.");
       } else if (code === "auth/user-not-found") {
-        alert("No existe un usuario con ese email.");
+        setError("No existe un usuario con ese email.");
       } else if (code === "auth/too-many-requests") {
-        alert("Demasiados intentos. Intenta más tarde o restablece tu contraseña.");
+        setError("Demasiados intentos. Intenta más tarde o restablece tu contraseña.");
       } else if (code === "auth/network-request-failed") {
-        alert("Error de red. Verifica tu conexión y reintenta.");
+        setError("Error de red. Verifica tu conexión y reintenta.");
+      } else if (code === "permission-denied") {
+        setError("Tu usuario no tiene permisos de administrador.");
       } else {
-        alert("No se pudo iniciar sesión: " + code);
+        setError("No se pudo iniciar sesión. (" + code + ")");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -84,11 +87,14 @@ export default function LoginForm() {
           />
         </div>
 
+        {error && <div className="mb-4 text-red-600 text-sm">{error}</div>}
+
         <button
           type="submit"
-          className="w-full bg-black text-white py-2 px-4 rounded-md font-semibold hover:bg-gray-900 transition-all"
+          disabled={loading}
+          className="w-full bg-black text-white py-2 px-4 rounded-md font-semibold hover:bg-gray-900 transition-all disabled:opacity-50"
         >
-          Iniciar sesión
+          {loading ? "Ingresando…" : "Iniciar sesión"}
         </button>
       </form>
 

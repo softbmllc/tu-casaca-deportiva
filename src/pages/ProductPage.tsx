@@ -4,7 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import ProductPageNavbar from "../components/ProductPageNavbar";
-import { fetchProductById, fetchProducts } from "../firebaseClientUtils";
+import { fetchProductBySlug, fetchProducts } from "../firebaseUtils";
 import { useCart } from "../context/CartContext";
 import { Check, ChevronLeft, ArrowUp, CreditCard, Truck, Store, MessageSquare, Lock } from "lucide-react";
 import { FiMinus, FiPlus } from "react-icons/fi";
@@ -56,7 +56,7 @@ export default function ProductPage() {
         return;
       }
       try {
-        const productData = await fetchProductById(decodedId);
+        const productData = await fetchProductBySlug(decodedId);
         if (!productData) {
           console.warn("❌ No se encontró el producto con slug:", decodedId);
           setProduct(null);

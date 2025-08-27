@@ -38,17 +38,18 @@ function Home() {
   return (
     <>
       <Helmet>
-        <title>Mutter Games — Consolas, videojuegos y coleccionables</title>
-        <meta name="description" content="Tienda de consolas, videojuegos y coleccionables. Pago protegido con Mercado Pago y envíos a todo el país." />
-        <meta property="og:title" content="Mutter Games — Consolas, videojuegos y coleccionables" />
-        <meta property="og:description" content="Explorá juegos, consolas, accesorios y figuras. Stock real y atención personalizada." />
+        <title>Tu Casaca Deportiva — Camisetas de Fútbol y NBA</title>
+        <meta name="description" content="Tienda online de camisetas de Fútbol y NBA (25/26 y retro). Diseño moderno, detalles premium y opción de personalización." />
+        <meta property="og:title" content="Tu Casaca Deportiva — Camisetas de Fútbol y NBA" />
+        <meta property="og:description" content="Explorá camisetas actuales y retro de tus equipos y selecciones favoritas. Stock, talles y personalización." />
         <meta property="og:image" content="/seo-image.jpg" />
-        <meta property="og:url" content="https://mutter-games.vercel.app/" />
+        <meta property="og:url" content="https://tucasacadeportiva.com/" />
         <meta property="og:type" content="website" />
-        <link rel="canonical" href="https://mutter-games.vercel.app/" />
+        <meta property="og:site_name" content="Tu Casaca Deportiva" />
+        <link rel="canonical" href="https://tucasacadeportiva.com/" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Mutter Games — Consolas, videojuegos y coleccionables" />
-        <meta name="twitter:description" content="Tienda de consolas, videojuegos y coleccionables." />
+        <meta name="twitter:title" content="Tu Casaca Deportiva — Camisetas de Fútbol y NBA" />
+        <meta name="twitter:description" content="Tienda online de camisetas de Fútbol y NBA (25/26 y retro). Personalización disponible." />
         <meta name="twitter:image" content="/seo-image.jpg" />
       </Helmet>
       <Hero />
@@ -65,19 +66,19 @@ export default function App() {
       <CartProvider>
         <div className="bg-[#0F0F0F] min-h-screen flex flex-col">
           <Helmet>
-            <title>Mutter Games — Consolas, videojuegos y coleccionables</title>
-            <meta name="description" content="Mutter Games es tu tienda online de confianza para consolas, videojuegos, accesorios y artículos coleccionables en Uruguay." />
-            <meta property="og:site_name" content="Mutter Games" />
+            <title>Tu Casaca Deportiva — Camisetas de Fútbol y NBA</title>
+            <meta name="description" content="Tu Casaca Deportiva es tu tienda online de camisetas de Fútbol y NBA (temporada 25/26 y retro). Diseño Nike‑like, opciones de personalización y envíos." />
+            <meta property="og:site_name" content="Tu Casaca Deportiva" />
             <meta property="og:type" content="website" />
-            <meta property="og:title" content="Mutter Games — Consolas, videojuegos y coleccionables" />
-            <meta property="og:description" content="Explorá juegos, consolas, accesorios y figuras. Stock real y atención personalizada." />
+            <meta property="og:title" content="Tu Casaca Deportiva — Camisetas de Fútbol y NBA" />
+            <meta property="og:description" content="Explorá camisetas actuales y retro, stock por talle y personalización con nombre y número." />
             <meta property="og:image" content="/seo-image.jpg" />
-            <meta property="og:url" content="https://muttergames.com/" />
+            <meta property="og:url" content="https://tucasacadeportiva.com/" />
             <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:title" content="Mutter Games — Consolas, videojuegos y coleccionables" />
-            <meta name="twitter:description" content="Mutter Games es tu tienda online de confianza para consolas, videojuegos, accesorios y artículos coleccionables en Uruguay." />
+            <meta name="twitter:title" content="Tu Casaca Deportiva — Camisetas de Fútbol y NBA" />
+            <meta name="twitter:description" content="Tienda de camisetas de Fútbol y NBA (25/26 y retro). Personalización disponible." />
             <meta name="twitter:image" content="/seo-image.jpg" />
-            <link rel="canonical" href="https://muttergames.com/" />
+            <link rel="canonical" href="https://tucasacadeportiva.com/" />
           </Helmet>
           <Routes>
             {/* ✅ Login público */}

@@ -419,28 +419,28 @@ export default function Shop() {
     <section className="bg-[#f9f9f9] text-black flex flex-col min-h-screen pt-[90px] md:pt-[110px]">
       <ShopNavbar />
       <Helmet>
-        <title>Mutter Games – Tienda de videojuegos y coleccionables</title>
+        <title>Tu Casaca Deportiva — Casacas de Fútbol y NBA</title>
         <meta
           name="description"
-          content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay."
+          content="Casacas de fútbol y NBA: retro y temporada 25/26. Calidad premium, pagos seguros y envíos a todo Uruguay."
         />
-        <meta name="keywords" content="videojuegos, consolas, retro, coleccionables, PlayStation, Xbox, Nintendo, Uruguay" />
+        <meta name="keywords" content="casacas, camisetas, fútbol, NBA, retro, temporada 25/26, Uruguay, personalización, tienda online" />
         <link rel="canonical" href="/shop" />
 
-        <meta property="og:title" content="Mutter Games – Tienda de videojuegos y coleccionables" />
+        <meta property="og:title" content="Tu Casaca Deportiva — Casacas de Fútbol y NBA" />
         <meta
           property="og:description"
-          content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay."
+          content="Casacas de fútbol y NBA: retro y temporada 25/26. Calidad premium, pagos seguros y envíos a todo Uruguay."
         />
         <meta property="og:image" content="/seo-image.jpg" />
         <meta property="og:url" content="/shop" />
         <meta property="og:type" content="website" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Mutter Games – Tienda de videojuegos y coleccionables" />
+        <meta name="twitter:title" content="Tu Casaca Deportiva — Casacas de Fútbol y NBA" />
         <meta
           name="twitter:description"
-          content="Juegos, consolas, retro y coleccionables. Productos originales, pago protegido con Mercado Pago y envíos a todo Uruguay."
+          content="Casacas de fútbol y NBA: retro y temporada 25/26. Calidad premium, pagos seguros y envíos a todo Uruguay."
         />
         <meta name="twitter:image" content="/seo-image.jpg" />
       </Helmet>
@@ -460,8 +460,8 @@ export default function Shop() {
             <input
               id="search"
               type="text"
-              placeholder={t("shop.searchPlaceholder", "Ej: GTA 5")}
-              className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#FF2D55] focus:border-[#FF2D55]"
+              placeholder={t("shop.searchPlaceholder", "Ej: Manchester United")}
+              className="w-full border px-3 py-2 rounded-lg text-sm text-black placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#3B82F6] focus:border-[#3B82F6]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -545,7 +545,7 @@ export default function Shop() {
               <Listbox value={sortOption} onChange={setSortOption}>
                 {({ open }) => (
                   <div className="relative w-52">
-                    <Listbox.Button className="w-full cursor-pointer rounded-md border border-[#0F0F0F] bg-white py-2 pl-4 pr-10 text-left shadow-sm focus:outline-none focus:ring-1 text-sm flex justify-between items-center text-[#0F0F0F] focus:ring-[#FF2D55] focus:border-[#FF2D55]">
+                    <Listbox.Button className="w-full cursor-pointer rounded-md border border-[#0F0F0F] bg-white py-2 pl-4 pr-10 text-left shadow-sm focus:outline-none focus:ring-1 text-sm flex justify-between items-center text-[#0F0F0F] focus:ring-[#3B82F6] focus:border-[#3B82F6]">
                       <span>
                         {{
                           "": "Ordenar por",
@@ -569,8 +569,8 @@ export default function Shop() {
                           key={option.value}
                           className={({ active, selected }) =>
                             `cursor-pointer select-none relative py-2 pl-10 pr-4
-                            ${selected ? "bg-[#FF2D55] text-white font-bold" : ""}
-                            ${active && !selected ? "hover:bg-[#FF2D55]/90 hover:text-white" : ""}
+                            ${selected ? "bg-[#3B82F6] text-white font-bold" : ""}
+                            ${active && !selected ? "hover:bg-[#2563eb] hover:text-white" : ""}
                             ${!selected && !active ? "text-[#0F0F0F]" : ""}`
                           }
                           value={option.value}
@@ -630,7 +630,7 @@ export default function Shop() {
             <div className="w-1/2 px-1">
               <button
                 onClick={() => setShowMobileFilter(!showMobileFilter)}
-                className="w-full border border-[#FF2D55] text-[#FF2D55] rounded-lg py-2 font-medium hover:bg-[#FF2D55] hover:text-white transition"
+                className="w-full border border-[#3B82F6] text-[#3B82F6] rounded-lg py-2 font-medium hover:bg-[#2563eb] hover:text-white transition"
               >
                 Filtros
               </button>
@@ -638,7 +638,7 @@ export default function Shop() {
             <div className="w-1/2 px-1">
               <button
                 onClick={() => setShowOrderMenuMobile(!showOrderMenuMobile)}
-                className="w-full border border-[#FF2D55] text-[#FF2D55] rounded-lg py-2 font-medium hover:bg-[#FF2D55] hover:text-white transition"
+                className="w-full border border-[#3B82F6] text-[#3B82F6] rounded-lg py-2 font-medium hover:bg-[#2563eb] hover:text-white transition"
               >
                 Ordenar
               </button>
@@ -738,7 +738,7 @@ export default function Shop() {
                         setSortOption("");
                         setSearchParams({}, { replace: true });
                       }}
-                      className="text-red-600 hover:underline font-semibold mt-2 inline-block"
+                      className="text-[#3B82F6] hover:underline font-semibold mt-2 inline-block"
                     >
                       Mostrar todos los productos
                     </button>

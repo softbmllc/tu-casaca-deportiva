@@ -52,28 +52,50 @@ import { Product, Category, ClientWithId } from "./data/types";
 import type { Order } from "./data/types";
 import type { CartItem } from "./data/types";
 
-// 🔥 Función para traer un producto específico por ID
+// ——— slug helper (normaliza acentos, espacios y símbolos) ———
+function normSlug(s: string): string {
+  return String(s || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}+/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// 🔥 Función para traer un producto específico por ID o slug (slug-aware y seguro)
 export async function fetchProductById(id: string): Promise<Product | null> {
   try {
+    // Si parece slug (contiene guiones o no es un autoId de 20 caracteres), resolver por slug
+    if (id.includes("-") || id.length !== 20) {
+      return await fetchProductBySlug(id);
+    }
     const ref = doc(db, "products", id);
     const snap = await getDoc(ref);
-    if (!snap.exists()) return null;
+    if (!snap.exists()) {
+      // Fallback: intentar como slug
+      return await fetchProductBySlug(id);
+    }
     const data = snap.data();
-    return mapProductData(snap.id, data);
-  } catch (error) {
-    console.error("Error fetching product by ID:", error);
-    return null;
+    return { id: snap.id, ...(data as any) };
+  } catch (e) {
+    // Fallback final a slug para evitar permission-denied en docs inexistentes
+    try {
+      return await fetchProductBySlug(id);
+    } catch {
+      return null;
+    }
   }
 }
 
 // 🔥 Función para traer todos los productos
 export async function fetchProducts(): Promise<Product[]> {
+  // Leer solo activos para cumplir reglas (public read)
   const productsCollection = collection(db, "products");
-  const productsSnapshot = await getDocs(productsCollection);
+  const activeQuery = query(productsCollection, where("active", "==", true));
+  const productsSnapshot = await getDocs(activeQuery);
 
   const productsList = productsSnapshot.docs.map((doc) => {
     const data = doc.data() as any;
-    // Defensive handling of title as string or { es, en }
     const rawTitle = data.title;
     const title = {
       es:
@@ -94,9 +116,7 @@ export async function fetchProducts(): Promise<Product[]> {
 
     return {
       id: doc.id,
-      slug:
-        data.slug ||
-        `${doc.id}-${title.es.toLowerCase().replace(/\s+/g, "-")}`,
+      slug: data.slug || `${doc.id}-${title.es.toLowerCase().replace(/\s+/g, "-")}`,
       name: title.es || data.name || "Producto sin nombre",
       title,
       images: data.images || [],
@@ -120,7 +140,6 @@ export async function fetchProducts(): Promise<Product[]> {
     } as Product & { orden?: number };
   }) as (Product & { orden?: number })[];
 
-  // ✅ Orden determinista: primero por 'orden' si existe, luego por título ES
   productsList.sort((a, b) => {
     const ao = typeof (a as any).orden === "number" ? (a as any).orden : 0;
     const bo = typeof (b as any).orden === "number" ? (b as any).orden : 0;
@@ -130,32 +149,35 @@ export async function fetchProducts(): Promise<Product[]> {
     return an.localeCompare(bn, "es");
   });
 
-  console.log("🔥 DEBUG desde firebaseUtils – productos cargados (ordenados):", productsList);
-  // Quitar el campo auxiliar 'orden' en el tipo devuelto
+  console.log("🔥 DEBUG desde firebaseUtils – productos activos cargados:", productsList.length);
   return productsList.map(({ orden, ...rest }) => rest);
 }
 
-// 🔥 Función para traer un producto específico por Slug
-export async function fetchProductBySlug(productId: string): Promise<Product | null> {
+// 🔥 Función para traer un producto específico por Slug (solo activos, acepta 3 formas de slug)
+export async function fetchProductBySlug(productSlug: string): Promise<Product | null> {
   try {
     const productsCollection = collection(db, "products");
-    const productsSnapshot = await getDocs(productsCollection);
+    const activesQ = query(productsCollection, where("active", "==", true));
+    const snap = await getDocs(activesQ);
+    const target = normSlug(productSlug);
 
-    for (const productDoc of productsSnapshot.docs) {
+    for (const productDoc of snap.docs) {
       const data = productDoc.data() as any;
-      const baseTitle =
+      const titleRaw =
         typeof data.title === "string"
           ? data.title
-          : data?.title?.es || data?.name || "producto";
-      const computedSlug = data.slug || `${productDoc.id}-${String(baseTitle).toLowerCase().replace(/\s+/g, "-")}`;
-      if (computedSlug === productId) {
+          : (data?.title?.es || data?.name || "");
+      const titleSlug = normSlug(titleRaw);
+      const storedSlug = data.slug ? normSlug(data.slug) : "";
+      const idTitleSlug = `${productDoc.id}-${titleSlug}`;
+
+      if ([storedSlug, titleSlug, idTitleSlug].filter(Boolean).includes(target)) {
         return mapProductData(productDoc.id, data);
       }
     }
-
     return null;
   } catch (error) {
-    console.error("Error al obtener producto por Slug:", error);
+    console.error("Error en fetchProductBySlug:", error);
     return null;
   }
 }

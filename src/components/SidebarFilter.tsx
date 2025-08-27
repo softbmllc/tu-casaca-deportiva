@@ -67,9 +67,9 @@ export default function SidebarFilter({
                   }}
                   className={`group relative flex w-full items-center gap-2 rounded-md px-3 pr-9 py-2 text-left transition
       ${expandedCategoryId === category.id || selectedCategory === category.id
-        ? 'bg-white/90 text-gray-900 border border-gray-200 shadow-sm before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#FF2D55]'
-        : 'text-gray-800 hover:bg-[#fff5f7] hover:text-gray-900'}
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2D55]/40`}
+        ? 'bg-white/90 text-gray-900 border border-gray-200 shadow-sm before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#3B82F6]'
+        : 'text-gray-800 hover:bg-[#eef6ff] hover:text-gray-900'}
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/40`}
                   aria-expanded={expandedCategoryId === category.id}
                 >
                   <span className="font-semibold tracking-wide flex-1">
@@ -102,9 +102,9 @@ export default function SidebarFilter({
                                 }}
                                 className={`group relative block w-full rounded-md px-3 pr-6 py-1.5 text-left transition
                 ${selectedSubcategory === sub.id
-                  ? 'bg-white text-gray-900 border border-gray-200 shadow-sm before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#FF2D55]'
-                  : 'text-gray-600 hover:bg-[#fff5f7] hover:text-gray-900'}
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2D55]/40`}
+                  ? 'bg-white text-gray-900 border border-gray-200 shadow-sm before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#3B82F6]'
+                  : 'text-gray-600 hover:bg-[#eef6ff] hover:text-gray-900'}
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/40`}
                               >
                                 {sub.name && typeof sub.name === 'object' ? (sub.name[language] || sub.name['es'] || '') : (sub.name || '')}
                               </button>
@@ -124,7 +124,7 @@ export default function SidebarFilter({
               setSelectedCategory('');
               setSelectedSubcategory('');
             }}
-            className="w-full text-[13px] md:text-sm rounded-md py-2 md:py-2 px-3 md:px-4 transition shadow-sm border border-gray-200 bg-[#0F0F0F] text-white hover:bg-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2D55]/40"
+            className="w-full text-[13px] md:text-sm rounded-md py-2 md:py-2 px-3 md:px-4 transition shadow-sm border border-gray-200 bg-[#0F0F0F] text-white hover:bg-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/40"
           >
             Limpiar filtros
           </button>
@@ -133,7 +133,7 @@ export default function SidebarFilter({
               setSelectedCategory('');
               setSelectedSubcategory('');
             }}
-            className="w-full text-[13px] md:text-sm rounded-md py-2 md:py-2 px-3 md:px-4 transition shadow-sm bg-[#FF2D55] text-white hover:bg-[#e0264b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2D55]/40"
+            className="w-full text-[13px] md:text-sm rounded-md py-2 md:py-2 px-3 md:px-4 transition shadow-sm bg-[#3B82F6] text-white hover:bg-[#2563eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/40"
           >
             Mostrar todo
           </button>

@@ -28,4 +28,14 @@ if (!getApps().length) {
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export { app }; // named export para poder importar { app } en cualquier archivo
 export default app;
+
+// --- DEBUG: confirmar proyecto en runtime (local y Vercel) ---
+try {
+  console.log("🔥 Firebase projectId:", app.options.projectId);
+  console.log("🔥 Firebase authDomain:", (app.options as any).authDomain);
+} catch (e) {
+  console.warn("No se pudo imprimir firebase app options:", e);
+}
+// --- FIN DEBUG ---

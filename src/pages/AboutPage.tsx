@@ -2,41 +2,51 @@
 
 import React from 'react';
 import Footer from '../components/Footer';
+import { FaGlobe, FaTshirt, FaWhatsapp, FaFutbol, FaBasketballBall } from 'react-icons/fa';
 
 const AboutPage = () => {
   return (
     <div className="bg-[#0F0F0F] text-white min-h-screen flex flex-col">
       <main className="flex-1">
         <section className="max-w-4xl mx-auto px-6 py-20 text-center">
-          <p className="text-[#FF2D55] uppercase tracking-widest">MUTTER GAMES & COLECCIONABLES</p>
+          <p className="flex items-center justify-center gap-2 text-[#3B82F6] uppercase tracking-widest">
+            <FaFutbol className="text-[#3B82F6]" /> TU CASACA DEPORTIVA <FaBasketballBall className="text-[#3B82F6]" />
+          </p>
           <h1 className="mt-4 text-4xl md:text-5xl font-extrabold">Nuestra historia</h1>
 
           <div className="mt-6 space-y-5 text-base md:text-lg text-white/85 leading-relaxed">
             <p>
-              Somos una tienda uruguaya con más de 20 años de experiencia en el comercio. Comenzamos en ferias barriales de La Teja a fines de los 90, cuando vender era tan simple como armar un puesto y atender con ganas.
+              Tu Casaca Deportiva nació con una misión clara: llevar la pasión del fútbol y la NBA a cada rincón de Uruguay. 
+              Somos una tienda online especializada en casacas de calidad premium, retro y actuales, con diseños de temporada y modelos históricos que marcaron época.
             </p>
             <p>
-              Luego abrimos uno de los primeros cibercafés del barrio, y con los años fuimos adaptándonos a las nuevas formas de vender. Hoy seguimos ese mismo espíritu, pero en el mundo digital.
-            </p>
-            <p>
-              Con miles de ventas concretadas a través de MercadoLibre y una comunidad que confía en nuestros productos, damos un paso más: lanzamos nuestra tienda online para brindar una experiencia más directa, rápida y profesional.
+              Cada camiseta refleja la esencia del deporte: identidad, orgullo y pertenencia. Apostamos por la calidad, la confianza y un servicio rápido y cercano. 
+              Desde nuestras redes y con el apoyo de una comunidad creciente, buscamos que cada cliente viva la experiencia de estrenar su casaca favorita como si estuviera entrando a la cancha.
             </p>
           </div>
 
-          <div className="mt-8 text-sm text-white/60">
-            +1.000 ventas verificadas · Envíos a todo el país · Soporte por WhatsApp
+          <div className="mt-8 flex flex-col md:flex-row justify-center items-center gap-6 text-sm text-white/60">
+            <div className="flex items-center gap-2">
+              <FaGlobe className="text-[#3B82F6]" /> <span>Envíos a todo el país</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FaTshirt className="text-[#3B82F6]" /> <span>Personalización disponible</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FaWhatsapp className="text-[#3B82F6]" /> <span>Atención por WhatsApp e Instagram</span>
+            </div>
           </div>
 
           <div className="mt-10 flex justify-center gap-4">
             <a
               href="/shop"
-              className="inline-block bg-[#FF2D55] text-white font-semibold px-6 py-3 rounded-md hover:bg-red-700 transition"
+              className="inline-block bg-[#3B82F6] text-white font-semibold px-6 py-3 rounded-md hover:bg-blue-700 transition"
             >
               Ver tienda
             </a>
             <a
-              href="https://www.instagram.com/muttergames/"
-              className="border border-white text-white font-semibold px-6 py-3 rounded-md hover:bg-white hover:text-[#FF2D55] transition"
+              href="https://www.instagram.com/tucasacadeportiva.uy/"
+              className="border border-white text-white font-semibold px-6 py-3 rounded-md hover:bg-white hover:text-[#3B82F6] transition"
             >
               Instagram
             </a>

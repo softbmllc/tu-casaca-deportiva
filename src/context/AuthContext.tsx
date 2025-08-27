@@ -4,13 +4,14 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { getLoggedInUser, loginUser as utilsLoginUser, logoutUser as utilsLogoutUser } from "../utils/userUtils";
 import { getAdminByUid } from "../firebaseUtils";
 import { User } from "../data/types";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 
 interface AuthContextType {
   user: User | null;
   login: (user: User) => void;
   logout: () => void;
   isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,7 +36,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const adminDoc = await getAdminByUid(firebaseUser.uid);
+        // ⛔️ Si la sesión es anónima, no intentes leer /admins/{uid}
+        if ((firebaseUser as any).isAnonymous) {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+        let adminDoc: any = null;
+        try {
+          adminDoc = await getAdminByUid(firebaseUser.uid);
+        } catch (e) {
+          // Silenciar permission-denied cuando no corresponde
+          adminDoc = null;
+        }
         const allowedRoles = ['superadmin','admin','editor','viewer'];
         if (adminDoc && allowedRoles.includes(adminDoc.role)) {
           const adminEmail = adminDoc.email ?? firebaseUser.email ?? '';
@@ -89,8 +102,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("userEmail");
   };
 
+  async function signIn(email: string, password: string) {
+    const auth = getAuth();
+    await signInWithEmailAndPassword(auth, email, password);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, signIn }}>
       {children}
     </AuthContext.Provider>
   );

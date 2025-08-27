@@ -58,13 +58,13 @@ export const createPreference = async (
     // 5) Base URL (prod por defecto)
     const baseUrl =
       import.meta.env.VITE_PUBLIC_BASE_URL ??
-      (typeof window !== "undefined" ? window.location.origin : "https://muttergames.com");
+      (typeof window !== "undefined" ? window.location.origin : "https://tucasacadeportiva.com");
 
     const payload = {
       items: normalizedItems,
       payer: {
         name: (shippingData as any)?.name || "No especificado",
-        email: (shippingData as any)?.email || "noemail@muttergames.com",
+        email: (shippingData as any)?.email || "noemail@tucasacadeportiva.com",
       },
       back_urls: {
         success: `${baseUrl}/success`,

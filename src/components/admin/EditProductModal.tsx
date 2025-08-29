@@ -163,7 +163,18 @@ export default function EditProductModal({
   const addVariant = () => {
     setVariants((prev) => [
       ...prev,
-      { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0, stock: 0 }] },
+      {
+        label: { es: "", en: "" },
+        options: [
+          {
+            value: "",
+            priceUSD: 0,
+            stock: 0,
+            allowCustomization: false,
+            variantId: (globalThis.crypto?.randomUUID?.() as string) || String(Date.now()),
+          },
+        ],
+      },
     ]);
   };
   const removeVariant = (idx: number) => {
@@ -175,7 +186,16 @@ export default function EditProductModal({
         i === vIdx
           ? {
               ...v,
-              options: [...v.options, { value: "", priceUSD: 0, stock: 0 }],
+              options: [
+                ...v.options,
+                {
+                  value: "",
+                  priceUSD: 0,
+                  stock: 0,
+                  allowCustomization: false,
+                  variantId: (globalThis.crypto?.randomUUID?.() as string) || String(Date.now()),
+                },
+              ],
             }
           : v
       )
@@ -588,13 +608,13 @@ export default function EditProductModal({
                       />
                     </div>
                     {variant.options.map((option: any, oIdx: number) => (
-                      <div key={oIdx} className="grid grid-cols-3 gap-2 mb-1 items-end">
+                      <div key={oIdx} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-1 items-end">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Valor</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Valor (Talle)</label>
                           <input
                             type="text"
                             className="border border-gray-300 rounded-lg p-2 w-full focus:ring-[#FF2D55] focus:border-[#FF2D55] placeholder-gray-400"
-                            placeholder="Ej: 60 cápsulas"
+                            placeholder="Ej: S / M / L / XL"
                             value={option.value}
                             onChange={(e) =>
                               handleOptionChange(vIdx, oIdx, "value", e.target.value)
@@ -602,7 +622,7 @@ export default function EditProductModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Precio</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Precio (USD)</label>
                           <input
                             type="number"
                             step="0.01"
@@ -615,24 +635,36 @@ export default function EditProductModal({
                             }
                           />
                         </div>
-                        <div className="flex gap-1 items-end">
-                          <div className="w-full">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Stock</label>
-                            <input
-                              type="number"
-                              min={0}
-                              className="border border-gray-300 rounded-lg p-2 w-full focus:ring-[#FF2D55] focus:border-[#FF2D55] placeholder-gray-400"
-                              placeholder="Ej: 10"
-                              value={option.stock || 0}
-                              onChange={(e) =>
-                                handleOptionChange(vIdx, oIdx, "stock", parseInt(e.target.value))
-                              }
-                            />
-                          </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Stock</label>
+                          <input
+                            type="number"
+                            min={0}
+                            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-[#FF2D55] focus:border-[#FF2D55] placeholder-gray-400"
+                            placeholder="Ej: 10"
+                            value={option.stock || 0}
+                            onChange={(e) =>
+                              handleOptionChange(vIdx, oIdx, "stock", parseInt(e.target.value))
+                            }
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id={`allowCustomization-${vIdx}-${oIdx}`}
+                            type="checkbox"
+                            checked={!!option.allowCustomization}
+                            onChange={(e) =>
+                              handleOptionChange(vIdx, oIdx, "allowCustomization", e.target.checked)
+                            }
+                            className="h-4 w-4 rounded border-gray-300"
+                          />
+                          <label htmlFor={`allowCustomization-${vIdx}-${oIdx}`} className="text-sm font-medium text-gray-800">
+                            Permitir personalizar
+                          </label>
                           <button
                             type="button"
                             onClick={() => removeOption(vIdx, oIdx)}
-                            className="ml-1 px-2 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600"
+                            className="ml-auto px-2 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600"
                           >
                             ×
                           </button>

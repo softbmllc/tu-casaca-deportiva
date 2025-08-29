@@ -8,6 +8,9 @@ import { fetchProductBySlug, fetchProducts } from "../firebaseUtils";
 import { useCart } from "../context/CartContext";
 import { Check, ChevronLeft, ArrowUp, CreditCard, Truck, Store, MessageSquare, Lock } from "lucide-react";
 import { FiMinus, FiPlus } from "react-icons/fi";
+import { FaFutbol } from 'react-icons/fa';
+import { TbShirtSport } from 'react-icons/tb';
+import { MdStars } from 'react-icons/md';
 import "keen-slider/keen-slider.min.css";
 import { useKeenSlider } from "keen-slider/react";
 import RelatedProducts from "../components/RelatedProducts";
@@ -16,8 +19,93 @@ import { useTranslation } from "react-i18next";
 import { HiExclamation, HiExclamationCircle } from "react-icons/hi";
 import { toast } from "react-hot-toast";
 
-
 // Improved mobile toast for stock limit error
+
+const isHTML = (s: string) => /<([a-z][\s\S]*?)>/i.test(s);
+
+const iconForEmoji = (ch: string) => {
+  switch (ch) {
+    case '⚽': return <FaFutbol className="text-[#3B82F6]" />;
+    case '👕': return <TbShirtSport className="text-[#3B82F6]" />;
+    case '⭐': return <MdStars className="text-[#3B82F6]" />;
+    case '🚚': return <Truck className="w-[1.1em] h-[1.1em] text-[#3B82F6]" />;
+    default:   return null;
+  }
+};
+
+const renderIconifiedDescription = (text: string) => {
+  // Helper to map a plain string to inline React nodes with icons
+  const mapInline = (s: string) => (
+    <>
+      {Array.from(s).map((ch, i) => {
+        const ic = iconForEmoji(ch);
+        return ic ? <span key={i} className="align-[0.1em] inline-flex">{ic}</span> : <span key={i}>{ch}</span>;
+      })}
+    </>
+  );
+
+  // If it looks like HTML, try to process simple <p> paragraphs, preserving tags
+  if (isHTML(text)) {
+    try {
+      // Very lightweight paragraph-aware transform: <p> ... </p>
+      const paragraphs = Array.from(text.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi));
+      if (paragraphs.length > 0) {
+        return (
+          <div className="space-y-2">
+            {paragraphs.map((m, idx) => {
+              const inner = m[1] || "";
+              // Strip any residual tags inside the paragraph before mapping inline emojis.
+              // If you need to preserve inner tags later, we can enhance this parser.
+              const innerPlain = inner.replace(/<[^>]+>/g, "");
+              return (
+                <p key={idx} className="leading-relaxed text-gray-800 flex items-start gap-2">
+                  {/* If starts with an emoji, render it as leading icon */}
+                  {(() => {
+                    const first = Array.from(innerPlain)[0];
+                    const icon = iconForEmoji(first || "");
+                    const content = icon ? innerPlain.slice(first!.length).trimStart() : innerPlain;
+                    return (
+                      <>
+                        {icon && <span className="mt-[2px]">{icon}</span>}
+                        <span>{mapInline(content)}</span>
+                      </>
+                    );
+                  })()}
+                </p>
+              );
+            })}
+          </div>
+        );
+      }
+      // If no <p> found, fall back to plain mapping below
+    } catch (e) {
+      // Any parsing issue -> fall back to safe HTML render
+      return <div dangerouslySetInnerHTML={{ __html: text }} />;
+    }
+  }
+
+  // Plain text path
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    return (
+      <ul className="space-y-2">
+        {lines.map((line, idx) => {
+          const first = Array.from(line)[0];
+          const icon = iconForEmoji(first || "");
+          const content = icon ? line.slice(first.length).trimStart() : line;
+          return (
+            <li key={idx} className="flex items-start gap-2 text-gray-800">
+              {icon && <span className="mt-[2px]">{icon}</span>}
+              <span>{mapInline(content)}</span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return <p className="leading-relaxed text-gray-800">{mapInline(text)}</p>;
+};
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -25,7 +113,7 @@ export default function ProductPage() {
   console.log("🧠 DEBUG PARAMS — slug:", slug);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedOption, setSelectedOption] = useState<{ value: string; priceUSD: number; variantLabel?: string; variantId?: string; stock?: number } | null>(null);
+  const [selectedOption, setSelectedOption] = useState<{ value: string; priceUSD: number; variantLabel?: string; variantId?: string; stock?: number; allowCustomization?: boolean } | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -36,6 +124,24 @@ export default function ProductPage() {
   const [stockMessage, setStockMessage] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
   const [showStickyCTA, setShowStickyCTA] = useState(true);
+  // --- Personalización (por variante) y lógica de POR ENCARGUE ---
+const [wantsCustomization, setWantsCustomization] = useState(false);
+const [customName, setCustomName] = useState("");
+const [customNumber, setCustomNumber] = useState("");
+
+// Backorder si: (a) stock 0 ó (b) la variante permite personalizar y el usuario lo activó
+const selectedIsBackorder =
+  (!!selectedOption && typeof selectedOption.stock === "number" && selectedOption.stock <= 0) ||
+  (!!selectedOption?.allowCustomization && wantsCustomization);
+
+// Resetear personalización cuando la opción no lo permite
+useEffect(() => {
+  if (!selectedOption?.allowCustomization) {
+    setWantsCustomization(false);
+    setCustomName("");
+    setCustomNumber("");
+  }
+}, [selectedOption?.allowCustomization]);
 
   // keen-slider logic
   const [sliderRef, slider] = useKeenSlider<HTMLDivElement>({
@@ -84,6 +190,7 @@ export default function ProductPage() {
             variantLabel: productData.variants[0].label?.[lang] || "Opción",
             variantId: single.variantId || `${productData.variants[0].label?.[lang] || "Opción"}-${single.value}`,
             stock: single.stock ?? 0,
+            allowCustomization: !!(single as any).allowCustomization,
           });
         }
       } catch (error) {
@@ -127,12 +234,6 @@ export default function ProductPage() {
   };
 
   const handleQuickBuy = () => {
-    if (isOutOfStock) {
-      setStockMessage('Sin stock disponible de esta opción');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2500);
-      return;
-    }
     // Requiere selección si existen variantes
     if (Array.isArray(product.variants) && product.variants.length > 0 && !selectedOption) {
       setStockMessage('Debes seleccionar una opción antes de continuar.');
@@ -141,39 +242,62 @@ export default function ProductPage() {
       scrollToBuyBlock();
       return;
     }
-    const availableStock = selectedOption?.stock ?? product.stockTotal ?? 0;
-    const existingItem = items.find(
-      (item) =>
-        item.id === String(product.id) &&
-        item.variantId === (selectedOption?.variantId || '')
-    );
-    const currentQuantityInCart = existingItem?.quantity || 0;
-    const requestedTotal = currentQuantityInCart + quantity;
-    if (requestedTotal > availableStock) {
-      if (availableStock === 0) {
-        setStockMessage('Sin stock disponible de esta opción');
-      } else {
-        setStockMessage(`Solo hay ${availableStock} unidades disponibles`);
+
+    // Validar personalización si el usuario la activó
+    if (selectedOption?.allowCustomization && wantsCustomization) {
+      if (!customName || !customNumber) {
+        setStockMessage('Completa nombre y número para la personalización.');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2500);
+        return;
       }
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2500);
-      return;
     }
+
+    const availableStock = selectedOption?.stock ?? product.stockTotal ?? 0;
+
+    // Si NO es backorder, respetar límite de stock
+    if (!selectedIsBackorder) {
+      const existingItem = items.find(
+        (item) =>
+          item.id === String(product.id) &&
+          item.variantId === (selectedOption?.variantId || '')
+      );
+      const currentQuantityInCart = existingItem?.quantity || 0;
+      const requestedTotal = currentQuantityInCart + quantity;
+
+      if (requestedTotal > availableStock) {
+        if (availableStock === 0) {
+          setStockMessage('Sin stock disponible de esta opción');
+        } else {
+          setStockMessage(`Solo hay ${availableStock} unidades disponibles`);
+        }
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2500);
+        return;
+      }
+    }
+
     setIsAdding(true);
+
     const cartItem = {
       id: product.id,
       slug: product.slug,
       name: product.title,
       title: product.title,
       image: product.images?.[0] || '',
-      quantity: quantity,
+      quantity,
       priceUSD: selectedOption?.priceUSD ?? product.priceUSD,
       price: selectedOption?.priceUSD ?? product.priceUSD,
       variantLabel: selectedOption?.variantLabel,
       variantId: selectedOption?.variantId,
       stock: selectedOption?.stock,
       color: '',
+      // NUEVO
+      isBackorder: !!selectedIsBackorder,
+      customName: selectedOption?.allowCustomization && wantsCustomization ? customName : '',
+      customNumber: selectedOption?.allowCustomization && wantsCustomization ? customNumber : '',
     };
+
     addToCart(cartItem);
     toast.success(lang === 'en' ? 'Added to cart' : 'Agregado al carrito');
     scrollToTop();
@@ -381,6 +505,7 @@ export default function ProductPage() {
                             onClick={() => {
                               setSelectedOption({
                                 ...option,
+                                allowCustomization: option.allowCustomization, // ← NUEVO
                                 variantLabel: variant.label?.[lang] || "Opción",
                                 variantId: option.variantId || `${variant.label?.[lang] || "Opción"}-${option.value}`,
                               });
@@ -416,15 +541,69 @@ export default function ProductPage() {
             </div>
 
             {selectedOption && typeof selectedOption.stock === 'number' && (
-  <div className="mt-2 text-sm text-gray-600">
-    {selectedOption.stock > 0 ? (
-      <>🟢 En stock: {selectedOption.stock} unidad{selectedOption.stock > 1 ? 'es' : ''}</>
+  <div className="mt-2 text-sm">
+    {selectedIsBackorder ? (
+      <span className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-sky-50 text-sky-800 border border-sky-200 font-medium">
+        POR ENCARGUE
+      </span>
     ) : (
-      <>🔴 Sin stock</>
+      <span className="text-green-700 font-medium">
+        🟢 En stock: {selectedOption.stock} unidad{selectedOption.stock > 1 ? 'es' : ''}
+      </span>
     )}
   </div>
 )}
-            <hr className="my-6 border-gray-100" />
+
+{selectedOption?.allowCustomization && (
+  <div className="mt-4 p-3 rounded-xl border border-gray-200 bg-white">
+    <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+      <input
+        type="checkbox"
+        checked={wantsCustomization}
+        onChange={(e) => setWantsCustomization(e.target.checked)}
+        className="h-4 w-4 rounded border-gray-300"
+      />
+      Personalizar camiseta (Nombre y número)
+    </label>
+
+    {wantsCustomization && (
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Nombre (espalda)</label>
+          <input
+            value={customName}
+            onChange={(e) => setCustomName(e.target.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ ]/g, '').slice(0, 17))}
+            placeholder="Ej: MBAPPE"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Número</label>
+          <input
+            value={customNumber}
+            onChange={(e) => {
+              const onlyNums = e.target.value.replace(/\D/g, '').slice(0, 2);
+              setCustomNumber(onlyNums);
+            }}
+            placeholder="Ej: 7"
+            inputMode="numeric"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
+          />
+          <p className="mt-1 text-[11px] text-gray-500">Sólo números · 0–99</p>
+        </div>
+      </div>
+    )}
+
+    {selectedIsBackorder && (
+      <p className="mt-3 text-xs text-sky-800 bg-sky-50 border border-sky-200 rounded-lg px-3 py-2">
+        Este pedido se prepara <b>por encargue</b>. Te confirmaremos tiempos estimados al finalizar la compra.
+      </p>
+    )}
+  </div>
+)}
+
+<hr className="my-6 border-gray-100" />
+
             {/* Trust row (beneficios clave) */}
             <div className="mt-3 mb-2 text-sm text-gray-900 flex flex-wrap items-center justify-start gap-3 md:gap-6">
               <div className="inline-flex items-center gap-2">
@@ -456,88 +635,93 @@ export default function ProductPage() {
 
             <div id="buy-block" className="grid md:grid-cols-2 gap-6 mt-6 mb-8">
               <button
-                disabled={isOutOfStock || isAdding}
-                onClick={() => {
-                  if (isOutOfStock) {
-                    // Mostrar toast claro cuando no hay stock
-                    setStockMessage('Sin stock disponible de esta opción');
-                    setShowToast(true);
-                    setTimeout(() => setShowToast(false), 2500);
-                    return;
-                  }
+    disabled={isAdding}
+    onClick={() => {
+      // Validar selección de variante si existen variantes
+      if (Array.isArray(product.variants) && product.variants.length > 0 && !selectedOption) {
+        setStockMessage('Debes seleccionar una opción antes de continuar.');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2500);
+        return;
+      }
 
-                  // Validar selección de variante si existen variantes
-                  if (Array.isArray(product.variants) && product.variants.length > 0 && !selectedOption) {
-                    setStockMessage('Debes seleccionar una opción antes de continuar.');
-                    setShowToast(true);
-                    setTimeout(() => setShowToast(false), 2500);
-                    return;
-                  }
+      // Validar personalización si el usuario la activó
+      if (selectedOption?.allowCustomization && wantsCustomization) {
+        if (!customName || !customNumber) {
+          setStockMessage('Completa nombre y número para la personalización.');
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 2500);
+          return;
+        }
+      }
 
-                  const availableStock = selectedOption?.stock ?? product.stockTotal ?? 0;
+      const availableStock = selectedOption?.stock ?? product.stockTotal ?? 0;
 
-                  // Buscar si ya hay un ítem igual en el carrito
-                  const existingItem = items.find(
-                    (item) =>
-                      item.id === String(product.id) &&
-                      item.variantId === (selectedOption?.variantId || '')
-                  );
+      // Si NO es backorder, respetar límite de stock
+      if (!selectedIsBackorder) {
+        const existingItem = items.find(
+          (item) =>
+            item.id === String(product.id) &&
+            item.variantId === (selectedOption?.variantId || '')
+        );
+        const currentQuantityInCart = existingItem?.quantity || 0;
+        const requestedTotal = currentQuantityInCart + quantity;
 
-                  const currentQuantityInCart = existingItem?.quantity || 0;
-                  const requestedTotal = currentQuantityInCart + quantity;
+        if (requestedTotal > availableStock) {
+          if (availableStock === 0) {
+            setStockMessage('Sin stock disponible de esta opción');
+          } else {
+            setStockMessage(`Solo hay ${availableStock} unidades disponibles`);
+          }
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 2500);
+          return;
+        }
+      }
 
-                  if (requestedTotal > availableStock) {
-                    if (availableStock === 0) {
-                      setStockMessage('Sin stock disponible de esta opción');
-                    } else {
-                      setStockMessage(`Solo hay ${availableStock} unidades disponibles`);
-                    }
-                    setShowToast(true);
-                    setTimeout(() => setShowToast(false), 2500);
-                    return;
-                  }
+      setIsAdding(true);
 
-                  setIsAdding(true);
+      const cartItem = {
+        id: product.id,
+        slug: product.slug,
+        name: product.title,
+        title: product.title,
+        image: product.images?.[0] || '',
+        quantity,
+        priceUSD: selectedOption?.priceUSD ?? product.priceUSD,
+        price: selectedOption?.priceUSD ?? product.priceUSD,
+        variantLabel: selectedOption?.variantLabel,
+        variantId: selectedOption?.variantId,
+        stock: selectedOption?.stock,
+        color: '',
+        // NUEVO
+        isBackorder: !!selectedIsBackorder,
+        customName: selectedOption?.allowCustomization && wantsCustomization ? customName : '',
+        customNumber: selectedOption?.allowCustomization && wantsCustomization ? customNumber : '',
+      };
 
-                  // Construir el objeto cartItem según las propiedades requeridas por CartItem
-                  const cartItem = {
-                    id: product.id,
-                    slug: product.slug,
-                    name: product.title,
-                    title: product.title,
-                    image: product.images?.[0] || '',
-                    quantity: quantity,
-                    priceUSD: selectedOption?.priceUSD ?? product.priceUSD,
-                    price: selectedOption?.priceUSD ?? product.priceUSD,
-                    variantLabel: selectedOption?.variantLabel,
-                    variantId: selectedOption?.variantId,
-                    stock: selectedOption?.stock,
-                    color: '',
-                  };
-                  addToCart(cartItem);
-                  toast.success(lang === 'en' ? 'Added to cart' : 'Agregado al carrito');
-                  scrollToTop();
-                  setTimeout(() => setIsAdding(false), 800);
-                }}
-                className={`h-12 rounded-lg shadow hover:shadow-md tracking-wide transition flex items-center justify-center gap-2 border font-semibold ${
-                  isOutOfStock
-                    ? 'bg-gray-300 text-white cursor-not-allowed'
-                    : 'bg-black text-white border-black hover:bg-white hover:text-black'
-                }${isAdding ? ' opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isOutOfStock ? (lang === 'en' ? 'OUT OF STOCK' : 'SIN STOCK') : (
-                  isAdding ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
-                  ) : (
-                    <>
-                      <Check size={18} /> {lang === 'en' ? 'Add to cart' : 'Agregar al carrito'}
-                    </>
-                  )
-                )}
-              </button>
+      addToCart(cartItem);
+      toast.success(lang === 'en' ? 'Added to cart' : 'Agregado al carrito');
+      scrollToTop();
+      setTimeout(() => setIsAdding(false), 800);
+    }}
+    className={`h-12 rounded-lg shadow hover:shadow-md tracking-wide transition flex items-center justify-center gap-2 border font-semibold ${
+      isAdding
+        ? 'opacity-50 cursor-not-allowed bg-black text-white border-black'
+        : 'bg-black text-white border-black hover:bg-white hover:text-black'
+    }`}
+  >
+    {isAdding ? (
+      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+      </svg>
+    ) : (
+      <>
+        <Check size={18} /> {lang === 'en' ? 'Add to cart' : 'Agregar al carrito'}
+      </>
+    )}
+  </button>
             </div>
 
             {/* Disclaimer legal/importación: TCD style */}
@@ -550,12 +734,14 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Descripción del producto (al final, ancho completo) */}
+        {/* Descripción (full-width) con íconos vectoriales desde emojis */}
         {productDescription && (
-          <div
-            className="prose prose-blue prose-lg max-w-none mb-8 text-gray-800 [&>p]:mb-4 [&>h2]:mt-8 [&>ul]:mb-4 [&>ul>li]:mb-2"
-            dangerouslySetInnerHTML={{ __html: productDescription }}
-          />
+          <section className="mt-10 mb-12">
+            <h2 className="text-xl font-bold mb-4">Descripción</h2>
+            <div className="prose prose-lg max-w-none">
+              {renderIconifiedDescription(productDescription)}
+            </div>
+          </section>
         )}
 
         {product && (

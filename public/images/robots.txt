@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://getbionova.com/sitemap.xml
+Sitemap: https://tucasacadeportiva.com/sitemap.xml

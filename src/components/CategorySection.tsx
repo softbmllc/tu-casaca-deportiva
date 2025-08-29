@@ -28,7 +28,7 @@ export default function CategorySection() {
       </Helmet>
 
       <motion.p
-        className="text-sm uppercase text-[#22D3EE] tracking-widest mb-4"
+        className="text-sm uppercase text-[#3B82F6] tracking-widest mb-4"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}

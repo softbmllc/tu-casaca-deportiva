@@ -37,8 +37,8 @@ const UI = {
   section: "bg-white rounded-xl border border-gray-200 shadow-sm p-5",
   sectionTitle: "text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3",
   label: "block text-sm font-medium text-gray-700 mb-1",
-  input: "w-full p-2.5 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55] focus:border-[#FF2D55]",
-  select: "w-full p-2.5 rounded-lg border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF2D55] focus:border-[#FF2D55]",
+  input: "w-full p-2.5 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6]",
+  select: "w-full p-2.5 rounded-lg border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6]",
 };
 
 // --- Minimal Headless Select (no deps, only UI) ---
@@ -83,7 +83,7 @@ function CustomSelect({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full p-2.5 pr-10 rounded-lg border border-gray-300 bg-white shadow-sm text-left focus:outline-none focus:ring-2 focus:ring-[#FF2D55] focus:border-[#FF2D55]"
+        className="w-full p-2.5 pr-10 rounded-lg border border-gray-300 bg-white shadow-sm text-left focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-[#3B82F6]"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
@@ -351,7 +351,7 @@ useEffect(() => {
   const [variants, setVariants] = useState<
   {
     label: { es: string; en: string };
-    options: { value: string; priceUSD: number; stock: number }[];
+    options: { value: string; priceUSD: number; stock: number; variantId?: string; allowCustomization?: boolean }[];
   }[]
 >([]);
   const sensors = useSensors(
@@ -540,6 +540,13 @@ useEffect(() => {
         variants: variants.map((variant) => ({
           ...variant,
           title: variant.label,
+          options: (variant.options || []).map((opt) => ({
+            value: opt.value,
+            priceUSD: Number(opt.priceUSD || 0),
+            stock: Number(opt.stock || 0),
+            variantId: opt.variantId || (crypto.randomUUID?.() || String(Date.now())),
+            allowCustomization: !!opt.allowCustomization,
+          })),
         })),
         sku: formData.sku || "",
         stockTotal: variants.reduce(
@@ -627,6 +634,36 @@ useEffect(() => {
             setFormData((prev) => ({ ...prev, description: value }))
           }
         />
+      </div>
+      <div className="mt-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-md p-3">
+        <p className="mb-2">
+          Tip: podés usar estos emojis en la descripción — se verán como <strong>íconos vectoriales</strong> en la tienda:
+          <span className="inline-flex items-center gap-2 ml-2">
+            <span>⚽</span><span>👕</span><span>⭐</span><span>🚚</span>
+          </span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const template = `<p>⚽ Camiseta de calidad premium.</p><p>👕 Tela liviana y respirable.</p><p>⭐ Personalización por encargue.</p><p>🚚 Envíos a todo Uruguay.</p>`;
+              setFormData(prev => ({ ...prev, description: template }));
+            }}
+            className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-100"
+          >
+            Insertar plantilla (Fútbol)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const template = `<p>🏀 Camiseta de calidad premium.</p><p>👕 Tela liviana y respirable.</p><p>⭐ Detalles nítidos, fit moderno.</p><p>🚚 Envíos a todo Uruguay.</p>`;
+              setFormData(prev => ({ ...prev, description: template }));
+            }}
+            className="px-3 py-1.5 rounded-md border text-gray-700 hover:bg-gray-100"
+          >
+            Insertar plantilla (NBA)
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -781,66 +818,84 @@ useEffect(() => {
       </div>
 
       {variant.options.map((option, oIndex) => (
-        <div key={oIndex} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Valor</label>
-            <input
-              type="text"
-              className={UI.input}
-              placeholder="Ej: Joystick Original"
-              value={option.value}
-              onChange={(e) => {
-                const updated = [...variants];
-                updated[vIndex].options[oIndex].value = e.target.value;
-                setVariants(updated);
-              }}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Precio</label>
-            <input
-              type="number"
-              step="0.01"
-              min={0}
-              className={UI.input}
-              value={option.priceUSD}
-              onChange={(e) => {
-                const updated = [...variants];
-                updated[vIndex].options[oIndex].priceUSD = parseFloat(e.target.value || "0");
-                setVariants(updated);
-              }}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Stock</label>
-            <input
-              type="number"
-              min={0}
-              className={UI.input}
-              value={option.stock || 0}
-              onChange={(e) => {
-                const updated = [...variants];
-                updated[vIndex].options[oIndex].stock = parseInt(e.target.value || "0");
-                setVariants(updated);
-              }}
-            />
-          </div>
+  <div key={oIndex} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-2">
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">Valor (Talle)</label>
+      <input
+        type="text"
+        className={UI.input}
+        placeholder="Ej: S / M / L / XL"
+        value={option.value}
+        onChange={(e) => {
+          const updated = [...variants];
+          updated[vIndex].options[oIndex].value = e.target.value;
+          setVariants(updated);
+        }}
+      />
+    </div>
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">Precio (USD)</label>
+      <input
+        type="number"
+        step="0.01"
+        min={0}
+        className={UI.input}
+        value={option.priceUSD}
+        onChange={(e) => {
+          const updated = [...variants];
+          updated[vIndex].options[oIndex].priceUSD = parseFloat(e.target.value || "0");
+          setVariants(updated);
+        }}
+      />
+    </div>
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">Stock</label>
+      <input
+        type="number"
+        min={0}
+        className={UI.input}
+        value={option.stock || 0}
+        onChange={(e) => {
+          const updated = [...variants];
+          updated[vIndex].options[oIndex].stock = parseInt(e.target.value || "0");
+          setVariants(updated);
+        }}
+      />
+    </div>
 
-          <div className="md:col-span-3 flex justify-end">
-            <button
-              type="button"
-              className="text-red-600 text-xs mt-1"
-              onClick={() => {
-                const updated = [...variants];
-                updated[vIndex].options.splice(oIndex, 1);
-                setVariants(updated);
-              }}
-            >
-              Eliminar esta opción
-            </button>
-          </div>
-        </div>
-      ))}
+    {/* ✅ Checkbox por variante */}
+    <div className="flex items-center gap-2">
+      <input
+        id={`allowCustomization-${vIndex}-${oIndex}`}
+        type="checkbox"
+        checked={!!option.allowCustomization}
+        onChange={(e) => {
+          const updated = [...variants];
+          updated[vIndex].options[oIndex].allowCustomization = e.target.checked;
+          setVariants(updated);
+        }}
+        className="h-4 w-4 rounded border-gray-300"
+      />
+      <label htmlFor={`allowCustomization-${vIndex}-${oIndex}`} className="text-sm font-medium text-gray-800">
+        Permitir personalizar
+      </label>
+    </div>
+
+    <div className="md:col-span-4 flex justify-end">
+      <button
+        type="button"
+        className="text-red-600 text-xs mt-1"
+        onClick={() => {
+          const updated = [...variants];
+          updated[vIndex].options.splice(oIndex, 1);
+          setVariants(updated);
+        }}
+      >
+        Eliminar esta opción
+      </button>
+    </div>
+  </div>
+))}
 
       <div className="flex items-center gap-4 mt-2">
         <button
@@ -848,7 +903,7 @@ useEffect(() => {
           className="text-[#FF2D55] text-sm"
           onClick={() => {
             const updated = [...variants];
-            updated[vIndex].options.push({ value: "", priceUSD: 0, stock: 0 });
+            updated[vIndex].options.push({ value: "", priceUSD: 0, stock: 0, allowCustomization: false });
             setVariants(updated);
           }}
         >
@@ -876,7 +931,7 @@ useEffect(() => {
     onClick={() => {
       setVariants([
         ...variants,
-        { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0, stock: 0 }] },
+        { label: { es: "", en: "" }, options: [{ value: "", priceUSD: 0, stock: 0, allowCustomization: false }] },
       ]);
     }}
   >

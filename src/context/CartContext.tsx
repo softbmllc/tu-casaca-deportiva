@@ -74,8 +74,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const [currentUid, setCurrentUid] = useState<string | null>(null);
 
+  const isAuthRoute =
+    typeof window !== "undefined" &&
+    (window.location.pathname === "/login" || window.location.pathname === "/admin/login");
+
   // Asegura sesión anónima y guarda el UID actual (anónimo o logueado)
   useEffect(() => {
+    if (isAuthRoute) return; // no iniciar auth anónima en /login
     const authInstance = getAuth();
     const unsub = onAuthStateChanged(authInstance, async (fbUser) => {
       if (fbUser) {
@@ -90,7 +95,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     });
     return () => unsub();
-  }, []);
+  }, [isAuthRoute]);
 
   const hasInitialized = useRef(false);
 
@@ -175,6 +180,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     console.log("🟨 useEffect: carga carrito desde Firebase según usuario/UID actual");
+    if (isAuthRoute) return; // no listeners en /login
     if (!currentUid) return;
 
     const stopAny: unknown = loadCartFromFirebaseAndSync(currentUid, async (itemsFromRealtime) => {
